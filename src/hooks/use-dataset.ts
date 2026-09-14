@@ -1,3 +1,7 @@
+/**
+ * Source de vérité des données : jeu embarqué, imports à chaud, enrichissement
+ * Netdeck, et les lignes de table qui en découlent.
+ */
 import * as React from "react"
 
 import dataset from "@/data/dataset.json"

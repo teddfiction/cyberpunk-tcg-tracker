@@ -1,3 +1,7 @@
+/**
+ * Table des extensions Cardmarket : libellés, codes d'impression et URLs
+ * externes. Tout ce qu'aucune source ne publie et qui a dû être reconstruit.
+ */
 import type { CodeMap } from "@/types"
 
 /**

@@ -1,3 +1,7 @@
+/**
+ * Jointure Netdeck ↔ Cardmarket : index par nom normalisé et extension, avec
+ * repli prudent sur le nom seul.
+ */
 import { norm } from "@/lib/format"
 import type { EnrichedCard, Printing } from "@/types"
 

@@ -1,3 +1,4 @@
+/** Filtre multi-extensions à chips, monté sur Popover + Command + Badge. */
 import * as React from "react"
 import { Check, ChevronDown, X } from "lucide-react"
 

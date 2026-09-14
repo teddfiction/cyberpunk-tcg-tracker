@@ -1,3 +1,4 @@
+/** `cn()` : fusion des classes Tailwind, utilitaire attendu par les composants shadcn. */
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 

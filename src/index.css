@@ -1,3 +1,4 @@
+/* Tokens du thème shadcn (base Mist, accent Yellow, radius 0) et police Geist. */
 @import "tailwindcss";
 @source "./**/*.{ts,tsx}";
 @custom-variant dark (&:where(.dark, .dark *));

@@ -1,3 +1,7 @@
+/**
+ * Assemblage de l'app : données, instance de table, filtres, table, paramètres.
+ * Aucune logique métier ici — tout vient des hooks et de lib/.
+ */
 import * as React from "react"
 import { Download } from "lucide-react"
 
@@ -6,29 +10,34 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar, type View } from "@/components/app-sidebar"
+import { columnsFor } from "@/components/columns"
 import { DataTable } from "@/components/data-table"
 import { FiltersBar } from "@/components/filters-bar"
 import { SettingsView } from "@/components/settings-view"
 import { StatsStrip } from "@/components/stats-strip"
 import { useDataset } from "@/hooks/use-dataset"
-import { useFilters } from "@/hooks/use-filters"
+import { useTable } from "@/hooks/use-table"
 import { useTheme } from "@/hooks/use-theme"
 import { download, toCsv } from "@/lib/csv"
-import { selectRows } from "@/lib/dataset"
 import { dateFr, dateShort } from "@/lib/format"
+import type { Mode } from "@/types"
 
 export default function App() {
   const data = useDataset()
-  const { filters, patch, setMode, toggleSort, reset, columns } = useFilters(data.enriched)
   const { dark, toggle } = useTheme()
 
   const [view, setView] = React.useState<View>("table")
+  const [mode, setMode] = React.useState<Mode>("normal")
   const fileRef = React.useRef<HTMLInputElement>(null)
 
-  const visible = React.useMemo(
-    () => selectRows(data.rows, data.cards, filters),
-    [data.rows, data.cards, filters]
-  )
+  const columns = React.useMemo(() => columnsFor(mode, data.enriched), [mode, data.enriched])
+  const table = useTable({
+    data: mode === "card" ? data.cards : data.rows,
+    columns,
+    mode,
+    codes: data.codes,
+    expansions: data.expansions,
+  })
 
   const options = React.useMemo(
     () =>
@@ -38,7 +47,8 @@ export default function App() {
     [data.expCounts]
   )
 
-  const total = filters.mode === "card" ? data.cards.length : data.rows.length
+  const shown = table.getRowModel().rows.length
+  const total = mode === "card" ? data.cards.length : data.rows.length
 
   return (
     <SidebarProvider>
@@ -68,9 +78,7 @@ export default function App() {
               variant="outline"
               size="sm"
               className="ml-auto"
-              onClick={() =>
-                download(`cyberpunk-tcg-${filters.mode}.csv`, toCsv(columns, visible, data.codes))
-              }
+              onClick={() => download(`cyberpunk-tcg-${mode}.csv`, toCsv(table, data.codes))}
             >
               <Download />
               <span className="hidden sm:inline">Exporter en CSV</span>
@@ -113,26 +121,17 @@ export default function App() {
               <StatsStrip rows={data.rows} cards={data.cards} />
 
               <FiltersBar
-                filters={filters}
-                patch={patch}
-                setMode={setMode}
-                reset={reset}
+                table={table}
+                mode={mode}
+                onMode={setMode}
                 options={options}
                 codes={data.codes}
                 expansions={data.expansions}
-                shown={visible.length}
+                shown={shown}
                 total={total}
               />
 
-              <DataTable
-                columns={columns}
-                rows={visible}
-                mode={filters.mode}
-                sort={filters.sort}
-                onSort={toggleSort}
-                codes={data.codes}
-                expansions={data.expansions}
-              />
+              <DataTable table={table} />
 
               <p className="text-muted-foreground text-xs leading-relaxed">
                 Sources : exports publics Cardmarket joints sur <code>idProduct</code>, enrichis par

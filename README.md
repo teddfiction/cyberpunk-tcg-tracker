@@ -3,7 +3,8 @@
 Consultation des cotes Cardmarket du Cyberpunk TCG (WeirdCo) : recherche, filtres,
 tri, regroupement par carte, export CSV.
 
-React 19 · TypeScript · Vite · Tailwind CSS v4 · shadcn/ui (primitives Radix UI).
+React 19 · TypeScript · Vite · Tailwind CSS v4 · shadcn/ui (primitives Radix UI)
+· TanStack Table v8.
 
 ## Démarrer
 
@@ -110,7 +111,8 @@ src/
   components/
     ui/                 composants shadcn/ui, registry new-york-v4, non modifiés
     app-sidebar.tsx     navigation, import, bascule de thème
-    data-table.tsx      table + rendu des cellules
+    columns.tsx         définition des colonnes TanStack, une liste par mode
+    data-table.tsx      rendu de la table depuis l'instance TanStack
     filters-bar.tsx     recherche, onglets, combobox, cases à cocher
     extension-combobox.tsx
     code-badge.tsx
@@ -121,14 +123,14 @@ src/
     expansions.ts       libellés d'extensions, codes d'impression, URLs externes
   hooks/
     use-dataset.ts      état des données et imports
-    use-filters.ts      état des filtres, tri, colonnes
+    use-table.ts        instance TanStack : tri, filtres, recherche
     use-theme.ts
     use-mobile.ts       requis par sidebar.tsx
   lib/
-    columns.ts          définition des colonnes par mode
-    csv.ts              export CSV
-    dataset.ts          construction des lignes, regroupement, filtrage, tri
+    csv.ts              export CSV depuis l'instance de table
+    dataset.ts          construction des lignes et regroupement par carte
     enrich.ts           jointure Netdeck ↔ Cardmarket
+    table.ts            tri, filtres et recherche passés à TanStack
     format.ts           formatage et normalisation
     ingest.ts           lecture des trois formats JSON
     utils.ts            cn()
@@ -139,8 +141,9 @@ src/
 ```
 
 Découpage : `lib/` ne contient que des fonctions pures, testables sans DOM ;
-`hooks/` porte l'état ; `components/` ne fait que du rendu. La logique de
-jointure et de tri est isolée dans `lib/dataset.ts` et `lib/enrich.ts`.
+`hooks/` porte l'état ; `components/` ne fait que du rendu. Chaque fichier
+s'ouvre sur un en-tête qui dit ce qu'il fait — sauf ceux du registry shadcn,
+laissés intacts pour rester régénérables par la CLI.
 
 ## Sources de données
 

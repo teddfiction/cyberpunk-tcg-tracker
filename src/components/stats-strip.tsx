@@ -1,12 +1,21 @@
+/**
+ * Quatre repères de cadrage au-dessus de la table.
+ * La somme des minis n'est pas une valorisation : `low` est la plus petite
+ * annonce, pas un prix de vente — le libellé doit rester prudent.
+ */
 import { eur } from "@/lib/format"
 import type { CardRow, Row } from "@/types"
 
-/** Quatre repères de cadrage. La somme des minis n'est pas une valorisation :
- *  `low` est la plus petite annonce, pas un prix de vente. */
 export function StatsStrip({ rows, cards }: { rows: Row[]; cards: CardRow[] }) {
-  const singles = rows.filter((r) => r.single).length
-  const withPrice = rows.filter((r) => r.hasPrice).length
-  const totalLow = rows.reduce((s, r) => s + (r.low ?? 0), 0)
+  // Une seule passe : trois `filter` séparés relisaient le tableau trois fois.
+  const { singles, withPrice, totalLow } = rows.reduce(
+    (acc, r) => ({
+      singles: acc.singles + (r.single ? 1 : 0),
+      withPrice: acc.withPrice + (r.hasPrice ? 1 : 0),
+      totalLow: acc.totalLow + (r.low ?? 0),
+    }),
+    { singles: 0, withPrice: 0, totalLow: 0 }
+  )
 
   const items: [React.ReactNode, string][] = [
     [cards.length, "cartes uniques"],

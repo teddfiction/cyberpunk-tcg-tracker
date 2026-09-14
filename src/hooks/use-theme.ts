@@ -1,3 +1,4 @@
+/** Bascule clair/sombre : préférence système au premier chargement, choix mémorisé ensuite. */
 import * as React from "react"
 
 const KEY = "cptcg-theme"

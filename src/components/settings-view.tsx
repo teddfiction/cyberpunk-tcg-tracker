@@ -1,3 +1,4 @@
+/** Vue Paramètres : saisie des codes d'impression et export du mapping. */
 import { Copy } from "lucide-react"
 
 import { Button } from "@/components/ui/button"

@@ -1,3 +1,4 @@
+/** Badge du code d'impression d'une extension. Plein = confirmé, pointillés = déduit. */
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import type { CodeMap } from "@/types"

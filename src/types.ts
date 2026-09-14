@@ -1,3 +1,9 @@
+/**
+ * Types partagés : modèle Cardmarket, lignes de table, et augmentation des
+ * métadonnées TanStack (mode courant, alignement, formatage CSV).
+ */
+import type { RowData } from "@tanstack/react-table"
+
 /** Un produit du catalogue Cardmarket (single ou scellé). */
 export type Product = {
   id: number
@@ -93,19 +99,31 @@ export type CardRow = {
 }
 
 export type Mode = "normal" | "foil" | "card"
-export type SortDir = "asc" | "desc"
-export type SortState = { k: string; dir: SortDir }
 
-export type ColType = "name" | "code" | "num" | "exp" | "prints" | "eur" | "pct" | "int" | "id"
-export type Col = { k: string; l: string; t: ColType }
+/** Ce que la table manipule : une ligne produit, ou une ligne carte. */
+export type TableRow = Row | CardRow
 
-export type Filters = {
-  q: string
-  mode: Mode
-  exps: string[]
-  hideEmpty: boolean
-  onlySingles: boolean
-  sort: SortState
+/**
+ * Accès indifférencié aux champs des deux formes. Réservé aux `cell` et au CSV,
+ * qui rendent un produit ou une carte sans avoir à distinguer les deux.
+ */
+export type AnyRow = Row & CardRow
+
+declare module "@tanstack/react-table" {
+  interface TableMeta<TData extends RowData> {
+    mode: Mode
+    codes: CodeMap
+    expansions: Record<string, string>
+  }
+
+  interface ColumnMeta<TData extends RowData, TValue> {
+    /** Colonne numérique : alignée à droite, chiffres tabulaires. */
+    align?: "right"
+    /** Classes ajoutées à la cellule (largeurs contraintes de la colonne Produit). */
+    className?: string
+    /** Décimal → virgule française à l'export CSV. */
+    decimal?: boolean
+    /** Rendu CSV quand la valeur brute de la colonne ne suffit pas. */
+    csv?: (row: AnyRow, codes: CodeMap) => string
+  }
 }
-
-export type ImportResult = { ok: boolean; message: string }

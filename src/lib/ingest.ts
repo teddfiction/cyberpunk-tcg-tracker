@@ -1,3 +1,4 @@
+/** Lecture et validation des trois formats JSON acceptés par l'import à chaud. */
 import { dateFr } from "@/lib/format"
 import { shortCategory } from "@/data/expansions"
 import type { EnrichedCard, Price, Product } from "@/types"

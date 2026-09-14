@@ -53,7 +53,8 @@ for (const p of products) {
   }
 }
 
-const orphans = guide.priceGuides.filter((r) => !products.some((p) => p.idProduct === r.idProduct))
+const catalogIds = new Set(catalog.map((p) => p.id))
+const orphans = guide.priceGuides.filter((r) => !catalogIds.has(r.idProduct))
 const uncoted = catalog.filter((p) => !prices[p.id])
 
 await writeFile(

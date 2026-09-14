@@ -1,3 +1,4 @@
+/** Navigation latérale : vues, import de fichiers, bascule de thème. */
 import { Moon, Settings2, Sun, Table2, Upload } from "lucide-react"
 
 import {
