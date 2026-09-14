@@ -13,7 +13,9 @@ de toucher au pipeline. Ce fichier ne couvre que ce qu'il faut savoir pour coder
 npm run dev              # vite, port 5173, ouvre le navigateur
 npm run build            # tsc -b && vite build → dist/
 npm run typecheck        # tsc -b --noEmit  ← à lancer après toute modif TS
+npm run data:fetch       # télécharge les trois exports → data/cardmarket/
 npm run data:cardmarket  # data/cardmarket/*.json → src/data/dataset.json
+npm run data:refresh     # data:fetch + data:cardmarket, le rafraîchissement courant
 npm run data:netdeck     # api.netdeck.gg → cards_enriched.json (Node, pas navigateur)
 ```
 
@@ -22,8 +24,8 @@ Pas de tests, pas de linter, pas de CI. `npm run typecheck` est le seul filet :
 
 `npm run dev` suffit pour travailler sur l'app : `src/data/dataset.json` est
 versionné et fait office d'amorce. Les scripts `data:*` ne servent qu'à rafraîchir
-les données — `data:cardmarket` exige que les trois exports bruts aient été
-retéléchargés au préalable dans `data/cardmarket/` (dossier non versionné).
+les données — `data:cardmarket` seul exige que `data/cardmarket/` soit déjà rempli
+(dossier non versionné), d'où `data:refresh` qui enchaîne les deux.
 **Procédure complète : README § « Exploiter l'app ».** Ne pas la dupliquer ici.
 
 ## Architecture — la règle de découpage
@@ -120,5 +122,5 @@ Dépôt git sur `main`. Ce qui est suivi, et ce qui ne l'est pas :
 | `cards_enriched.json`, `netdeck-raw.json` | non | sorties de scripts, régénérables |
 | visuels de cartes | non | licence CD PROJEKT RED, usage local, pas de redistribution |
 
-Conséquence pour un clone frais : l'app démarre telle quelle, mais
-`npm run data:cardmarket` échoue tant que `data/cardmarket/` est vide.
+Conséquence pour un clone frais : l'app démarre telle quelle ; `npm run data:refresh`
+reconstitue `data/cardmarket/` puis régénère le dérivé.

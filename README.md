@@ -27,17 +27,29 @@ retéléchargeables et republiés quotidiennement. C'est le dérivé
 `src/data/dataset.json` qui fait foi et qui est committé.
 
 ```bash
-mkdir -p data/cardmarket && cd data/cardmarket
-curl -O https://downloads.s3.cardmarket.com/productCatalog/priceGuide/price_guide_23.json
-curl -O https://downloads.s3.cardmarket.com/productCatalog/productList/products_singles_23.json
-curl -O https://downloads.s3.cardmarket.com/productCatalog/productList/products_nonsingles_23.json
-cd ../..
+npm run data:refresh        # télécharge les trois exports puis régénère dataset.json
+```
 
+Équivalent en deux temps, si l'on veut inspecter les fichiers bruts avant conversion :
+
+```bash
+npm run data:fetch          # → data/cardmarket/*.json
 npm run data:cardmarket     # → src/data/dataset.json
 ```
 
-Le script récapitule produits, cotes, lignes de prix orphelines et produits sans
-cote. Relancer `npm run dev` pour voir le nouveau jeu, puis committer
+`data:fetch` refuse d'écrire une réponse non-JSON : un portail captif ou une
+redirection est signalé tout de suite, plutôt que de faire échouer la conversion
+plus loin avec un message obscur. En cas de blocage réseau, les trois fichiers se
+téléchargent à la main :
+
+```
+https://downloads.s3.cardmarket.com/productCatalog/priceGuide/price_guide_23.json
+https://downloads.s3.cardmarket.com/productCatalog/productList/products_singles_23.json
+https://downloads.s3.cardmarket.com/productCatalog/productList/products_nonsingles_23.json
+```
+
+`data:cardmarket` récapitule produits, cotes, lignes de prix orphelines et produits
+sans cote. Relancer `npm run dev` pour voir le nouveau jeu, puis committer
 `src/data/dataset.json`.
 
 Pour un simple coup d'œil sans toucher à l'amorce, `price_guide_23.json` seul
@@ -81,8 +93,8 @@ le fichier sans assistant d'import.
 
 | Quand | Quoi |
 |---|---|
-| Suivi régulier des cotes | retélécharger `price_guide_23.json`, `npm run data:cardmarket`, committer `src/data/dataset.json` |
-| Nouvelle extension | retélécharger les trois exports, relancer `npm run data:netdeck`, compléter `EXPANSIONS` puis `DEFAULT_CODES` |
+| Suivi régulier des cotes | `npm run data:refresh`, puis committer `src/data/dataset.json` |
+| Nouvelle extension | `npm run data:refresh`, puis `npm run data:netdeck`, compléter `EXPANSIONS` puis `DEFAULT_CODES` |
 | Vérification ponctuelle | import à chaud dans l'app, rien à committer |
 
 ## Structure
@@ -91,6 +103,7 @@ le fichier sans assistant d'import.
 data/cardmarket/        exports bruts Cardmarket — non versionné, entrée du pipeline
 public/fonts/           Geist Variable (woff2)
 scripts/
+  fetch-cardmarket.mjs  téléchargement des exports Cardmarket
   build-dataset.mjs     exports Cardmarket  →  src/data/dataset.json
   netdeck-export.mjs    API cyberpunktcg.com →  cards_enriched.json
 src/
@@ -133,8 +146,9 @@ jointure et de tri est isolée dans `lib/dataset.ts` et `lib/enrich.ts`.
 
 Trois sources, toutes publiques.
 
-1. **Cardmarket** — cotes et catalogue. Trois exports JSON téléchargés à la main,
-   convertis par `npm run data:cardmarket`. Price guide mis à jour quotidiennement.
+1. **Cardmarket** — cotes et catalogue. Trois exports JSON récupérés par
+   `npm run data:fetch`, convertis par `npm run data:cardmarket`.
+   Price guide mis à jour quotidiennement.
 2. **Netdeck** (`api.netdeck.gg`) — numéros de collecteur, raretés, visuels.
    Extraits par `npm run data:netdeck`, chargés à chaud.
 3. **Import à chaud** — le bouton « Importer un JSON » accepte les trois formats,
