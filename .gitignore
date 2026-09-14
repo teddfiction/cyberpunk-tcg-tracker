@@ -1,0 +1,8 @@
+node_modules
+dist
+*.local
+.DS_Store
+# sorties des scripts de données
+cards_enriched.json
+netdeck-raw.json
+tsconfig.tsbuildinfo

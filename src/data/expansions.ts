@@ -1,0 +1,70 @@
+import type { CodeMap } from "@/types"
+
+/**
+ * Libellés des extensions Cardmarket.
+ *
+ * Les exports Cardmarket ne contiennent que des `idExpansion`. Ces noms ont été
+ * reconstruits en croisant les produits scellés avec leur idExpansion : un
+ * « Welcome to Night City - Beta Booster Box » en 6714 nomme l'extension 6714.
+ * 6717 et 6719 n'ont aucun produit scellé associé, leur nom reste inconnu —
+ * l'export Netdeck devrait les identifier (« Set 1 Promos » probablement).
+ */
+export const EXPANSIONS: Record<string, string> = {
+  "6714": "Welcome to Night City — Beta",
+  "6715": "The Heist — Beta Starter Deck",
+  "6716": "Embracing Power — Beta Starter Deck",
+  "6717": "Extension 6717",
+  "6718": "Pre-Release Beta Kit",
+  "6719": "Extension 6719",
+  "6720": "The Heist — Demo Deck",
+  "6721": "Embracing Power — Demo Deck",
+  "6722": "Alpha Kit",
+  "6761": "Welcome to Night City — Retail",
+  "6762": "The Heist — Retail Starter Deck",
+  "6763": "Embracing Power — Retail Starter Deck",
+}
+
+/**
+ * Codes d'impression par extension.
+ *
+ * `sure: true` = confirmé par une source externe. `sure: false` = déduction,
+ * affichée en pointillés dans l'interface et modifiable dans Paramètres.
+ *
+ * MS01B et SD02B sont confirmés. SD01B suit de la numérotation d'Embracing
+ * Power en 02 et de l'ordre des produits dans les exports. Les codes Retail
+ * supposent que le suffixe B marque la Beta et disparaît au retail. DD01B,
+ * DD02B et MS01A sont des conjectures.
+ */
+export const DEFAULT_CODES: CodeMap = {
+  "6714": { code: "MS01B", sure: true },
+  "6716": { code: "SD02B", sure: true },
+  "6715": { code: "SD01B", sure: false },
+  "6717": { code: "", sure: false },
+  "6718": { code: "", sure: false },
+  "6719": { code: "", sure: false },
+  "6720": { code: "DD01B", sure: false },
+  "6721": { code: "DD02B", sure: false },
+  "6722": { code: "MS01A", sure: false },
+  "6761": { code: "MS01", sure: false },
+  "6762": { code: "SD01", sure: false },
+  "6763": { code: "SD02", sure: false },
+}
+
+/** Raccourcit les `categoryName` Cardmarket : « Cyberpunk Booster Boxes » → « Booster Box ». */
+export function shortCategory(categoryName: string): string {
+  const c = String(categoryName).replace("Cyberpunk ", "").replace("CPK ", "")
+  return (
+    {
+      "Booster Boxes": "Booster Box",
+      "Box Sets": "Box Set",
+      "Starter Decks": "Starter Deck",
+    }[c] ?? c
+  )
+}
+
+/** Recherche Cardmarket par nom de produit. */
+export const CARDMARKET_SEARCH = "https://www.cardmarket.com/fr/Cyberpunk/Products/Search?searchString="
+
+/** Fiche d'une impression sur le site officiel. */
+export const cyberpunkTcgUrl = (slug: string, printingUuid?: string | null) =>
+  `https://cyberpunktcg.com/cards/${slug}${printingUuid ? `?printing=${printingUuid}` : ""}`
