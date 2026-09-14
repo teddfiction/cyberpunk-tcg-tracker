@@ -20,6 +20,12 @@ npm run data:netdeck     # api.netdeck.gg → cards_enriched.json (Node, pas nav
 Pas de tests, pas de linter, pas de CI. `npm run typecheck` est le seul filet :
 `strict`, `noUnusedLocals`, `noUnusedParameters` sont actifs.
 
+`npm run dev` suffit pour travailler sur l'app : `src/data/dataset.json` est
+versionné et fait office d'amorce. Les scripts `data:*` ne servent qu'à rafraîchir
+les données — `data:cardmarket` exige que les trois exports bruts aient été
+retéléchargés au préalable dans `data/cardmarket/` (dossier non versionné).
+**Procédure complète : README § « Exploiter l'app ».** Ne pas la dupliquer ici.
+
 ## Architecture — la règle de découpage
 
 Trois couches, dans cet ordre de dépendance. Ne pas la casser :
@@ -102,10 +108,17 @@ Ces contraintes ne sont pas des bugs. Ne pas « réparer » :
 - **Export CSV** (`lib/csv.ts`) : séparateur `;`, virgule décimale, BOM UTF-8. C'est ce qui
   permet à Excel FR d'ouvrir le fichier sans assistant d'import. Ne pas « normaliser » en RFC 4180.
 
-## État du dépôt
+## Versionnement
 
-- **Pas de dépôt git initialisé** (`git log` échoue). Un `.gitignore` existe déjà.
-- Résidu à supprimer : le dossier vide `src/{components/ui,lib,hooks,data}` — accident
-  d'expansion de brace shell, sans rapport avec le code.
-- Les sorties de scripts (`cards_enriched.json`, `netdeck-raw.json`) sont ignorées :
-  ne pas les committer, ni les visuels de cartes (licence CD PROJEKT RED, usage local).
+Dépôt git sur `main`. Ce qui est suivi, et ce qui ne l'est pas :
+
+| Chemin | Suivi | Pourquoi |
+|---|---|---|
+| `src/data/dataset.json` | **oui** | dérivé qui fait foi, amorce de l'app — le committer après chaque `npm run data:cardmarket` |
+| `src/data/expansions.ts` | **oui** | libellés et codes d'impression saisis à la main, seule mémoire de ce travail |
+| `data/cardmarket/` | non | exports bruts republiés quotidiennement, retéléchargeables — diffs illisibles |
+| `cards_enriched.json`, `netdeck-raw.json` | non | sorties de scripts, régénérables |
+| visuels de cartes | non | licence CD PROJEKT RED, usage local, pas de redistribution |
+
+Conséquence pour un clone frais : l'app démarre telle quelle, mais
+`npm run data:cardmarket` échoue tant que `data/cardmarket/` est vide.

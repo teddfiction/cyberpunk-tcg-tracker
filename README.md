@@ -14,10 +14,81 @@ npm run build      # dist/
 npm run typecheck
 ```
 
+Le dépôt embarque un jeu de données (`src/data/dataset.json`) : l'app tourne
+immédiatement, sans téléchargement préalable. La section suivante décrit comment
+le rafraîchir.
+
+## Exploiter l'app
+
+### 1. Rafraîchir les cotes Cardmarket
+
+Les exports bruts vivent dans `data/cardmarket/`, **non versionné** : ils sont
+retéléchargeables et republiés quotidiennement. C'est le dérivé
+`src/data/dataset.json` qui fait foi et qui est committé.
+
+```bash
+mkdir -p data/cardmarket && cd data/cardmarket
+curl -O https://downloads.s3.cardmarket.com/productCatalog/priceGuide/price_guide_23.json
+curl -O https://downloads.s3.cardmarket.com/productCatalog/productList/products_singles_23.json
+curl -O https://downloads.s3.cardmarket.com/productCatalog/productList/products_nonsingles_23.json
+cd ../..
+
+npm run data:cardmarket     # → src/data/dataset.json
+```
+
+Le script récapitule produits, cotes, lignes de prix orphelines et produits sans
+cote. Relancer `npm run dev` pour voir le nouveau jeu, puis committer
+`src/data/dataset.json`.
+
+Pour un simple coup d'œil sans toucher à l'amorce, `price_guide_23.json` seul
+suffit : bouton « Importer un JSON » dans l'app. L'import ne vit qu'en mémoire.
+
+### 2. Enrichir : numéros de collecteur, raretés, visuels
+
+Cardmarket ne publie ni numéro de collecteur ni rareté. L'API Netdeck les fournit.
+
+```bash
+npm run data:netdeck           # métadonnées seules
+npm run data:netdeck:images    # + miniatures webp base64 (npm i sharp)
+```
+
+Produit `cards_enriched.json` à la racine (non versionné). Le charger via
+« Importer un JSON » : la colonne « N° » apparaît, les raretés s'affichent sous le
+nom du produit, les miniatures dans la colonne Produit.
+
+L'API `api.netdeck.gg` restreint le CORS à `https://cyberpunktcg.com` : l'appel doit
+partir d'un script Node avec l'en-tête `Origin`, jamais du navigateur. Si le schéma
+a changé, `node scripts/netdeck-export.mjs --raw` dumpe la réponse brute à inspecter.
+
+### 3. Figer les codes d'impression
+
+Les codes (MS01B, SD02B…) n'existent dans aucune source et sont saisis à la main.
+
+1. Onglet **Paramètres**, renseigner le code de chaque extension. Toute saisie vaut
+   confirmation : le badge passe de pointillés à plein.
+2. **Copier le mapping JSON**.
+3. Reporter le résultat dans `DEFAULT_CODES` (`src/data/expansions.ts`) et committer.
+
+Sans cette étape, les saisies sont perdues au rechargement.
+
+### 4. Exporter
+
+Bouton **Exporter en CSV** : colonnes du mode courant, lignes filtrées et triées
+telles qu'affichées. Séparateur `;`, virgule décimale, BOM UTF-8 — Excel FR ouvre
+le fichier sans assistant d'import.
+
+### Cycle type
+
+| Quand | Quoi |
+|---|---|
+| Suivi régulier des cotes | retélécharger `price_guide_23.json`, `npm run data:cardmarket`, committer `src/data/dataset.json` |
+| Nouvelle extension | retélécharger les trois exports, relancer `npm run data:netdeck`, compléter `EXPANSIONS` puis `DEFAULT_CODES` |
+| Vérification ponctuelle | import à chaud dans l'app, rien à committer |
+
 ## Structure
 
 ```
-data/cardmarket/        exports bruts Cardmarket (entrée du pipeline)
+data/cardmarket/        exports bruts Cardmarket — non versionné, entrée du pipeline
 public/fonts/           Geist Variable (woff2)
 scripts/
   build-dataset.mjs     exports Cardmarket  →  src/data/dataset.json
@@ -33,7 +104,7 @@ src/
     settings-view.tsx   édition des codes d'impression
     stats-strip.tsx
   data/
-    dataset.json        jeu de données embarqué (généré)
+    dataset.json        jeu de données embarqué (généré, versionné)
     expansions.ts       libellés d'extensions, codes d'impression, URLs externes
   hooks/
     use-dataset.ts      état des données et imports
@@ -58,36 +129,17 @@ Découpage : `lib/` ne contient que des fonctions pures, testables sans DOM ;
 `hooks/` porte l'état ; `components/` ne fait que du rendu. La logique de
 jointure et de tri est isolée dans `lib/dataset.ts` et `lib/enrich.ts`.
 
-## Données
+## Sources de données
 
 Trois sources, toutes publiques.
 
-**1. Cardmarket — cotes et catalogue.** Télécharger dans `data/cardmarket/` :
-
-```
-https://downloads.s3.cardmarket.com/productCatalog/priceGuide/price_guide_23.json
-https://downloads.s3.cardmarket.com/productCatalog/productList/products_singles_23.json
-https://downloads.s3.cardmarket.com/productCatalog/productList/products_nonsingles_23.json
-```
-
-puis `npm run data:cardmarket` pour régénérer `src/data/dataset.json`.
-Le price guide est mis à jour quotidiennement.
-
-**2. Netdeck — numéros de collecteur, raretés, visuels.**
-
-```bash
-npm run data:netdeck           # métadonnées
-npm run data:netdeck:images    # + miniatures base64 (npm i sharp)
-node scripts/netdeck-export.mjs --raw     # dump brut si le schéma a changé
-```
-
-Produit `cards_enriched.json` à charger via « Importer un JSON ». L'API
-`api.netdeck.gg` restreint le CORS à `https://cyberpunktcg.com` : l'appel doit
-venir d'un script Node, pas du navigateur.
-
-**3. Import à chaud.** Le bouton « Importer un JSON » accepte les trois formats,
-reconnus à leur clé racine : `priceGuides`, `products`, `cards`. Les imports
-vivent en mémoire — recharger la page revient au jeu embarqué.
+1. **Cardmarket** — cotes et catalogue. Trois exports JSON téléchargés à la main,
+   convertis par `npm run data:cardmarket`. Price guide mis à jour quotidiennement.
+2. **Netdeck** (`api.netdeck.gg`) — numéros de collecteur, raretés, visuels.
+   Extraits par `npm run data:netdeck`, chargés à chaud.
+3. **Import à chaud** — le bouton « Importer un JSON » accepte les trois formats,
+   reconnus à leur clé racine : `priceGuides`, `products`, `cards`. Les imports
+   vivent en mémoire ; recharger la page revient au jeu embarqué.
 
 ## Limites connues des données
 

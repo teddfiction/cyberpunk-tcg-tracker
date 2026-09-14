@@ -2,6 +2,10 @@ node_modules
 dist
 *.local
 .DS_Store
+# exports bruts Cardmarket : entrée du pipeline, retéléchargeable,
+# mis à jour quotidiennement. Le dérivé src/data/dataset.json fait foi.
+data/cardmarket/
+
 # sorties des scripts de données
 cards_enriched.json
 netdeck-raw.json
