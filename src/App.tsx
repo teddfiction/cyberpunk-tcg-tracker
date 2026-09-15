@@ -21,7 +21,7 @@ import { useDataset } from "@/hooks/use-dataset"
 import { useTable } from "@/hooks/use-table"
 import { useTheme } from "@/hooks/use-theme"
 import { download, toCsv } from "@/lib/csv"
-import { dateFr, dateShort, sentences } from "@/lib/format"
+import { dateAbbr, sentences } from "@/lib/format"
 import { MODES, type Mode } from "@/lib/modes"
 import { HIDDEN_COLUMNS, INITIAL_FILTERS, rowId, searchRow } from "@/lib/table"
 import { VIEWS, type View } from "@/lib/views"
@@ -147,8 +147,8 @@ export default function App() {
           <div className="min-w-0">
             <h1 className="truncate text-sm font-medium">{VIEWS[view].label}</h1>
             <p className="text-muted-foreground truncate text-xs">
-              {data.rows.length} produits · {data.cards.length} cartes · prix du{" "}
-              {dateFr(data.pricesAt)} · catalogue du {dateShort(data.catalogAt)}
+              {data.rows.length} produits · {data.cards.length} cartes · Prix du{" "}
+              {dateAbbr(data.pricesAt)} · Catalogue du {dateAbbr(data.catalogAt)}
             </p>
           </div>
 

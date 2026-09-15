@@ -78,7 +78,11 @@ export function ExtensionCombobox({ options, selected, onChange, codes, expansio
         </button>
       </PopoverTrigger>
 
-      <PopoverContent className="w-72 p-0" align="start">
+      {/* 384 px : le plus long libellé — « Embracing Power — Retail Starter
+          Deck » — fait 290 px à lui seul, auxquels s'ajoutent l'effectif, la
+          coche et les retraits. À 288 px il tronquait. Plafonné à la fenêtre
+          pour ne pas déborder sur un téléphone. */}
+      <PopoverContent className="w-96 max-w-[calc(100vw-2rem)] p-0" align="start">
         <Command>
           <CommandInput placeholder="Chercher une extension…" />
           <CommandList>
@@ -91,8 +95,11 @@ export function ExtensionCombobox({ options, selected, onChange, codes, expansio
                   onSelect={() => toggle(exp)}
                 >
                   <CodeBadge exp={exp} codes={codes} expansions={expansions} />
-                  <span className="truncate">{expansions[exp] ?? `Extension ${exp}`}</span>
-                  <span className="text-muted-foreground ml-auto tabular-nums">{count}</span>
+                  {/* Le nom passe à la ligne plutôt que de se faire couper :
+                      sur un téléphone, le menu est plafonné à la fenêtre et
+                      les libellés les plus longs n'y tiennent pas d'un trait. */}
+                  <span className="min-w-0 flex-1">{expansions[exp] ?? `Extension ${exp}`}</span>
+                  <span className="text-muted-foreground shrink-0 tabular-nums">{count}</span>
                   {selected.includes(exp) && <Check className="size-4" />}
                 </CommandItem>
               ))}

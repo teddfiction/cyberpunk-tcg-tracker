@@ -19,6 +19,13 @@ export const dateFr = (s: string) =>
 export const dateShort = (s: string) => new Date(s).toLocaleDateString("fr-FR")
 
 /**
+ * Mois abrégé : « 15 sept. 2026 ». L'en-tête y met ses deux dates, là où il
+ * mêlait auparavant le mois en toutes lettres et le tout-numérique.
+ */
+export const dateAbbr = (s: string) =>
+  new Date(s).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })
+
+/**
  * Clé de rapprochement entre sources : minuscules, sans accents ni ponctuation.
  * Rend « V - Streetkid » (Cardmarket) et « V: Streetkid » (Netdeck) identiques,
  * et reproduit exactement le `set.code` renvoyé par l'API Netdeck.

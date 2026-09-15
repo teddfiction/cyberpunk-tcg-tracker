@@ -13,7 +13,7 @@ export type ViewConfig = {
 }
 
 export const VIEWS = {
-  table: { label: "Data table", hint: "Cotes Cardmarket" },
+  table: { label: "Cotes Cardmarket", hint: "Catalogue et prix" },
   netdeck: { label: "Base de cartes", hint: "Impressions Netdeck" },
   settings: { label: "Paramètres" },
 } as const satisfies Record<string, ViewConfig>
