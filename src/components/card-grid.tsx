@@ -11,12 +11,10 @@ import { CardDialog } from "@/components/card-dialog"
 import { eur } from "@/lib/format"
 import { cardStats } from "@/lib/printings"
 import { cn } from "@/lib/utils"
-import type { CodeMap, GridCard } from "@/types"
+import type { GridCard } from "@/types"
 
 type Props = {
   cards: GridCard[]
-  codes: CodeMap
-  expansions: Record<string, string>
 }
 
 /**
@@ -27,7 +25,7 @@ type Props = {
  */
 const OFFSCREEN = "[content-visibility:auto] [contain-intrinsic-size:auto_520px]"
 
-export function CardGrid({ cards, codes, expansions }: Props) {
+export function CardGrid({ cards }: Props) {
   // La carte n'est pas remise à `null` à la fermeture : la modale la rend
   // encore pendant son animation de sortie. C'est `open` qui pilote, pas elle.
   const [card, setCard] = React.useState<GridCard | null>(null)
@@ -59,14 +57,7 @@ export function CardGrid({ cards, codes, expansions }: Props) {
       </div>
 
       {card && (
-        <CardDialog
-          card={card}
-          open={open}
-          onOpenChange={setOpen}
-          trigger={trigger}
-          codes={codes}
-          expansions={expansions}
-        />
+        <CardDialog card={card} open={open} onOpenChange={setOpen} trigger={trigger} />
       )}
     </>
   )
@@ -87,7 +78,7 @@ function Tile({
         onClick={(e) => onSelect(e.currentTarget)}
         aria-haspopup="dialog"
         aria-label={`${card.name} — voir les versions`}
-        className="focus-visible:ring-ring/50 relative block cursor-pointer outline-none focus-visible:ring-[3px]"
+        className="focus-visible:ring-ring/50 block cursor-pointer outline-none focus-visible:ring-[3px]"
       >
         {card.thumb ? (
           <img src={card.thumb} alt={card.name} className="border-border w-full border" />
@@ -95,15 +86,6 @@ function Tile({
           <div className="border-border bg-muted aspect-[5/7] w-full border" />
         )}
 
-        {card.printings.length > 1 && (
-          <Badge
-            variant="secondary"
-            className="absolute top-1 right-1 gap-1 tabular-nums shadow-sm"
-          >
-            <Layers className="size-3" />
-            {card.printings.length}
-          </Badge>
-        )}
       </button>
 
       <div className="min-w-0">
@@ -115,6 +97,12 @@ function Tile({
         <div className="mt-1 flex flex-wrap gap-1">
           {card.color && <Badge variant="outline">{card.color}</Badge>}
           {card.type && <Badge variant="secondary">{card.type}</Badge>}
+          {card.printings.length > 1 && (
+            <Badge variant="secondary" className="gap-1 tabular-nums">
+              <Layers className="size-3" />
+              {card.printings.length}
+            </Badge>
+          )}
         </div>
 
         {stats.length > 0 && (

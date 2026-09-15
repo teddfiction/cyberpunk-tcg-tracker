@@ -7,6 +7,7 @@
  * `components/grid-columns.ts`.
  */
 import { rarityRank } from "@/data/rarities"
+import { words } from "@/lib/format"
 import type { GridCard } from "@/types"
 
 export type FacetSort = "count" | "numeric" | "rarity"
@@ -54,4 +55,21 @@ export function facetOptions(facet: Facet, cards: GridCard[]): FacetOption[] {
   if (facet.sort === "numeric") return options.sort((a, b) => Number(a.value) - Number(b.value))
   if (facet.sort === "rarity") return options.sort((a, b) => rarityRank(a.value) - rarityRank(b.value))
   return options.sort((a, b) => b.count - a.count || a.value.localeCompare(b.value, "fr"))
+}
+
+/**
+ * Options retenues par la saisie du champ de recherche d'un filtre.
+ *
+ * Même contrat que la recherche globale (`searchRow`, `searchCard`) : chaque
+ * mot tapé doit **commencer** un mot de l'option, accents ignorés. Une seule
+ * façon de chercher dans l'app plutôt que deux selon l'endroit — « night »
+ * trouve « Welcome to Night City », « eta » ne trouve pas « Beta ».
+ */
+export function matchOptions(options: FacetOption[], query: string): FacetOption[] {
+  const terms = words(query)
+  if (!terms.length) return options
+  return options.filter((o) => {
+    const hay = " " + words(o.value).join(" ")
+    return terms.every((term) => hay.includes(" " + term))
+  })
 }

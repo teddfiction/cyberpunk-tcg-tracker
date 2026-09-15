@@ -85,6 +85,15 @@ Les effectifs affichés sont comptés sur **toutes** les cartes, jamais sur les
 seules visibles : sinon cocher une option ferait disparaître les autres et l'on
 ne pourrait plus élargir sa sélection.
 
+### Ajouter un tri à la grille de cartes
+
+**Un fichier : `lib/sorts.ts`**, une entrée dans `SORTS` — un libellé et l'état
+TanStack correspondant. Le menu se remplit tout seul, et un test vérifie que
+chaque tri vise une colonne qui existe dans `grid-columns.ts`.
+
+Le tri ne se double pas d'un `useState` : `sortIdOf` retrouve l'entrée active
+depuis l'état de la table, qui en reste seule dépositaire.
+
 ### Ajouter une vue
 
 **Trois fichiers, et le compilateur indique les deux derniers.**
@@ -290,6 +299,15 @@ La consigne du projet : **uniquement Tailwind et les composants shadcn natifs.**
   CLI — donc pas d'édition, pas même un commentaire d'en-tête. Nouveau composant :
   `npx shadcn@latest add <nom>`, jamais écrit à la main. Toute personnalisation
   vit dans `src/components/`.
+- **Filtres de la grille : `DropdownMenu` + `DropdownMenuCheckboxItem`.** Son
+  indicateur est déjà posé à gauche du libellé par le registry, rien à
+  surcharger. Le champ de recherche est un `Input` ordinaire et non `Command` :
+  cmdk ne peut pas vivre dans un menu Radix, les deux se disputent les flèches
+  et la frappe. Deux conséquences à ne pas défaire — le champ se focalise à la
+  frame suivant l'ouverture (un menu Radix focalise toujours son premier item
+  et n'expose pas `onOpenAutoFocus`), et `ArrowDown` depuis le champ vise
+  explicitement le premier item, faute de quoi le clavier reste prisonnier de
+  la recherche.
 - **Radix exclusivement.** Le `Combobox` du registry dépend de `@base-ui/react` ;
   `extension-combobox.tsx` le reconstruit avec `Popover` + `Command` + `Badge`,
   eux aussi natifs. Ne pas introduire `@base-ui/react` (README § « Note sur le

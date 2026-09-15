@@ -6,9 +6,11 @@ import { describe, expect, it } from "vitest"
 
 import { GRID_COLUMNS } from "@/components/grid-columns"
 import { buildRows } from "@/lib/dataset"
-import { FACETS, facetOptions } from "@/lib/facets"
+import { FACETS, facetOptions, matchOptions } from "@/lib/facets"
 import { emptyIndex } from "@/lib/enrich"
 import { buildGrid, buildPrintings, cardStats } from "@/lib/printings"
+import { COLOR_RANK, SORT_IDS, SORTS, TYPE_RANK, sortIdOf } from "@/lib/sorts"
+import { gridNames, makeGrid } from "@/test/table"
 import {
   AMBIGUOUS_CATALOG,
   AMBIGUOUS_ENRICHED,
@@ -195,5 +197,77 @@ describe("facettes", () => {
   it("chaque facette a sa colonne, sinon son filtre ne s'appliquerait à rien", () => {
     const ids = new Set(GRID_COLUMNS.map((c) => c.id))
     for (const facet of FACETS) expect(ids).toContain(facet.id)
+  })
+})
+
+describe("tri de la grille", () => {
+  it("range les couleurs et les types par rang, pas par alphabet", () => {
+    // Relevé sur l'ordre de service de l'API Netdeck, qui est celui du site.
+    expect(COLOR_RANK).toEqual(["Red", "Yellow", "Green", "Blue"])
+    expect(TYPE_RANK).toEqual(["Legend", "Unit", "Gear", "Program"])
+    expect(COLOR_RANK.indexOf("Yellow")).toBeLessThan(COLOR_RANK.indexOf("Green"))
+    expect(TYPE_RANK.indexOf("Legend")).toBeLessThan(TYPE_RANK.indexOf("Gear"))
+  })
+
+  it("le tri par défaut enchaîne couleur, type puis coût", () => {
+    expect(SORTS.default.sorting.map((s) => s.id)).toEqual(["color", "type", "cost"])
+    expect(SORTS.default.sorting.every((s) => !s.desc)).toBe(true)
+  })
+
+  it("chaque tri vise une colonne qui existe", () => {
+    const ids = new Set(GRID_COLUMNS.map((c) => c.id))
+    for (const id of SORT_IDS) {
+      for (const s of SORTS[id].sorting) expect(ids).toContain(s.id)
+    }
+  })
+
+  it("retrouve le tri actif depuis l'état TanStack, sans copie React", () => {
+    expect(sortIdOf([...SORTS.default.sorting])).toBe("default")
+    expect(sortIdOf([...SORTS.power.sorting])).toBe("power")
+    // Un tri qui ne vient pas du menu retombe sur « Défaut ».
+    expect(sortIdOf([{ id: "low", desc: true }])).toBe("default")
+  })
+
+  it("applique le rang des couleurs, pas l'alphabet ni l'ordre des noms", () => {
+    // Zébu est Red (rang 0), Éclair est Blue (rang 3). Par nom ou par ordre
+    // alphabétique de couleur, Éclair passerait devant : ici il passe après.
+    expect(gridNames(makeGrid({ sorting: [...SORTS.default.sorting] }))).toEqual([
+      "Zébu - Calme",
+      "Éclair - Vif",
+    ])
+    expect(gridNames(makeGrid({ sorting: [...SORTS.name.sorting] }))).toEqual([
+      "Éclair - Vif",
+      "Zébu - Calme",
+    ])
+  })
+
+  it("trie par numéro de collecteur, celui de l'impression numérotée", () => {
+    expect(gridNames(makeGrid({ sorting: [...SORTS.num.sorting] }))).toEqual([
+      "Zébu - Calme", // 001
+      "Éclair - Vif", // 007
+    ])
+  })
+})
+
+describe("matchOptions", () => {
+  const options = [
+    { value: "Welcome to Night City — Beta", count: 3 },
+    { value: "Alpha Kit", count: 2 },
+    { value: "Nova Rare", count: 1 },
+  ]
+
+  it("rend tout sur une requête vide", () => {
+    expect(matchOptions(options, "  ")).toHaveLength(3)
+  })
+
+  it("apparie un début de mot, accents et casse ignorés", () => {
+    expect(matchOptions(options, "night").map((o) => o.value)).toEqual([
+      "Welcome to Night City — Beta",
+    ])
+    expect(matchOptions(options, "rare").map((o) => o.value)).toEqual(["Nova Rare"])
+  })
+
+  it("n'apparie pas un fragment pris au milieu d'un mot — même contrat que la recherche", () => {
+    expect(matchOptions(options, "eta")).toEqual([])
   })
 })

@@ -62,6 +62,8 @@ export const ENRICHED: EnrichedCard[] = [
   {
     name: "Zébu - Calme",
     slug: "zebu-calme",
+    color: "Red",
+    type: "Unit",
     printings: [
       printing("u1", "Alpha Kit", "alphakit", "001", "Nova Rare"),
       printing("u2", "Welcome to Night City — Retail", "welcometonightcityretail", null, "Common"),
@@ -70,6 +72,8 @@ export const ENRICHED: EnrichedCard[] = [
   {
     name: "Éclair - Vif",
     slug: "eclair-vif",
+    color: "Blue",
+    type: "Legend",
     printings: [printing("u3", "Beta Kit", "betakit", "007", "Epic")],
   },
 ]

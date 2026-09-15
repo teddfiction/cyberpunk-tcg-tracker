@@ -16,10 +16,12 @@ import { Input } from "@/components/ui/input"
 import { CardGrid } from "@/components/card-grid"
 import { FacetFilter } from "@/components/facet-filter"
 import { GRID_COLUMNS } from "@/components/grid-columns"
+import { SortMenu } from "@/components/sort-menu"
 import { useTable } from "@/hooks/use-table"
 import { download, toCsv } from "@/lib/csv"
 import { FACETS, facetOptions } from "@/lib/facets"
 import { buildGrid, buildPrintings, searchCard } from "@/lib/printings"
+import { SORTS } from "@/lib/sorts"
 import type { CodeMap, EnrichedCard, Row } from "@/types"
 
 type Props = {
@@ -39,8 +41,7 @@ export function NetdeckView({ cards, rows, codes, expansions, onImport }: Props)
   const table = useTable({
     data: grid,
     columns: GRID_COLUMNS,
-    defaultSort: "name",
-    defaultDesc: false,
+    defaultSort: SORTS.default.sorting,
     getRowId: (c) => c.name,
     globalFilterFn: searchCard,
     meta: { codes, expansions },
@@ -112,14 +113,21 @@ export function NetdeckView({ cards, rows, codes, expansions, onImport }: Props)
             Réinitialiser
           </Button>
         )}
+      </div>
 
-        <span className="text-muted-foreground ml-auto text-xs tabular-nums">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="text-muted-foreground text-xs tabular-nums">
           {visible.length} / {grid.length} cartes ·{" "}
           {visible.reduce((n, c) => n + c.printings.length, 0)} impressions
         </span>
+
+        <SortMenu
+          sorting={table.getState().sorting}
+          onSort={(next) => table.setSorting(next)}
+        />
       </div>
 
-      <CardGrid cards={visible} codes={codes} expansions={expansions} />
+      <CardGrid cards={visible} />
 
       <p className="text-muted-foreground text-xs leading-relaxed">
         Source : <code>api.netdeck.gg</code> via <code>npm run data:netdeck:images</code>. Cliquer

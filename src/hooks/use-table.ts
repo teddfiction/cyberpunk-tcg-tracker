@@ -28,8 +28,12 @@ import { resolveSorting } from "@/lib/table"
 type Args<T> = {
   data: T[]
   columns: ColumnDef<T>[]
-  /** Colonne triée au départ, et de repli si le tri courant n'existe plus ici. */
-  defaultSort: string
+  /**
+   * Tri initial, et de repli si le tri courant n'existe plus dans ces colonnes.
+   * Une chaîne pour une colonne unique ; un `SortingState` quand le tri est à
+   * plusieurs clés, comme le « Couleur › Type › Coût » de la grille.
+   */
+  defaultSort: string | SortingState
   /** Sens du tri initial. Décroissant par défaut : on cherche d'abord les gros prix. */
   defaultDesc?: boolean
   /** Clé de ligne stable — deux lignes peuvent porter le même identifiant métier. */
@@ -55,7 +59,7 @@ export function useTable<T>({
   initialFilters = [],
 }: Args<T>) {
   const initialSorting = React.useMemo<SortingState>(
-    () => [{ id: defaultSort, desc: defaultDesc }],
+    () => (typeof defaultSort === "string" ? [{ id: defaultSort, desc: defaultDesc }] : defaultSort),
     [defaultSort, defaultDesc]
   )
 
@@ -65,8 +69,8 @@ export function useTable<T>({
 
   /** Changer de jeu de colonnes peut faire disparaître la colonne triée. */
   const safeSorting = React.useMemo(
-    () => resolveSorting(sorting, columns.map((c) => c.id), defaultSort, defaultDesc),
-    [sorting, columns, defaultSort, defaultDesc]
+    () => resolveSorting(sorting, columns.map((c) => c.id), initialSorting),
+    [sorting, columns, initialSorting]
   )
 
   return useReactTable<T>({
