@@ -14,7 +14,7 @@ import { DEFAULT_CODES, EXPANSIONS } from "@/data/expansions"
 import { buildCards, buildRows, countByExpansion } from "@/lib/dataset"
 import { buildEnrichIndex } from "@/lib/enrich"
 import { describe, mergeCatalog, parse, readJsonFile, IngestError } from "@/lib/ingest"
-import { fetchPriceGuide } from "@/lib/remote"
+import { fetchCardmarket } from "@/lib/remote"
 import { idbDelete, idbGet, idbSet } from "@/lib/store"
 import type { CodeMap, Dataset, EnrichedCard, Price, Product } from "@/types"
 
@@ -148,16 +148,16 @@ export function useDataset() {
   )
 
   /**
-   * Télécharge le price guide du jour et le passe par `importFiles`.
+   * Télécharge les trois exports Cardmarket et les passe par `importFiles`.
    *
-   * Aucune logique d'import n'est redupliquée ici : le fichier récupéré suit
-   * exactement le chemin d'un fichier choisi à la main, compte rendu et
+   * Aucune logique d'import n'est redupliquée ici : les fichiers récupérés
+   * suivent exactement le chemin de fichiers choisis à la main, compte rendu et
    * conservation compris.
    */
-  const refreshPrices = React.useCallback(async () => {
+  const refreshData = React.useCallback(async () => {
     setFetching(true)
     try {
-      await importFiles([await fetchPriceGuide()])
+      await importFiles(await fetchCardmarket())
     } catch (e) {
       setNotice({
         tone: "error",
@@ -198,7 +198,7 @@ export function useDataset() {
     notice,
     setNotice,
     importFiles,
-    refreshPrices,
+    refreshData,
     fetching,
     forget,
   }

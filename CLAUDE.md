@@ -132,7 +132,10 @@ l'appariement est certain (voir « Limites des données »).
   `proxy` de `vite.config.ts`. Rendre un `File` et le passer à `importFiles`
   plutôt que d'écrire un second chemin d'import — parse, compte rendu,
   conservation et avis suivent alors tout seuls. C'est ce que fait
-  « Actualiser les prix ».
+  « Actualiser les données ».
+- **Une URL Cardmarket** : `data/cardmarket.ts`, et rien d'autre. Le script de
+  téléchargement, le relais de `vite.config.ts` et le bouton y puisent tous les
+  trois.
 
 ### Persister quelque chose
 
