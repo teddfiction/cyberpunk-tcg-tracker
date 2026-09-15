@@ -12,6 +12,13 @@ export type Product = {
   cat: string
   /** idMetacard : regroupe les impressions d'une même carte. 0 pour le scellé. */
   mc: number
+  /**
+   * `dateAdded` Cardmarket, au format « AAAA-MM-JJ hh:mm:ss ». Gardée en
+   * chaîne : le format est à largeur fixe, donc l'ordre lexicographique est
+   * l'ordre chronologique, et `new Date()` sur cette forme n'est pas standard.
+   * Vide sur un jeu produit avant que le champ soit lu.
+   */
+  added: string
 }
 
 /** Les cotes d'un produit, telles que publiées dans le price guide. */
@@ -115,6 +122,8 @@ export type CardRow = {
   single: boolean
   id: number
   thumb: string | null
+  /** Ajout le plus récent parmi ses produits. */
+  added: string
 }
 
 /**
