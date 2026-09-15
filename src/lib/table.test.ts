@@ -91,8 +91,44 @@ describe("filtres", () => {
 })
 
 describe("recherche", () => {
-  it("cherche dans le nom", () => {
-    expect(new Set(idsOf("normal", { globalFilter: "zébu" }))).toEqual(new Set([10, 14]))
+  it("ignore les accents, dans les deux sens", () => {
+    expect(new Set(idsOf("normal", { globalFilter: "zebu" }))).toEqual(new Set([10, 14]))
+    expect(new Set(idsOf("normal", { globalFilter: "ZÉBU" }))).toEqual(new Set([10, 14]))
+  })
+
+  it("franchit la ponctuation du nom", () => {
+    // « Zébu - Calme » : le tiret ne doit pas couper la recherche en deux.
+    expect(new Set(idsOf("normal", { globalFilter: "zebu calme" }))).toEqual(new Set([10, 14]))
+  })
+
+  it("se contente d'un début de mot", () => {
+    expect(new Set(idsOf("normal", { globalFilter: "zeb cal" }))).toEqual(new Set([10, 14]))
+  })
+
+  it("accepte les mots dans n'importe quel ordre", () => {
+    expect(new Set(idsOf("normal", { globalFilter: "calme zebu" }))).toEqual(new Set([10, 14]))
+    expect(idsOf("normal", { globalFilter: "retail welcome" })).toEqual([14])
+  })
+
+  it("exige que tous les mots correspondent", () => {
+    expect(idsOf("normal", { globalFilter: "zebu deluxe" })).toEqual([])
+  })
+
+  it("ne s'apparie ni à cheval sur deux mots, ni au milieu d'un mot", () => {
+    // Les deux garde-fous contre les faux positifs : « vif » et « beta » se
+    // suivent dans la ligne mais « vifbeta » n'est pas un mot, et « alme » est
+    // bien dans « calme » sans en être le début.
+    expect(idsOf("normal", { globalFilter: "vifbeta" })).toEqual([])
+    expect(idsOf("normal", { globalFilter: "alme" })).toEqual([])
+  })
+
+  it("trouve un nom d'une lettre sans ramener tout ce qui contient cette lettre", () => {
+    // « Vif » commence par v ; « Zébu » et « Effet » n'ont pas de mot en v.
+    expect(idsOf("normal", { globalFilter: "v" })).toEqual([11])
+  })
+
+  it("une requête sans rien de comparable ne filtre pas", () => {
+    expect(idsOf("normal", { globalFilter: " - " })).toHaveLength(5)
   })
 
   it("cherche dans le code d'impression et l'extension", () => {

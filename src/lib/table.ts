@@ -5,6 +5,7 @@
  */
 import type { FilterFn, SortingFn, SortingState } from "@tanstack/react-table"
 
+import { words } from "@/lib/format"
 import { MODES, type Mode } from "@/lib/modes"
 import type { AnyRow, TableRow } from "@/types"
 
@@ -16,14 +17,29 @@ export const sortText: SortingFn<TableRow> = (a, b, id) =>
   String(a.getValue(id) ?? "").localeCompare(String(b.getValue(id) ?? ""), "fr")
 
 /**
- * Recherche plein texte. Déclarée sur la seule colonne Produit — sans ça
- * TanStack la rejouerait à l'identique sur chaque colonne de chaque ligne.
+ * Recherche plein texte, tolérante à la saisie naturelle.
+ *
+ * Requête et ligne sont découpées en mots (sans accents, ponctuation ignorée) ;
+ * chaque mot de la requête doit ensuite **commencer** un mot de la ligne.
+ * « V corpo » trouve « V - Corporate Exile », « zebu » trouve « Zébu », l'ordre
+ * des mots est libre, et un début de mot suffit — on cherche pendant la frappe.
+ *
+ * Le début de mot est ce qui tient les faux positifs : en sous-chaîne libre,
+ * le « v » de « V corpo » s'appariait au v de « Surveillance » et ramenait
+ * presque deux fois plus de lignes. Contrepartie assumée : un fragment pris au
+ * milieu d'un mot ne trouve plus rien (« 01 » ne remonte plus « MS01B » —
+ * « MS01 » oui).
+ *
+ * Déclarée sur la seule colonne Produit — sans ça TanStack la rejouerait à
+ * l'identique sur chaque colonne de chaque ligne.
  */
 export const searchRow: FilterFn<TableRow> = (row, _columnId, needle) => {
-  const q = String(needle).trim().toLowerCase()
-  if (!q) return true
+  const terms = words(String(needle))
+  if (!terms.length) return true
   const r = row.original as AnyRow
-  return `${r.name} ${r.expName} ${r.code ?? ""} ${r.num ?? ""} ${r.id}`.toLowerCase().includes(q)
+  // L'espace de tête fait du début de chaîne un début de mot comme les autres.
+  const hay = " " + words(`${r.name} ${r.expName} ${r.code ?? ""} ${r.num ?? ""} ${r.id}`).join(" ")
+  return terms.every((term) => hay.includes(" " + term))
 }
 
 /** Extensions cochées dans la barre de filtres. Une carte passe si l'une des siennes correspond. */

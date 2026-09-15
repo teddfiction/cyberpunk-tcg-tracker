@@ -151,16 +151,25 @@ Tous couverts par des tests : si l'un saute, `npm run test` le dit.
   À valeur égale TanStack retombe sur l'index d'origine, donc sur ce tri-là. Il
   n'y a pas de comparateur secondaire à écrire — mais supprimer ce tri amont
   rendrait l'ordre des ex æquo aléatoire.
-- **Recherche.** `enableGlobalFilter` n'est vrai que sur la première colonne,
-  sinon TanStack rejoue le même prédicat sur chaque colonne de chaque ligne.
+- **Recherche** (`searchRow`, `lib/table.ts`). Contrat : requête et ligne sont
+  découpées en mots — accents retirés, ponctuation en séparateur — et chaque mot
+  de la requête doit **commencer** un mot de la ligne. Donc « V corpo » trouve
+  « V - Corporate Exile », l'ordre des mots est libre, et un début de mot suffit.
+  Le début de mot n'est pas cosmétique : en sous-chaîne libre, un terme d'une
+  lettre s'apparie partout (« v » dans « Surveillance ») et double le bruit.
+  Contrepartie assumée : un fragment pris au milieu d'un mot ne trouve rien.
+  `enableGlobalFilter` n'est vrai que sur la première colonne, sinon TanStack
+  rejoue le prédicat sur chaque colonne de chaque ligne.
 - **TanStack détient l'état de la table.** `FiltersBar` lit et écrit dans
   l'instance. Ne pas réintroduire de copie React du tri ou des filtres.
 - **Jointure Netdeck** (`lib/enrich.ts`) : repli sur le nom seul **uniquement si
   la carte n'a qu'une impression connue**. Ce garde-fou évite d'attribuer le
   mauvais numéro de collecteur aux réimpressions. Ne pas l'assouplir.
-- **`norm()`** (`lib/format.ts`) est la clé de rapprochement entre toutes les
-  sources et reproduit exactement le `set.code` de l'API Netdeck. La modifier
-  casse la jointure.
+- **`norm()` et `words()`** (`lib/format.ts`) se ressemblent mais ne servent pas
+  à la même chose. `norm()` colle tout (« V - Streetkid » → `vstreetkid`) : c'est
+  la clé de jointure entre sources, elle reproduit exactement le `set.code` de
+  Netdeck — la modifier casse la jointure. `words()` garde les frontières de mots :
+  c'est la recherche. Ne pas remplacer l'une par l'autre.
 - **Export CSV** : séparateur `;`, virgule décimale, BOM UTF-8. C'est ce qui permet
   à Excel FR d'ouvrir le fichier sans assistant d'import. Ne pas « normaliser »
   en RFC 4180.
@@ -245,18 +254,13 @@ Ces contraintes viennent des sources, pas du code. Ne pas « réparer » :
   `https://cyberpunktcg.com`. L'appel doit rester dans un script Node avec en-tête
   `Origin`, jamais depuis le navigateur.
 
-### Deux comportements à trancher
+### Un comportement à trancher
 
-Documentés et testés tels quels, mais discutables — à arbitrer avant de s'appuyer
-dessus :
-
-- **`matchExpansion` garde le libellé le plus long** en cas d'ambiguïté, donc une
-  correspondance exacte peut perdre face à un libellé plus long qui la contient
-  (« Beta Kit » → « Beta Kit Deluxe »). Inoffensif tant qu'aucune extension n'est
-  le préfixe d'une autre.
-- **La recherche est sensible aux accents** : `searchRow` passe en minuscules sans
-  normaliser, donc « zebu » ne trouve pas « Zébu ». `norm()` existe et ferait le
-  travail, au prix de quelques faux positifs sur les identifiants.
+Documenté et testé tel quel, mais discutable — à arbitrer avant de s'appuyer
+dessus : **`matchExpansion` garde le libellé le plus long** en cas d'ambiguïté,
+donc une correspondance exacte peut perdre face à un libellé plus long qui la
+contient (« Beta Kit » → « Beta Kit Deluxe »). Inoffensif tant qu'aucune extension
+n'est le préfixe d'une autre.
 
 ## Versionnement
 

@@ -34,3 +34,17 @@ export const minOf = (values: (number | null | undefined)[]) => {
   const v = values.filter((x): x is number => x != null)
   return v.length ? Math.min(...v) : null
 }
+
+/**
+ * Découpe en mots comparables : minuscules, sans accents, toute ponctuation
+ * traitée en séparateur. Sert à la recherche — contrairement à `norm()`, qui
+ * colle tout, les frontières de mots sont conservées. C'est ce qui évite qu'une
+ * requête s'apparie à cheval sur deux champs.
+ */
+export const words = (s: string) =>
+  String(s)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean)

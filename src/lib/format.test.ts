@@ -1,7 +1,7 @@
 /** Formatage et normalisation — `norm()` est la clé de jointure entre sources. */
 import { describe, expect, it } from "vitest"
 
-import { eur, minOf, norm, pct } from "@/lib/format"
+import { eur, minOf, norm, pct, words } from "@/lib/format"
 
 describe("norm", () => {
   it("rapproche les deux écritures d'un même nom", () => {
@@ -14,6 +14,26 @@ describe("norm", () => {
 
   it("supprime accents et ponctuation", () => {
     expect(norm("Éclair - Vif")).toBe("eclairvif")
+  })
+})
+
+describe("words", () => {
+  it("découpe sur la ponctuation", () => {
+    expect(words("V - Corporate Exile")).toEqual(["v", "corporate", "exile"])
+  })
+
+  it("retire les accents sans coller les mots", () => {
+    expect(words("Éclair - Vif")).toEqual(["eclair", "vif"])
+  })
+
+  it("traite les tirets longs comme des séparateurs", () => {
+    expect(words("Welcome to Night City — Retail")).toEqual([
+      "welcome", "to", "night", "city", "retail",
+    ])
+  })
+
+  it("rend une liste vide quand il n'y a rien de comparable", () => {
+    expect(words("  -  ")).toEqual([])
   })
 })
 
