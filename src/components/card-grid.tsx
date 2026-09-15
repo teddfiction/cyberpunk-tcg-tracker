@@ -20,6 +20,14 @@ type Props = {
   expansions: Record<string, string>
 }
 
+/**
+ * Les miniatures sont des data URI : `loading="lazy"` ne s'y applique pas, le
+ * navigateur décoderait les 151 visuels d'un coup. `content-visibility: auto`
+ * lui rend le droit de sauter ce qui est hors écran ; `contain-intrinsic-size`
+ * réserve la hauteur pour que la barre de défilement ne saute pas.
+ */
+const OFFSCREEN = "[content-visibility:auto] [contain-intrinsic-size:auto_360px]"
+
 export function CardGrid({ cards, codes, expansions }: Props) {
   const [open, setOpen] = React.useState<Set<string>>(new Set())
 
@@ -76,19 +84,14 @@ function Tile({
   ].filter(Boolean) as string[]
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className={cn("flex flex-col gap-2", !expanded && OFFSCREEN)}>
       <button
         onClick={onToggle}
         aria-expanded={expanded}
         className="focus-visible:ring-ring/50 relative block outline-none focus-visible:ring-[3px]"
       >
         {card.thumb ? (
-          <img
-            src={card.thumb}
-            alt={card.name}
-            loading="lazy"
-            className="border-border w-full border"
-          />
+          <img src={card.thumb} alt={card.name} className="border-border w-full border" />
         ) : (
           <div className="border-border bg-muted aspect-[5/7] w-full border" />
         )}
@@ -134,7 +137,6 @@ function Tile({
                 <img
                   src={p.thumb}
                   alt={`${p.name} — ${p.set}`}
-                  loading="lazy"
                   className="border-border h-14 w-10 shrink-0 border object-cover"
                 />
               )}
