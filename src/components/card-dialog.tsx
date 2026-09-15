@@ -21,7 +21,7 @@ import {
 import { cyberpunkTcgUrl } from "@/data/expansions"
 import { rarityLabel } from "@/data/rarities"
 import { eur } from "@/lib/format"
-import { cardStats } from "@/lib/printings"
+import { cardStats, statText } from "@/lib/printings"
 import { cn } from "@/lib/utils"
 import type { GridCard, PrintRow } from "@/types"
 
@@ -60,7 +60,7 @@ export function CardDialog({ card, open, onOpenChange, trigger }: Props) {
           <DialogTitle className="pr-6">{card.name}</DialogTitle>
           <DialogDescription>
             {n > 1 ? `${n} impressions` : "1 impression"}
-            {stats.length > 0 && ` · ${stats.join(" · ")}`}
+            {stats.length > 0 && ` · ${stats.map(statText).join(" · ")}`}
           </DialogDescription>
 
           {card.slug && (

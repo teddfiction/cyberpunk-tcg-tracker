@@ -117,7 +117,7 @@ le fichier sans assistant d'import.
 
 ```
 data/cardmarket/        exports bruts Cardmarket — non versionné, entrée du pipeline
-public/fonts/           Geist Variable (woff2)
+public/fonts/           Geist et Geist Mono, variables (woff2, SIL OFL 1.1)
 scripts/
   fetch-cardmarket.ts   téléchargement des exports Cardmarket
   build-dataset.ts      exports Cardmarket  →  src/data/dataset.json
@@ -144,6 +144,7 @@ src/
     dataset.json        jeu de données embarqué (généré, versionné)
     expansions.ts       libellés d'extensions, codes d'impression, URLs externes
     rarities.ts         taxonomie des raretés et leur rang de tri
+    colors.ts           couleurs de carte du jeu → tokens CSS
     cardmarket.ts       URLs des trois exports — script, relais et bouton
   hooks/
     use-dataset.ts      état des données et imports
@@ -219,7 +220,7 @@ Trois sources, toutes publiques.
 ## Thème
 
 Tokens shadcn/ui : base **Slate**, accent **Yellow**, graphiques **Cyan**,
-radius **0**, police **Geist**. Les valeurs OKLCH sont celles du registry
+radius **0**, polices **Geist** et **Geist Mono**. Les valeurs OKLCH sont celles du registry
 officiel, mappées à la main sur le scaffold de tokens dans `src/index.css`. Pour
 appliquer un thème généré par le configurateur shadcn, remplacer les blocs
 `:root` et `.dark`.

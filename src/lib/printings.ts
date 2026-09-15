@@ -12,7 +12,7 @@
  */
 import { rarityRank } from "@/data/rarities"
 import { matchExpansion } from "@/lib/enrich"
-import { minOf, norm, words } from "@/lib/format"
+import { eur, minOf, norm, words } from "@/lib/format"
 import type { CodeMap, EnrichedCard, GridCard, PrintRow, Row } from "@/types"
 
 import type { FilterFn } from "@tanstack/react-table"
@@ -128,17 +128,47 @@ export function buildGrid(cards: EnrichedCard[] | null, printings: PrintRow[]): 
 }
 
 /**
- * Caractéristiques d'une carte, en libellés prêts à afficher. La tuile et la
- * modale des versions les montrent toutes deux — d'où leur place ici plutôt
- * que dans l'un des deux composants.
+ * Une information de carte : un libellé terne, une valeur contrastée.
+ * `dot` marque celle qui porte la pastille de couleur.
  */
-export const cardStats = (card: GridCard) =>
-  [
-    card.cost != null && `Coût ${card.cost}`,
-    card.power != null && `Force ${card.power}`,
-    card.ram != null && `RAM ${card.ram}`,
-    card.eddiable && "€$",
-  ].filter(Boolean) as string[]
+export type CardStat = { label: string; value?: string; dot?: boolean }
+
+/**
+ * Caractéristiques d'une carte. La tuile et la modale des versions les montrent
+ * toutes deux — d'où leur place ici plutôt que dans l'un des deux composants.
+ *
+ * La pastille de couleur s'accroche à la RAM, comme sur le site officiel. Une
+ * carte sur 151 n'a pas de RAM : sa pastille passe alors en tête, faute de quoi
+ * sa couleur ne s'afficherait nulle part.
+ */
+export function cardStats(card: GridCard): CardStat[] {
+  const out: CardStat[] = []
+  if (card.cost != null) out.push({ label: "Coût", value: String(card.cost) })
+  if (card.power != null) out.push({ label: "Force", value: String(card.power) })
+  if (card.ram != null) out.push({ label: "RAM", value: String(card.ram) })
+  if (card.eddiable) out.push({ label: "€$" })
+
+  // La pastille n'existe que s'il y a une couleur à montrer. Elle se pose sur
+  // la RAM ; à défaut sur la première info, et à défaut sur une info dédiée.
+  if (card.color) {
+    const porteur = out.find((s) => s.label === "RAM") ?? out[0]
+    if (porteur) porteur.dot = true
+    else out.push({ label: card.color, dot: true })
+  }
+  return out
+}
+
+/**
+ * Ce que porte la tuile : les caractéristiques, plus la cote Cardmarket. La
+ * modale ne la reprend pas — elle en montre une par version.
+ */
+export const tileStats = (card: GridCard): CardStat[] =>
+  card.low != null
+    ? [...cardStats(card), { label: "Cardmarket dès", value: eur(card.low) ?? "" }]
+    : cardStats(card)
+
+/** Rendu texte d'une information, pour la description de la modale. */
+export const statText = (s: CardStat) => [s.label, s.value].filter(Boolean).join(" ")
 
 /** Recherche de la grille : nom, sous-titre, tags, type, couleur, sets, raretés. */
 export const searchCard: FilterFn<GridCard> = (row, _columnId, needle) => {
