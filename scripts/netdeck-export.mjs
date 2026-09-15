@@ -15,8 +15,9 @@
  *   { items: [ { id, external_id, name, subname, display_name, slug,
  *                printing_id, set: { code, name }, rarity, print_number,
  *                image_url (signée), source_image_url (non signée), artist,
- *                color, card_type, cost, power, ram, classifications[],
- *                keywords[], rules_text, printings[], legality } ], total }
+ *                color, card_type, cost, power, ram, is_eddiable,
+ *                classifications[], keywords[] (vide), rules_text,
+ *                printings[], legality } ], total }
  *
  * Point important : dans la liste, `printings` est VIDE et chaque item ne porte
  * qu'une seule impression. Les autres impressions d'une même carte ne se
@@ -126,12 +127,19 @@ const printingOf = (o) => ({
 const cardOf = (o) => ({
   // Cardmarket ecrit "Nom - Sous-titre" : on reproduit exactement cette forme
   name: o.subname ? `${o.name} - ${o.subname}` : o.name,
+  // Le sous-titre seul sert de deuxieme ligne dans la grille
+  subname: o.subname ?? null,
   slug: o.slug ?? null,
   type: o.card_type ?? null,
   color: o.color ?? null,
   cost: o.cost ?? null,
   power: o.power ?? null,
   ram: o.ram ?? null,
+  // `classifications` sont les tags affiches sur la carte (Merc, Arasaka...).
+  // `keywords` est vide sur les 151 cartes du relevé : on ne le garde pas.
+  tags: o.classifications ?? [],
+  // Carte jouable en eddies : le "€$" de la carte, et un filtre de la grille.
+  eddiable: !!o.is_eddiable,
   printings: [],
 })
 

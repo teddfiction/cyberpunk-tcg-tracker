@@ -43,12 +43,18 @@ export type Printing = {
 
 export type EnrichedCard = {
   name: string
+  /** Sous-titre seul — « Streetkid » pour « V - Streetkid ». */
+  subname?: string | null
   slug: string | null
   type?: string | null
   color?: string | null
   cost?: number | null
   power?: number | null
   ram?: number | null
+  /** Classifications Netdeck : Merc, Arasaka, Netrunner… */
+  tags?: string[]
+  /** Carte jouable en eddies. */
+  eddiable?: boolean
   printings: Printing[]
 }
 
