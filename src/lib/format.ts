@@ -48,3 +48,22 @@ export const words = (s: string) =>
     .toLowerCase()
     .split(/[^a-z0-9]+/)
     .filter(Boolean)
+
+/**
+ * Découpe un compte rendu en phrases, une par ligne.
+ *
+ * Les avis d'import concatènent désormais jusqu'à quatre comptes rendus — trois
+ * fichiers plus un éventuel avertissement de stockage — et se lisaient en un
+ * seul pavé.
+ *
+ * La coupure demande une fin de phrase **suivie d'un début de phrase** : un
+ * point, une espace, puis une majuscule ou un chiffre. C'est ce qui protège les
+ * noms de fichiers, où le point est suivi d'une minuscule ou d'une ponctuation
+ * — « price_guide_23.json (export du… » et « cards_enriched.json : 502… »
+ * restent d'un seul tenant.
+ */
+export const sentences = (text: string): string[] =>
+  String(text)
+    .split(/(?<=\.)\s+(?=[A-ZÀ-ÝŒ0-9])/)
+    .map((s) => s.trim())
+    .filter(Boolean)
