@@ -3,9 +3,10 @@
  * Fonctions pures, sans JSX : les décisions métier (collation française, valeurs
  * manquantes toujours en bas, extensions multiples) vivent ici.
  */
-import type { FilterFn, SortingFn } from "@tanstack/react-table"
+import type { FilterFn, SortingFn, SortingState } from "@tanstack/react-table"
 
-import type { AnyRow, Mode, TableRow } from "@/types"
+import { MODES, type Mode } from "@/lib/modes"
+import type { AnyRow, TableRow } from "@/types"
 
 /**
  * Collation française. `localeCompare` range « Éclat » avant « Effet » ;
@@ -45,6 +46,17 @@ export const rowId = (r: TableRow) => ("nExp" in r ? `c${r.mc}` : `p${r.id}`)
 /** Colonnes masquées en permanence : elles ne portent que les filtres de la barre. */
 export const HIDDEN_COLUMNS = { exps: false, priced: false, single: false }
 
-/** Colonne triée par défaut, quand le mode change et fait disparaître la précédente. */
-export const defaultSortId = (mode: Mode) =>
-  mode === "foil" ? "lowF" : mode === "card" ? "bestLow" : "low"
+/**
+ * Le tri courant, ou celui par défaut du mode quand la colonne triée n'existe
+ * pas dans ce mode. Dérivé à chaque rendu plutôt que remis à zéro par un effet :
+ * pas d'état transitoire incohérent entre deux peintures.
+ */
+export function resolveSorting(
+  sorting: SortingState,
+  columnIds: (string | undefined)[],
+  mode: Mode
+): SortingState {
+  const ids = new Set(columnIds)
+  const kept = sorting.filter((s) => ids.has(s.id))
+  return kept.length ? kept : [{ id: MODES[mode].defaultSort, desc: true }]
+}

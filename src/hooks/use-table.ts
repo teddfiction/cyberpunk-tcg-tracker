@@ -14,8 +14,9 @@ import {
   type SortingState,
 } from "@tanstack/react-table"
 
-import { HIDDEN_COLUMNS, defaultSortId, rowId, searchRow } from "@/lib/table"
-import type { CodeMap, Mode, TableRow } from "@/types"
+import { type Mode } from "@/lib/modes"
+import { HIDDEN_COLUMNS, resolveSorting, rowId, searchRow } from "@/lib/table"
+import type { CodeMap, TableRow } from "@/types"
 
 /** Repris par `reset()` : la remise à zéro repasse par cet état, pas par du vide. */
 const INITIAL_SORTING: SortingState = [{ id: "low", desc: true }]
@@ -35,11 +36,10 @@ export function useTable({ data, columns, mode, codes, expansions }: Args) {
   const [globalFilter, setGlobalFilter] = React.useState("")
 
   /** Changer de mode peut faire disparaître la colonne triée : on retombe sur un tri valide. */
-  const safeSorting = React.useMemo(() => {
-    const ids = new Set(columns.map((c) => c.id))
-    const kept = sorting.filter((s) => ids.has(s.id))
-    return kept.length ? kept : [{ id: defaultSortId(mode), desc: true }]
-  }, [sorting, columns, mode])
+  const safeSorting = React.useMemo(
+    () => resolveSorting(sorting, columns.map((c) => c.id), mode),
+    [sorting, columns, mode]
+  )
 
   return useReactTable<TableRow>({
     data,

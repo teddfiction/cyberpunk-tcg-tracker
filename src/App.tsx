@@ -20,7 +20,7 @@ import { useTable } from "@/hooks/use-table"
 import { useTheme } from "@/hooks/use-theme"
 import { download, toCsv } from "@/lib/csv"
 import { dateFr, dateShort } from "@/lib/format"
-import type { Mode } from "@/types"
+import { MODES, type Mode } from "@/lib/modes"
 
 export default function App() {
   const data = useDataset()
@@ -31,8 +31,9 @@ export default function App() {
   const fileRef = React.useRef<HTMLInputElement>(null)
 
   const columns = React.useMemo(() => columnsFor(mode, data.enriched), [mode, data.enriched])
+  const source = { rows: data.rows, cards: data.cards }[MODES[mode].source]
   const table = useTable({
-    data: mode === "card" ? data.cards : data.rows,
+    data: source,
     columns,
     mode,
     codes: data.codes,
@@ -48,7 +49,7 @@ export default function App() {
   )
 
   const shown = table.getRowModel().rows.length
-  const total = mode === "card" ? data.cards.length : data.rows.length
+  const total = source.length
 
   return (
     <SidebarProvider>

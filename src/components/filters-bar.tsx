@@ -11,7 +11,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ExtensionCombobox } from "@/components/extension-combobox"
-import type { CodeMap, Mode, TableRow } from "@/types"
+import { MODES, MODE_IDS, type Mode } from "@/lib/modes"
+import type { CodeMap, TableRow } from "@/types"
 
 type Props = {
   table: Table<TableRow>
@@ -63,9 +64,11 @@ export function FiltersBar({
 
         <Tabs value={mode} onValueChange={(v) => onMode(v as Mode)}>
           <TabsList>
-            <TabsTrigger value="normal">Normal</TabsTrigger>
-            <TabsTrigger value="foil">Foil</TabsTrigger>
-            <TabsTrigger value="card">Par carte</TabsTrigger>
+            {MODE_IDS.map((id) => (
+              <TabsTrigger key={id} value={id}>
+                {MODES[id].label}
+              </TabsTrigger>
+            ))}
           </TabsList>
         </Tabs>
       </div>
@@ -99,7 +102,7 @@ export function FiltersBar({
         </Button>
 
         <span className="text-muted-foreground ml-auto text-xs tabular-nums">
-          {shown} / {total} {mode === "card" ? "cartes" : "produits"}
+          {shown} / {total} {MODES[mode].noun}
         </span>
       </div>
     </div>

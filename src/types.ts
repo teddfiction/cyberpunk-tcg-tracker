@@ -4,6 +4,8 @@
  */
 import type { RowData } from "@tanstack/react-table"
 
+import type { Mode } from "@/lib/modes"
+
 /** Un produit du catalogue Cardmarket (single ou scellé). */
 export type Product = {
   id: number
@@ -97,8 +99,6 @@ export type CardRow = {
   id: number
   thumb: string | null
 }
-
-export type Mode = "normal" | "foil" | "card"
 
 /** Ce que la table manipule : une ligne produit, ou une ligne carte. */
 export type TableRow = Row | CardRow

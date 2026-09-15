@@ -11,8 +11,9 @@ React 19 · TypeScript · Vite · Tailwind CSS v4 · shadcn/ui (primitives Radix
 ```bash
 npm install
 npm run dev        # http://localhost:5173
-npm run build      # dist/
+npm run test       # vitest
 npm run typecheck
+npm run build      # dist/
 ```
 
 Le dépôt embarque un jeu de données (`src/data/dataset.json`) : l'app tourne
@@ -130,10 +131,14 @@ src/
     csv.ts              export CSV depuis l'instance de table
     dataset.ts          construction des lignes et regroupement par carte
     enrich.ts           jointure Netdeck ↔ Cardmarket
+    modes.ts            registre des modes d'affichage
     table.ts            tri, filtres et recherche passés à TanStack
     format.ts           formatage et normalisation
     ingest.ts           lecture des trois formats JSON
     utils.ts            cn()
+  test/
+    fixtures.ts         jeu synthétique des tests
+    table.ts            instance TanStack headless pour les tests
   App.tsx
   index.css             tokens du thème
   main.tsx

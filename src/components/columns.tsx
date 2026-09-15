@@ -9,9 +9,10 @@ import { ExternalLink } from "lucide-react"
 import { CodeBadge } from "@/components/code-badge"
 import { CARDMARKET_SEARCH, cyberpunkTcgUrl } from "@/data/expansions"
 import { eur, pct } from "@/lib/format"
+import { MODES, type Mode } from "@/lib/modes"
 import { expansionsOf, filterExpansions, filterFlag, sortText } from "@/lib/table"
 import { cn } from "@/lib/utils"
-import type { AnyRow, Mode, TableRow } from "@/types"
+import type { AnyRow, TableRow } from "@/types"
 
 const dash = <span className="text-muted-foreground/50">—</span>
 
@@ -56,9 +57,9 @@ const nameColumn = (header: string): ColumnDef<TableRow> => ({
   header,
   sortingFn: sortText,
   meta: { className: "max-w-[300px] min-w-[180px]" },
-  cell: ({ row, table }) => {
+  cell: ({ row }) => {
+    const card = "nExp" in row.original
     const r = row.original as AnyRow
-    const card = table.options.meta?.mode === "card"
     return (
       <div className="flex items-center gap-2">
         {r.thumb && (
@@ -180,7 +181,7 @@ const filterColumns = (mode: Mode): ColumnDef<TableRow>[] => [
   },
   {
     id: "priced",
-    accessorFn: (r) => (mode === "foil" ? r.hasPriceF : r.hasPrice),
+    accessorFn: (r) => MODES[mode].priced(r),
     filterFn: filterFlag,
     enableSorting: false,
     enableGlobalFilter: false,
@@ -195,48 +196,48 @@ const filterColumns = (mode: Mode): ColumnDef<TableRow>[] => [
 ]
 
 /**
- * `avg1`, `avg7`, `avg30` et leurs équivalents foil ne sont pas listés :
- * Cardmarket les publie systématiquement vides. `trend-foil` vaut 0 partout.
+ * Colonnes visibles par mode. `Record<Mode, …>` : ajouter un mode au registre
+ * sans ajouter sa liste ici ne compile pas.
+ *
+ * `avg1`, `avg7`, `avg30` et leurs équivalents foil n'y figurent pas :
+ * Cardmarket les publie systématiquement vides, `trend-foil` vaut 0 partout.
  */
+const VISIBLE: Record<Mode, (enriched: boolean) => ColumnDef<TableRow>[]> = {
+  normal: (enriched) => [
+    nameColumn("Produit"),
+    codeColumn,
+    ...(enriched ? [numColumn] : []),
+    expansionColumn,
+    money("avg", "Moyenne", (r) => r.avg),
+    money("low", "Mini", (r) => r.low),
+    money("trend", "Tendance", (r) => r.trend),
+    percent("d", "Δ tend./mini", (r) => r.d),
+    idColumn,
+  ],
+  foil: (enriched) => [
+    nameColumn("Produit"),
+    codeColumn,
+    ...(enriched ? [numColumn] : []),
+    expansionColumn,
+    money("avgF", "Moyenne foil", (r) => r.avgF),
+    money("lowF", "Mini foil", (r) => r.lowF),
+    percent("df", "Δ moy./mini", (r) => r.df),
+    idColumn,
+  ],
+  card: () => [
+    nameColumn("Carte"),
+    printsColumn,
+    money("bestLow", "Mini le moins cher", (r) => r.bestLow),
+    money("bestTrend", "Tendance mini", (r) => r.bestTrend),
+    money("bestLowF", "Mini foil", (r) => r.bestLowF),
+  ],
+}
+
 export function columnsFor(mode: Mode, enriched: boolean): ColumnDef<TableRow>[] {
-  const num = enriched ? [numColumn] : []
-
-  const visible: ColumnDef<TableRow>[] =
-    mode === "card"
-      ? [
-          nameColumn("Carte"),
-          printsColumn,
-          money("bestLow", "Mini le moins cher", (r) => r.bestLow),
-          money("bestTrend", "Tendance mini", (r) => r.bestTrend),
-          money("bestLowF", "Mini foil", (r) => r.bestLowF),
-        ]
-      : mode === "foil"
-        ? [
-            nameColumn("Produit"),
-            codeColumn,
-            ...num,
-            expansionColumn,
-            money("avgF", "Moyenne foil", (r) => r.avgF),
-            money("lowF", "Mini foil", (r) => r.lowF),
-            percent("df", "Δ moy./mini", (r) => r.df),
-            idColumn,
-          ]
-        : [
-            nameColumn("Produit"),
-            codeColumn,
-            ...num,
-            expansionColumn,
-            money("avg", "Moyenne", (r) => r.avg),
-            money("low", "Mini", (r) => r.low),
-            money("trend", "Tendance", (r) => r.trend),
-            percent("d", "Δ tend./mini", (r) => r.d),
-            idColumn,
-          ]
-
-  // La recherche plein texte n'est déclarée que sur la première colonne : sinon
-  // TanStack rejouerait le même prédicat sur chaque colonne de chaque ligne.
   return [
-    ...visible.map((c, i) => ({ ...c, enableGlobalFilter: i === 0 })),
+    // La recherche plein texte n'est déclarée que sur la première colonne : sinon
+    // TanStack rejouerait le même prédicat sur chaque colonne de chaque ligne.
+    ...VISIBLE[mode](enriched).map((c, i) => ({ ...c, enableGlobalFilter: i === 0 })),
     ...filterColumns(mode),
   ]
 }
