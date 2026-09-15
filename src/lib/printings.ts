@@ -38,6 +38,7 @@ export function buildPrintings({ cards, rows, expansions, codes }: BuildArgs): P
 
   const out: PrintRow[] = []
   for (const card of cards) {
+    let rank = 0
     for (const printing of card.printings) {
       if (!printing.uuid) continue
       const exp = matchExpansion(printing.set, printing.setCode, expansions)
@@ -65,6 +66,7 @@ export function buildPrintings({ cards, rows, expansions, codes }: BuildArgs): P
         low: group.length === 1 ? (group[0].low ?? null) : null,
         lowRange: group.length > 1 && min != null && max != null && min !== max ? [min, max] : null,
         variants: group.length,
+        rank: rank++,
       })
     }
   }
@@ -77,9 +79,14 @@ export function buildPrintings({ cards, rows, expansions, codes }: BuildArgs): P
 /**
  * Regroupe les impressions par carte, pour la grille.
  *
- * L'impression de référence est celle qui porte un numéro de collecteur —
- * Netdeck n'en donne qu'à une par carte, c'est sa version « principale ». À
- * défaut, la plus commune. C'est son visuel que porte la tuile.
+ * L'impression de référence est celle de rang 0 : l'endpoint liste de Netdeck
+ * sert la version par défaut de la carte, et le script la pousse en tête. C'est
+ * son visuel que porte la tuile.
+ *
+ * Elle se reconnaissait autrefois à son numéro de collecteur, seule à en porter
+ * un. Ce n'est plus vrai — les 502 impressions en ont toutes un depuis que
+ * l'export lit `collector_number` — et le critère ne discriminait donc plus
+ * rien : la tuile retombait sur l'ordre alphabétique des sets.
  */
 export function buildGrid(cards: EnrichedCard[] | null, printings: PrintRow[]): GridCard[] {
   if (!cards?.length) return []
@@ -93,11 +100,7 @@ export function buildGrid(cards: EnrichedCard[] | null, printings: PrintRow[]): 
 
   return cards
     .map((card) => {
-      const ordered = [...(byName.get(card.name) ?? [])].sort(
-        (a, b) =>
-          Number(!!b.num) - Number(!!a.num) ||
-          rarityRank(a.rarity ?? "") - rarityRank(b.rarity ?? "")
-      )
+      const ordered = [...(byName.get(card.name) ?? [])].sort((a, b) => a.rank - b.rank)
 
       const lows = ordered.map((p) => p.low ?? p.lowRange?.[0] ?? null)
 

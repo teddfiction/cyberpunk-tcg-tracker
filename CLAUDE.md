@@ -415,6 +415,18 @@ Ces contraintes viennent des sources, pas du code. Ne pas « réparer » :
   survol — d'où sa largeur de 320 px et le poids du fichier (~14 Mo en 320 px,
   réglable par `--width=`). Ce fichier reste local et gitignoré : les visuels
   sont sous licence CD PROJEKT RED.
+- **Netdeck nomme le numéro de collecteur différemment selon l'endpoint** : la
+  liste dit `print_number`, le détail dit `collector_number`. `printingOf`
+  (`scripts/netdeck-export.mjs`) lit les deux. N'en lire qu'un laissait 351 des
+  502 impressions sans numéro — seule celle de tête en recevait un, et les
+  autres paraissaient ne pas en avoir. Les numéros distinguent les variantes
+  qu'aucun autre champ ne sépare : « 005a » et « 005b » sont deux Rare du même
+  illustrateur, le préfixe « β » marquant les tirages Beta.
+- **L'impression de référence d'une carte est celle de rang 0**, pas « celle qui
+  porte un numéro » : l'endpoint liste sert la version par défaut, le script la
+  pousse en tête, et `PrintRow.rank` la retrouve après le tri à plat de
+  `buildPrintings`. Le critère du numéro ne discrimine plus rien depuis qu'elles
+  en ont toutes un.
 - Cardmarket ne publie **ni numéro de collecteur ni rareté**. L'export brut ne
   contient que `idProduct, name, idCategory, categoryName, idExpansion,
   idMetacard, dateAdded` — rien d'autre à en tirer. Les colonnes « N° » et

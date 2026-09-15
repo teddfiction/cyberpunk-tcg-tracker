@@ -121,8 +121,17 @@ describe("buildGrid", () => {
     expect(zebu.rarities).toEqual(["Common", "Nova Rare"])
   })
 
-  it("met en tête l'impression qui porte un numéro", () => {
-    expect(byName("Zébu - Calme").printings[0].num).toBe("001")
+  it("met en tête l'impression par défaut de la carte, pas la première venue", () => {
+    // Rang 0 = l'impression que sert l'endpoint liste de Netdeck, poussée en
+    // tête par le script. Le critère ne peut plus être « celle qui porte un
+    // numéro » : depuis que l'export lit `collector_number`, elles en ont
+    // toutes un. Ici « Alpha Kit » passe avant « Welcome… » bien que le tri à
+    // plat de buildPrintings range les sets dans l'autre sens.
+    const zebu = byName("Zébu - Calme")
+    expect(zebu.printings.map((p) => p.rank)).toEqual([0, 1])
+    expect(zebu.printings[0].num).toBe("001")
+    expect(zebu.printings[0].set).toBe("Alpha Kit")
+    expect(zebu.printings[1].num).toBe("β001")
   })
 
   it("retient la cote la plus basse toutes impressions confondues", () => {
