@@ -3,19 +3,21 @@ import react from "@vitejs/plugin-react"
 import tailwindcss from "@tailwindcss/vite"
 import path from "node:path"
 
+import { CARDMARKET_BASE, CARDMARKET_PROXY } from "./src/data/cardmarket"
+
 /**
  * Les exports Cardmarket ne renvoient aucun en-tête CORS — vérifié : un `fetch`
  * depuis la page échoue, et `no-cors` ne rend qu'une réponse opaque. Le serveur
  * de dev relaie donc l'appel, ce qui le fait passer pour same-origin.
  *
  * Ce relais n'existe qu'en dev et en `preview` : un `dist/` servi en statique
- * n'a personne pour proxyfier. `fetchPriceGuide` le détecte et le dit.
+ * n'a personne pour proxyfier. `fetchCardmarket` le détecte et le dit.
  */
 const PROXY = {
-  "/cardmarket": {
-    target: "https://downloads.s3.cardmarket.com/productCatalog",
+  [CARDMARKET_PROXY]: {
+    target: CARDMARKET_BASE,
     changeOrigin: true,
-    rewrite: (path: string) => path.replace(/^\/cardmarket/, ""),
+    rewrite: (p: string) => p.slice(CARDMARKET_PROXY.length),
   },
 }
 

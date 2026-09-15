@@ -117,8 +117,8 @@ le fichier sans assistant d'import.
 data/cardmarket/        exports bruts Cardmarket — non versionné, entrée du pipeline
 public/fonts/           Geist Variable (woff2)
 scripts/
-  fetch-cardmarket.mjs  téléchargement des exports Cardmarket
-  build-dataset.mjs     exports Cardmarket  →  src/data/dataset.json
+  fetch-cardmarket.ts   téléchargement des exports Cardmarket
+  build-dataset.ts      exports Cardmarket  →  src/data/dataset.json
   netdeck-export.mjs    API cyberpunktcg.com →  cards_enriched.json
 src/
   components/
@@ -142,6 +142,7 @@ src/
     dataset.json        jeu de données embarqué (généré, versionné)
     expansions.ts       libellés d'extensions, codes d'impression, URLs externes
     rarities.ts         taxonomie des raretés et leur rang de tri
+    cardmarket.ts       URLs des trois exports — script, relais et bouton
   hooks/
     use-dataset.ts      état des données et imports
     use-table.ts        instance TanStack : tri, filtres, recherche
@@ -159,8 +160,8 @@ src/
     printings.ts        impressions Netdeck et regroupement par carte
     table.ts            tri, filtres et recherche passés à TanStack
     format.ts           formatage et normalisation
-    ingest.ts           lecture des trois formats JSON
-    remote.ts           téléchargement à chaud du price guide, et ses gardes
+    ingest.ts           lecture des trois formats JSON, garde de schéma
+    remote.ts           téléchargement à chaud des exports, et ses gardes
     utils.ts            cn()
   test/
     fixtures.ts         jeu synthétique des tests
@@ -170,6 +171,10 @@ src/
   main.tsx
   types.ts
 ```
+
+Les scripts sont en TypeScript et lancés par `tsx` : ils importent `src/` par
+l'alias `@/`, et ne redéfinissent donc plus la lecture des exports Cardmarket
+qu'ils partageaient auparavant, à l'identique, avec `lib/ingest.ts`.
 
 Découpage : `lib/` ne contient que des fonctions pures, testables sans DOM ;
 `hooks/` porte l'état ; `components/` ne fait que du rendu. Chaque fichier

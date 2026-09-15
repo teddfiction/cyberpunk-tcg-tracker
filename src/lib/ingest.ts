@@ -16,10 +16,44 @@ export type Parsed =
 
 export class IngestError extends Error {}
 
+/**
+ * Version de schéma que les trois exports Cardmarket annoncent à leur racine.
+ * La voir changer est le seul avertissement qu'on aura avant que les champs
+ * bougent : sans ce contrôle, un renommage se traduirait par des colonnes vides
+ * et aucune erreur.
+ */
+const CARDMARKET_SCHEMA = 1
+
+function checkSchema(o: Record<string, unknown>, filename: string) {
+  const v = o.version
+  if (v != null && v !== CARDMARKET_SCHEMA) {
+    throw new IngestError(
+      `${filename} : schéma Cardmarket version ${String(v)}, attendu ${CARDMARKET_SCHEMA}. ` +
+        "Les champs ont peut-être changé — vérifier l'export avant de l'importer."
+    )
+  }
+}
+
+/**
+ * Lit un corps de réponse en JSON, ou explique pourquoi ce n'en est pas.
+ *
+ * Un portail captif, une page d'erreur ou un `dist/` servi sans relais
+ * renvoient du HTML **avec un 200** : sans ce contrôle, l'échec ne se
+ * manifesterait que bien plus loin, avec un message inexploitable.
+ */
+export function expectJson(body: string, what: string): unknown {
+  try {
+    return JSON.parse(body)
+  } catch {
+    throw new IngestError(`${what} : réponse non-JSON (${Math.round(body.length / 1024)} Ko).`)
+  }
+}
+
 export function parse(json: unknown, filename: string): Parsed {
   const o = json as Record<string, unknown>
 
   if (Array.isArray(o?.priceGuides)) {
+    checkSchema(o, filename)
     const prices: Record<string, Price> = {}
     const ids: number[] = []
     for (const r of o.priceGuides as Record<string, number | null>[]) {
@@ -44,12 +78,14 @@ export function parse(json: unknown, filename: string): Parsed {
   }
 
   if (Array.isArray(o?.products)) {
+    checkSchema(o, filename)
     const products = (o.products as Record<string, unknown>[]).map((p) => ({
       id: p.idProduct as number,
       name: p.name as string,
       exp: p.idExpansion as number,
       mc: (p.idMetacard as number) || 0,
       cat: shortCategory(String(p.categoryName ?? "")),
+      added: String(p.dateAdded ?? ""),
     }))
     return { kind: "catalog", products, catalogAt: (o.createdAt as string) ?? new Date().toISOString() }
   }

@@ -149,6 +149,19 @@ propriété : un stockage qui échoue en silence est pire que pas de stockage.
 
 ## Architecture
 
+**Les scripts partagent `src/`.** `scripts/*.ts` est lancé par `tsx`, qui
+résout l'alias `@/` depuis `tsconfig.json`. `build-dataset.ts` ne sait donc plus
+lire Cardmarket : il appelle `parse()`, celui-là même qui sert aux imports à
+chaud. Avant, le mapping des prix, celui du catalogue et `shortCategory`
+existaient dans le script **et** dans `lib/ingest.ts`, identiques mot pour mot —
+une seule des deux copies aurait été corrigée le jour où un champ change, et le
+jeu embarqué aurait divergé des imports sans qu'aucun test bronche. Ne pas
+réintroduire de logique de lecture dans `scripts/`.
+
+`netdeck-export.mjs` reste en `.mjs` : il ne partage rien avec `src/`, mais ses
+objets reproduisent à la main `Printing` et `EnrichedCard`. Le passer en TS
+mettrait le compilateur sur ce contrat-là aussi.
+
 Trois couches, dans cet ordre de dépendance :
 
 | Couche | Rôle | Contrainte |
@@ -360,7 +373,18 @@ La consigne du projet : **uniquement Tailwind et les composants shadcn natifs.**
 Ces contraintes viennent des sources, pas du code. Ne pas « réparer » :
 
 - `avg1`, `avg7`, `avg30` et leurs variantes foil sont **vides à 100 %** dans
-  l'export Cardmarket, `trend-foil` vaut 0 partout : colonnes non déclarées.
+  l'export Cardmarket, `trend-foil` n'a qu'une seule valeur distincte (0) :
+  colonnes non déclarées. Revérifié sur l'export du 15/09/2026 — ce n'est pas
+  une observation qui date.
+- **`dateAdded` est le seul champ que Cardmarket donne et qui ne soit pas déjà
+  affiché ailleurs.** Colonne « Ajouté le », dans les trois modes. Gardé en
+  chaîne : le format « AAAA-MM-JJ hh:mm:ss » est à largeur fixe, donc l'ordre
+  lexicographique est l'ordre chronologique, là où `new Date()` sur cette forme
+  n'est pas standard. Sur le relevé du 15/09/2026 : 304 produits versés le
+  28/08, puis 8 le 07/09 et 5 le 11/09.
+- **Le schéma est contrôlé.** Les trois exports annoncent `version: 1` à leur
+  racine ; `parse()` refuse toute autre valeur. C'est le seul avertissement
+  qu'on aura avant que les champs bougent.
 - **`low` n'est pas un prix de vente** mais la plus petite annonce. Sur un marché à
   trois annonces, c'est du bruit ; `trend` est plus honnête. La somme des `low`
   n'est pas une valorisation — le libellé de `StatsStrip` doit rester prudent.
