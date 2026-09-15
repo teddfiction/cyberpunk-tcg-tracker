@@ -5,6 +5,7 @@
  *
  *   node netdeck-export.mjs              # métadonnées (rapide)
  *   node netdeck-export.mjs --images     # + miniatures webp base64 (npm i sharp)
+ *   node netdeck-export.mjs --images --width=200   # miniatures plus legeres
  *   node netdeck-export.mjs --flat       # saute la passe détail : 1 impression par carte
  *   node netdeck-export.mjs --raw        # dump brut de la liste, sans transformation
  *
@@ -36,6 +37,14 @@ const DELAY = 250
 
 const args = new Set(process.argv.slice(2))
 const WANT_IMAGES = args.has("--images")
+/**
+ * Largeur des miniatures. Il n'existe aucune URL d'image publique — CloudFront
+ * exige une signature qui expire — donc la miniature stockee ici est la seule
+ * image dont disposera l'app, aussi bien pour l'icone de ligne que pour
+ * l'apercu au survol. 320 px la rend lisible en apercu pour ~5 Mo de base64
+ * sur 151 cartes ; 200 px suffit si l'on ne veut que l'icone.
+ */
+const WIDTH = Number([...args].find((a) => a.startsWith("--width="))?.slice(8)) || 320
 const FLAT = args.has("--flat")
 const RAW_ONLY = args.has("--raw")
 
@@ -140,7 +149,7 @@ async function thumbnail(url) {
   const res = await fetch(url, { headers })
   if (!res.ok) return null
   const out = await sharp(Buffer.from(await res.arrayBuffer()))
-    .resize({ width: 200 })
+    .resize({ width: WIDTH })
     .webp({ quality: 72 })
     .toBuffer()
   return "data:image/webp;base64," + out.toString("base64")
@@ -206,6 +215,7 @@ if (!FLAT) {
 }
 
 if (WANT_IMAGES) {
+  log(`Miniatures a ${WIDTH} px...\n`)
   const n = [...cards.values()].reduce((s, c) => s + c.printings.length, 0)
   let i = 0
   for (const card of cards.values()) {
@@ -237,5 +247,6 @@ await writeFile("cards_enriched.json", JSON.stringify(out))
 const prints = out.cards.reduce((n, c) => n + c.printings.length, 0)
 const withNum = out.cards.filter((c) => c.printings.some((p) => p.number)).length
 const sets = new Set(out.cards.flatMap((c) => c.printings.map((p) => p.set).filter(Boolean)))
-log(`→ cards_enriched.json : ${out.cards.length} cartes, ${prints} impressions, ${withNum} avec numero\n`)
+const weight = Math.round(JSON.stringify(out).length / 1024 / 1024 * 10) / 10
+log(`→ cards_enriched.json : ${out.cards.length} cartes, ${prints} impressions, ${withNum} avec numero, ${weight} Mo\n`)
 log(`   sets rencontres : ${[...sets].join(" | ")}\n`)
