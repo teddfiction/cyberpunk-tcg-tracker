@@ -124,6 +124,19 @@ export function buildGrid(cards: EnrichedCard[] | null, printings: PrintRow[]): 
     .sort((a, b) => a.name.localeCompare(b.name, "fr"))
 }
 
+/**
+ * Caractéristiques d'une carte, en libellés prêts à afficher. La tuile et la
+ * modale des versions les montrent toutes deux — d'où leur place ici plutôt
+ * que dans l'un des deux composants.
+ */
+export const cardStats = (card: GridCard) =>
+  [
+    card.cost != null && `Coût ${card.cost}`,
+    card.power != null && `Force ${card.power}`,
+    card.ram != null && `RAM ${card.ram}`,
+    card.eddiable && "€$",
+  ].filter(Boolean) as string[]
+
 /** Recherche de la grille : nom, sous-titre, tags, type, couleur, sets, raretés. */
 export const searchCard: FilterFn<GridCard> = (row, _columnId, needle) => {
   const terms = words(String(needle))

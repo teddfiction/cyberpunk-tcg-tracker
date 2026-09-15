@@ -8,7 +8,7 @@ import { GRID_COLUMNS } from "@/components/grid-columns"
 import { buildRows } from "@/lib/dataset"
 import { FACETS, facetOptions } from "@/lib/facets"
 import { emptyIndex } from "@/lib/enrich"
-import { buildGrid, buildPrintings } from "@/lib/printings"
+import { buildGrid, buildPrintings, cardStats } from "@/lib/printings"
 import {
   AMBIGUOUS_CATALOG,
   AMBIGUOUS_ENRICHED,
@@ -129,6 +129,29 @@ describe("buildGrid", () => {
 
   it("rend une liste vide sans enrichissement", () => {
     expect(buildGrid(null, [])).toEqual([])
+  })
+})
+
+describe("cardStats", () => {
+  const card = buildGrid(
+    [
+      {
+        name: "Stat - Test",
+        slug: null,
+        cost: 3,
+        power: 0,
+        ram: null,
+        eddiable: true,
+        printings: [],
+      },
+    ],
+    []
+  )[0]
+
+  it("garde les caractéristiques renseignées, y compris un zéro", () => {
+    // Une force de 0 est une valeur, pas une absence : c'est `!= null` qui
+    // tranche, jamais la véracité.
+    expect(cardStats(card)).toEqual(["Coût 3", "Force 0", "€$"])
   })
 })
 

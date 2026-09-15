@@ -178,7 +178,7 @@ leurs lignes et leurs colonnes :
 | Vue | Ligne | Construite par | Colonnes | Rendu |
 |---|---|---|---|---|
 | Data table | un produit Cardmarket, ou une carte regroupée | `lib/dataset.ts` | `components/columns.tsx` | `DataTable` |
-| Base de cartes | une carte Netdeck, dépliable sur ses impressions | `lib/printings.ts` | `components/grid-columns.ts` | `CardGrid` |
+| Base de cartes | une carte Netdeck, ses impressions en modale | `lib/printings.ts` | `components/grid-columns.ts` | `CardGrid` + `CardDialog` |
 
 **La grille est une table sans table.** Ses colonnes ne rendent rien : elles
 portent les facettes, la recherche et l'export CSV, et `CardGrid` dessine les
@@ -186,6 +186,16 @@ tuiles à partir de `table.getRowModel().rows`. C'est ce qui évite un second
 moteur de filtrage — ajouter une facette reste une ligne dans `lib/facets.ts`
 plus sa colonne dans `grid-columns.ts`, et un test vérifie que chaque facette a
 bien la sienne.
+
+Elle est la seule vue à **plafonner sa largeur** (`max-w-7xl`, quatre colonnes
+au plus) là où la table des cotes s'étale : à 1280 px les tuiles font 308 px,
+soit juste sous les 320 px natifs des miniatures, et il n'existe pas d'image
+plus grande à aller chercher (voir « Limites des données »). Les versions
+s'ouvrent en modale plutôt qu'en dépliant la tuile — sous une tuile, les
+artworks tenaient dans 40 px de haut, illisibles, et déplier repoussait toute la
+grille. Radix ne rend pas le focus à la tuile en sortant : `CardDialog` le fait
+lui-même, sinon le clavier repartirait du haut des 151 tuiles à chaque
+fermeture.
 
 La base de cartes montre ce que la table des cotes ne peut pas montrer : les
 cartes qu'aucun vendeur ne propose. Sa cote Cardmarket n'est rattachée que

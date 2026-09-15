@@ -1,16 +1,15 @@
 /**
- * Grille de cartes. Une tuile par carte ; cliquer la déplie sur ses
+ * Grille de cartes. Une tuile par carte ; cliquer l'ouvre en modale sur ses
  * impressions, dont chacune a son propre visuel — c'est là que se voient les
  * variantes de rareté que Cardmarket ne distingue pas.
  */
 import * as React from "react"
-import { ChevronDown, ExternalLink } from "lucide-react"
+import { Layers } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
-import { CodeBadge } from "@/components/code-badge"
-import { cyberpunkTcgUrl } from "@/data/expansions"
-import { rarityLabel } from "@/data/rarities"
+import { CardDialog } from "@/components/card-dialog"
 import { eur } from "@/lib/format"
+import { cardStats } from "@/lib/printings"
 import { cn } from "@/lib/utils"
 import type { CodeMap, GridCard } from "@/types"
 
@@ -26,18 +25,20 @@ type Props = {
  * lui rend le droit de sauter ce qui est hors écran ; `contain-intrinsic-size`
  * réserve la hauteur pour que la barre de défilement ne saute pas.
  */
-const OFFSCREEN = "[content-visibility:auto] [contain-intrinsic-size:auto_360px]"
+const OFFSCREEN = "[content-visibility:auto] [contain-intrinsic-size:auto_520px]"
 
 export function CardGrid({ cards, codes, expansions }: Props) {
-  const [open, setOpen] = React.useState<Set<string>>(new Set())
+  // La carte n'est pas remise à `null` à la fermeture : la modale la rend
+  // encore pendant son animation de sortie. C'est `open` qui pilote, pas elle.
+  const [card, setCard] = React.useState<GridCard | null>(null)
+  const [open, setOpen] = React.useState(false)
+  const trigger = React.useRef<HTMLButtonElement | null>(null)
 
-  const toggle = (name: string) =>
-    setOpen((prev) => {
-      const next = new Set(prev)
-      if (next.has(name)) next.delete(name)
-      else next.add(name)
-      return next
-    })
+  const select = (c: GridCard, el: HTMLButtonElement) => {
+    trigger.current = el
+    setCard(c)
+    setOpen(true)
+  }
 
   if (!cards.length) {
     return (
@@ -48,47 +49,45 @@ export function CardGrid({ cards, codes, expansions }: Props) {
   }
 
   return (
-    <div className="grid grid-cols-2 items-start gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-      {cards.map((card) => (
-        <Tile
-          key={card.name}
+    <>
+      {/* Quatre colonnes au plus : au-delà, la tuile passe sous les 320 px de
+          la miniature et le visuel — le fond de cette vue — devient illisible. */}
+      <div className="grid grid-cols-2 items-start gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        {cards.map((c) => (
+          <Tile key={c.name} card={c} onSelect={(el) => select(c, el)} />
+        ))}
+      </div>
+
+      {card && (
+        <CardDialog
           card={card}
-          expanded={open.has(card.name)}
-          onToggle={() => toggle(card.name)}
+          open={open}
+          onOpenChange={setOpen}
+          trigger={trigger}
           codes={codes}
           expansions={expansions}
         />
-      ))}
-    </div>
+      )}
+    </>
   )
 }
 
 function Tile({
   card,
-  expanded,
-  onToggle,
-  codes,
-  expansions,
+  onSelect,
 }: {
   card: GridCard
-  expanded: boolean
-  onToggle: () => void
-  codes: CodeMap
-  expansions: Record<string, string>
+  onSelect: (trigger: HTMLButtonElement) => void
 }) {
-  const stats = [
-    card.cost != null && `Coût ${card.cost}`,
-    card.power != null && `Force ${card.power}`,
-    card.ram != null && `RAM ${card.ram}`,
-    card.eddiable && "€$",
-  ].filter(Boolean) as string[]
+  const stats = cardStats(card)
 
   return (
-    <div className={cn("flex flex-col gap-2", !expanded && OFFSCREEN)}>
+    <div className={cn("flex flex-col gap-2", OFFSCREEN)}>
       <button
-        onClick={onToggle}
-        aria-expanded={expanded}
-        className="focus-visible:ring-ring/50 relative block outline-none focus-visible:ring-[3px]"
+        onClick={(e) => onSelect(e.currentTarget)}
+        aria-haspopup="dialog"
+        aria-label={`${card.name} — voir les versions`}
+        className="focus-visible:ring-ring/50 relative block cursor-pointer outline-none focus-visible:ring-[3px]"
       >
         {card.thumb ? (
           <img src={card.thumb} alt={card.name} className="border-border w-full border" />
@@ -101,8 +100,8 @@ function Tile({
             variant="secondary"
             className="absolute top-1 right-1 gap-1 tabular-nums shadow-sm"
           >
+            <Layers className="size-3" />
             {card.printings.length}
-            <ChevronDown className={cn("size-3 transition-transform", expanded && "rotate-180")} />
           </Badge>
         )}
       </button>
@@ -128,62 +127,6 @@ function Tile({
           <div className="mt-1 text-xs font-medium tabular-nums">dès {eur(card.low)}</div>
         )}
       </div>
-
-      {expanded && (
-        <ul className="flex flex-col gap-2 border-t pt-2">
-          {card.printings.map((p) => (
-            <li key={p.uuid} className="flex items-start gap-2">
-              {p.thumb && (
-                <img
-                  src={p.thumb}
-                  alt={`${p.name} — ${p.set}`}
-                  className="border-border h-14 w-10 shrink-0 border object-cover"
-                />
-              )}
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1 text-xs font-medium">
-                  {p.rarity ? rarityLabel(p.rarity) : "Rareté inconnue"}
-                  {p.num && (
-                    <span className="text-muted-foreground font-mono">#{p.num}</span>
-                  )}
-                </div>
-                <div className="text-muted-foreground truncate text-xs">{p.set}</div>
-                <div className="mt-1 flex flex-wrap items-center gap-1">
-                  {p.exp && <CodeBadge exp={p.exp} codes={codes} expansions={expansions} />}
-                  <span className="text-xs tabular-nums">
-                    {p.low != null ? (
-                      eur(p.low)
-                    ) : p.lowRange ? (
-                      <span
-                        className="text-muted-foreground underline decoration-dotted underline-offset-2"
-                        title={`${p.variants} produits Cardmarket partagent ce nom dans cette extension : la cote de cette impression n'est pas isolable.`}
-                      >
-                        {eur(p.lowRange[0])} – {eur(p.lowRange[1])}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground/50">—</span>
-                    )}
-                  </span>
-                </div>
-              </div>
-            </li>
-          ))}
-
-          {card.slug && (
-            <li>
-              <a
-                href={cyberpunkTcgUrl(card.slug)}
-                target="_blank"
-                rel="noopener"
-                className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-xs hover:underline"
-              >
-                Fiche officielle
-                <ExternalLink className="size-3" />
-              </a>
-            </li>
-          )}
-        </ul>
-      )}
     </div>
   )
 }

@@ -60,7 +60,11 @@ export function NetdeckView({ cards, rows, codes, expansions, onImport }: Props)
   const filtering = table.getState().columnFilters.length > 0 || search.length > 0
 
   return (
-    <div className="flex flex-col gap-4">
+    // Largeur plafonnée, contrairement à la table des cotes qui gagne à
+    // s'étaler : à 1280 px, quatre colonnes font des tuiles de 308 px, soit
+    // juste sous les 320 px natifs des miniatures — au-delà elles seraient
+    // agrandies, et il n'y a pas d'image plus grande à aller chercher.
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-56 flex-1">
           <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
@@ -119,7 +123,7 @@ export function NetdeckView({ cards, rows, codes, expansions, onImport }: Props)
 
       <p className="text-muted-foreground text-xs leading-relaxed">
         Source : <code>api.netdeck.gg</code> via <code>npm run data:netdeck:images</code>. Cliquer
-        une carte déplie ses impressions. La cote Cardmarket n'est rattachée que lorsqu'un seul
+        une carte ouvre ses versions. La cote Cardmarket n'est rattachée que lorsqu'un seul
         produit correspond à cette carte dans cette extension ; sinon la fourchette est affichée en
         pointillés — rien ne dit lequel est cette impression précise.
       </p>

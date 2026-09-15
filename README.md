@@ -116,7 +116,8 @@ src/
     card-thumb.tsx      vignette et aperçu au survol
     columns.tsx         colonnes des cotes, une liste par mode
     grid-columns.ts     colonnes-facettes de la grille (ne rendent rien)
-    card-grid.tsx       grille de cartes, dépliable sur les impressions
+    card-grid.tsx       grille de cartes, quatre colonnes au plus
+    card-dialog.tsx     versions d'une carte, en modale
     facet-filter.tsx    filtre à facette générique
     netdeck-view.tsx    vue base de cartes
     data-table.tsx      rendu de la table depuis l'instance TanStack
