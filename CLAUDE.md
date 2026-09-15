@@ -300,8 +300,16 @@ La consigne du projet : **uniquement Tailwind et les composants shadcn natifs.**
   `StatsStrip`, qui partagent une bordure de grille qu'une `Card` casserait).
 - **Aucune couleur en dur.** Toujours les tokens : `bg-card`,
   `text-muted-foreground`, `text-destructive`. Ils vivent dans les blocs `:root` /
-  `.dark` de `src/index.css`. Thème : base **Mist**, accent **Yellow**,
-  `--radius: 0`, police **Geist** (locale).
+  `.dark` de `src/index.css`. Thème : base **Slate**, accent **Yellow**,
+  graphiques **Cyan**, `--radius: 0`, police **Geist** (locale). Base et accent
+  sont deux axes : changer de base ne touche pas aux tons `primary` / `ring` /
+  `sidebar-primary`, qui restent jaunes.
+- **Toasts : `sonner`.** Le registry ne sert plus de `toast` Radix — `sonner` est
+  le composant shadcn natif aujourd'hui, seule entorse admise à la règle Radix.
+  Son fichier lit le thème dans `next-themes`, absent de provider ici : `App.tsx`
+  lui impose le thème par la prop `theme`, que son `{...props}` laisse gagner.
+  Pas de `richColors` : la distinction succès/erreur passe par l'icône, la
+  surface reste sur `--popover`.
 - **TanStack Table épinglé en 8.21.3.** La v9 est en `latest` mais change toute
   l'API ; la recette data-table de shadcn est écrite pour la v8. Migrer est un
   chantier, pas un `npm update`.

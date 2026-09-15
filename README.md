@@ -197,10 +197,15 @@ Trois sources, toutes publiques.
 
 ## Thème
 
-Tokens shadcn/ui : base **Mist**, accent **Yellow**, radius **0**, police
-**Geist**. Les valeurs OKLCH sont celles du registry officiel, mappées à la main
-sur le scaffold de tokens dans `src/index.css`. Pour appliquer un thème généré
-par le configurateur shadcn, remplacer les blocs `:root` et `.dark`.
+Tokens shadcn/ui : base **Slate**, accent **Yellow**, graphiques **Cyan**,
+radius **0**, police **Geist**. Les valeurs OKLCH sont celles du registry
+officiel, mappées à la main sur le scaffold de tokens dans `src/index.css`. Pour
+appliquer un thème généré par le configurateur shadcn, remplacer les blocs
+`:root` et `.dark`.
+
+Les cinq `--chart-*` reprennent l'échelle Cyan de Tailwind — pas 5. 300 → 700 en
+clair, 200 → 600 en sombre, où 700 tomberait à 52 % de clarté sur un fond
+slate-950. Aucun graphique ne les consomme encore : ils sont là pour le jour où.
 
 ## Note sur le combobox
 
