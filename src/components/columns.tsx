@@ -84,6 +84,11 @@ const nameColumn = (header: string): ColumnDef<TableRow> => ({
           <span className="text-muted-foreground block truncate text-xs">
             {card ? r.expName : r.cat}
             {r.foil && !card ? " · foil listé" : ""}
+            {!card && r.variants > 1 ? (
+              <span title="Cardmarket liste plusieurs produits sous ce nom dans cette extension, sans rien qui permette de les distinguer à part leur ID.">
+                {` · ${r.variants} versions`}
+              </span>
+            ) : null}
           </span>
         </div>
       </div>
@@ -135,10 +140,9 @@ const numColumn: ColumnDef<TableRow> = {
 }
 
 /**
- * Rareté de l'impression. Affichée en clair quand l'appariement Netdeck est
- * certain ; en pointillés, listant les candidates, quand plusieurs impressions
- * de la carte coexistent dans l'extension — Cardmarket ne distingue alors ses
- * variantes que par `idProduct`, et rien ne dit laquelle est laquelle.
+ * Rareté de la carte. En clair dès que les impressions connues s'accordent —
+ * c'est le cas général, Netdeck publiant une rareté par carte. En pointillés,
+ * listant les candidates, seulement si elles divergent.
  */
 const rarityColumn: ColumnDef<TableRow> = {
   id: "rarity",
@@ -165,7 +169,7 @@ const rarityColumn: ColumnDef<TableRow> = {
     return (
       <span
         className="text-muted-foreground underline decoration-dotted underline-offset-2"
-        title="Plusieurs impressions de cette carte dans cette extension : Cardmarket ne les distingue que par leur ID, la rareté exacte de ce produit n'est pas déterminable."
+        title="Les impressions connues de cette carte ne s'accordent pas sur une rareté."
       >
         {candidates.map(rarityLabel).join(" · ")}
       </span>

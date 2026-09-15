@@ -74,10 +74,17 @@ export type Row = Product &
     /** Rareté de l'impression, seulement quand l'appariement est certain. */
     rarity: string | null
     /**
-     * Raretés possibles quand plusieurs impressions coexistent dans l'extension
-     * et que rien ne dit laquelle est ce produit. Vide si `rarity` est connue.
+     * Raretés possibles quand les impressions connues ne s'accordent pas.
+     * Vide si `rarity` est connue.
      */
     rarities: string[]
+    /**
+     * Nombre de produits Cardmarket partageant ce nom dans cette extension.
+     * Au-delà de 1, ce sont des versions que Cardmarket ne distingue que par
+     * leur `idProduct` — la rareté reste celle de la carte, mais on ne sait pas
+     * quelle version physique on regarde.
+     */
+    variants: number
     thumb: string | null
     slug: string | null
     uuid: string | null

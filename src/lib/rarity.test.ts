@@ -67,11 +67,33 @@ describe("appariement certain", () => {
   })
 })
 
+describe("plusieurs produits Cardmarket, une seule impression connue", () => {
+  // Le cas réel : 37 cartes du catalogue, 76 produits. Netdeck publie une
+  // rareté par carte — elle vaut donc pour toutes ses versions Cardmarket.
+  const rows = rowsOf(AMBIGUOUS_CATALOG, AMBIGUOUS_ENRICHED)
+  const byId = (id: number) => rows.find((r) => r.id === id)!
+
+  it("affiche la rareté de la carte sur chaque version", () => {
+    expect(byId(23).rarity).toBe("Secret")
+    expect(byId(24).rarity).toBe("Secret")
+    expect(byId(23).rarities).toEqual([])
+  })
+
+  it("donne aussi le numéro de collecteur, qui est celui de la carte", () => {
+    expect(byId(23).num).toBe("012")
+  })
+
+  it("signale combien de versions Cardmarket partagent ce nom", () => {
+    expect(byId(23).variants).toBe(2)
+    expect(byId(22).variants).toBe(1)
+  })
+})
+
 describe("appariement ambigu", () => {
   const rows = rowsOf(AMBIGUOUS_CATALOG, AMBIGUOUS_ENRICHED)
   const byId = (id: number) => rows.find((r) => r.id === id)!
 
-  it("n'attribue aucune rareté aux deux variantes indistinguables", () => {
+  it("n'attribue aucune rareté quand les impressions connues divergent", () => {
     expect(byId(20).rarity).toBeNull()
     expect(byId(21).rarity).toBeNull()
   })
@@ -81,7 +103,7 @@ describe("appariement ambigu", () => {
     expect(byId(21).rarities).toEqual(["Rare", "Nova Rare"])
   })
 
-  it("ne prête pas non plus de numéro de collecteur", () => {
+  it("ne prête pas de numéro de collecteur : il désigne une impression", () => {
     expect(byId(20).num).toBeNull()
     expect(byId(20).uuid).toBeNull()
   })

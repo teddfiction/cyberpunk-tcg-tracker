@@ -280,19 +280,38 @@ Ces contraintes viennent des sources, pas du code. Ne pas « réparer » :
 - **`low` n'est pas un prix de vente** mais la plus petite annonce. Sur un marché à
   trois annonces, c'est du bruit ; `trend` est plus honnête. La somme des `low`
   n'est pas une valorisation — le libellé de `StatsStrip` doit rester prudent.
+- **Couverture Netdeck** (relevé du 15/09/2026) : 151 cartes, qui couvrent par
+  le nom **293 des 296 singles** Cardmarket, soit 99 %. Netdeck étiquette ses
+  cartes avec les sets *retail* alors que le catalogue Cardmarket est
+  essentiellement en Beta / Demo / Alpha Kit — mais ce sont les mêmes cartes,
+  donc l'appariement par nom fonctionne. `PRM01` (« Set 1 Promos ») confirme au
+  passage l'hypothèse notée dans `data/expansions.ts` pour 6717 / 6719.
+  Raretés réellement rencontrées : Common, Uncommon, Rare, Epic, Secret, Nova
+  Rare — les trois « Iconic » de `data/rarities.ts` n'existent pas encore dans
+  les données.
 - Cardmarket ne publie **ni numéro de collecteur ni rareté**. L'export brut ne
   contient que `idProduct, name, idCategory, categoryName, idExpansion,
   idMetacard, dateAdded` — rien d'autre à en tirer. Les colonnes « N° » et
   « Rareté » n'apparaissent qu'une fois `cards_enriched.json` importé.
-- **Une impression n'a pas de dénomination côté Cardmarket.** 37 cartes (76
+- **Une version n'a pas de dénomination côté Cardmarket.** 37 cartes (76
   produits, 26 % des singles) existent en plusieurs exemplaires dans une même
   extension, sous un nom strictement identique : seuls l'`idProduct` et
-  l'horodatage d'ajout les séparent. Ce sont les variantes de rareté.
-  `buildRows` n'attribue donc une rareté et un numéro **que lorsqu'un produit
-  fait face à une seule impression Netdeck** ; sinon il expose les raretés
-  candidates, affichées en pointillés. **Ne pas remplacer ça par une heuristique**
-  (apparier par le prix, par l'ordre des `idProduct`) sans décision explicite :
-  ce serait afficher une valeur inventée avec l'assurance d'une valeur mesurée.
+  l'horodatage d'ajout les séparent.
+
+  Mesuré sur l'export du 15/09/2026 : **Netdeck publie une rareté par carte**,
+  jamais plusieurs impressions divergentes, et ces 37 cartes sont exclusivement
+  Rare (18), Epic (15) ou Secret (4) — les Common et Uncommon n'ont jamais de
+  doublon. La rareté est donc une propriété de **la carte**, et vaut pour toutes
+  ses versions Cardmarket. `buildRows` l'affiche en clair dès que les
+  impressions connues s'accordent, et ne passe en pointillés que si elles
+  divergent — cas qui ne se produit pas aujourd'hui.
+
+  Ce qui reste inconnu, c'est **quelle version physique** est tel `idProduct`.
+  Cette incertitude-là est portée par `Row.variants` et affichée sous le nom
+  (« · 2 versions »), pas par la colonne Rareté. **Ne pas apparier les versions
+  par une heuristique** (le prix, l'ordre des `idProduct`) sans décision
+  explicite : ce serait afficher une valeur inventée avec l'assurance d'une
+  valeur mesurée.
 - Les **codes d'impression** (MS01B, SD02B…) n'existent dans aucune source. Seuls
   MS01B et SD02B sont confirmés (`sure: true`), le reste est déduit et affiché en
   pointillés.

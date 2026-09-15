@@ -38,9 +38,12 @@ export function buildRows({ catalog, prices, expansions, codes, enrich }: BuildA
       const pr = prices[String(p.id)] ?? ({} as Partial<Price>)
       const expName = expansions[String(p.exp)] ?? `Extension ${p.exp}`
       const printings = enrich.on ? printingsFor(enrich, p.name, p.exp) : []
-      // Certain uniquement quand un produit fait face à une seule impression.
-      const sure = printings.length === 1 && variants.get(variantKey(p.name, p.exp)) === 1
-      const e = sure ? printings[0] : null
+      // Netdeck publie une rareté par carte. Tant que les impressions connues
+      // s'accordent, la rareté vaut pour toutes les versions Cardmarket de
+      // cette carte — plusieurs produits ne la rendent pas incertaine.
+      const known = [...new Set(printings.map((x) => x.rarity).filter((x): x is string => !!x))]
+      // Numéro et uuid désignent une impression : seulement s'il n'y en a qu'une.
+      const e = printings.length === 1 ? printings[0] : null
 
       const d =
         pr.trend != null && pr.low != null && pr.low > 0
@@ -59,10 +62,9 @@ export function buildRows({ catalog, prices, expansions, codes, enrich }: BuildA
         d,
         df,
         num: e?.number ?? null,
-        rarity: e?.rarity ?? null,
-        rarities: sure
-          ? []
-          : [...new Set(printings.map((x) => x.rarity).filter((x): x is string => !!x))],
+        rarity: known.length === 1 ? known[0] : null,
+        rarities: known.length > 1 ? known : [],
+        variants: variants.get(variantKey(p.name, p.exp)) ?? 1,
         // slug identifie la carte et non l'impression : toujours sûr. La
         // miniature varie peu d'une variante à l'autre, on prend la première.
         thumb: printings.find((x) => x.thumb)?.thumb ?? null,
