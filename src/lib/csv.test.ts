@@ -44,6 +44,14 @@ describe("toCsv", () => {
     }
   })
 
+  it("laisse le visuel hors de l'export : ce sont des data URI", () => {
+    const enriched = (mode: Parameters<typeof makeTable>[0]) =>
+      toCsv(makeTable(mode, {}, true), CODES).split("\n")
+    expect(enriched("normal")[0].startsWith('"Produit"')).toBe(true)
+    expect(enriched("normal")[0]).not.toContain("thumb")
+    expect(enriched("normal")[1]).not.toContain("data:image")
+  })
+
   it("rend les codes d'impression dans la colonne Impressions", () => {
     const out = lines("card", { globalFilter: "zébu" })
     expect(out[1]).toContain('"A1 C1"')

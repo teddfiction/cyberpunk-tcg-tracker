@@ -10,7 +10,7 @@ import type { AnyRow, CodeMap, TableRow } from "@/types"
 const quote = (s: string) => `"${s.replace(/"/g, '""')}"`
 
 export function toCsv(table: Table<TableRow>, codes: CodeMap): string {
-  const columns = table.getVisibleLeafColumns()
+  const columns = table.getVisibleLeafColumns().filter((c) => !c.columnDef.meta?.noCsv)
   const lines = [columns.map((c) => quote(String(c.columnDef.header))).join(";")]
 
   for (const row of table.getRowModel().rows) {

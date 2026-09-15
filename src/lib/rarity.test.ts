@@ -142,3 +142,15 @@ describe("colonne Rareté", () => {
     )
   })
 })
+
+describe("colonne Visuel", () => {
+  it("n'apparaît qu'une fois l'enrichissement chargé, et en tête", () => {
+    expect(makeTable("normal").getVisibleLeafColumns().map((c) => c.id)).not.toContain("thumb")
+    expect(makeTable("normal", {}, true).getVisibleLeafColumns()[0].id).toBe("thumb")
+  })
+
+  it("laisse la recherche sur la colonne Produit, qui n'est plus la première", () => {
+    const table = makeTable("normal", { globalFilter: "zebu" }, true)
+    expect(table.getRowModel().rows.map((r) => r.original.id).sort()).toEqual([10, 14])
+  })
+})

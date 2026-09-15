@@ -184,6 +184,12 @@ Tous couverts par des tests : si l'un saute, `npm run test` le dit.
   À valeur égale TanStack retombe sur l'index d'origine, donc sur ce tri-là. Il
   n'y a pas de comparateur secondaire à écrire — mais supprimer ce tri amont
   rendrait l'ordre des ex æquo aléatoire.
+- **Recherche : la déclarer par `id`, jamais par rang.** `enableGlobalFilter`
+  n'est vrai que sur la colonne `name`. La viser par sa position casserait la
+  recherche en silence dès qu'une colonne passe devant — la colonne Visuel n'a
+  pas d'accesseur, donc `getCanGlobalFilter()` y répond faux, et TanStack qui ne
+  trouve aucune colonne cherchable cesse simplement de filtrer. Aucune erreur,
+  juste toutes les lignes qui remontent. Un test le verrouille.
 - **Recherche** (`searchRow`, `lib/table.ts`). Contrat : requête et ligne sont
   découpées en mots — accents retirés, ponctuation en séparateur — et chaque mot
   de la requête doit **commencer** un mot de la ligne. Donc « V corpo » trouve
@@ -289,6 +295,13 @@ Ces contraintes viennent des sources, pas du code. Ne pas « réparer » :
   Raretés réellement rencontrées : Common, Uncommon, Rare, Epic, Secret, Nova
   Rare — les trois « Iconic » de `data/rarities.ts` n'existent pas encore dans
   les données.
+- **Pas d'URL d'image publique.** `image_url` est signée et expire ;
+  `source_image_url`, sa variante nue, est refusée par CloudFront (« Missing
+  Key-Pair-Id »). La miniature produite par `npm run data:netdeck:images` est
+  donc la seule image dont dispose l'app, pour la colonne comme pour l'aperçu au
+  survol — d'où sa largeur de 320 px et le poids du fichier (~14 Mo en 320 px,
+  réglable par `--width=`). Ce fichier reste local et gitignoré : les visuels
+  sont sous licence CD PROJEKT RED.
 - Cardmarket ne publie **ni numéro de collecteur ni rareté**. L'export brut ne
   contient que `idProduct, name, idCategory, categoryName, idExpansion,
   idMetacard, dateAdded` — rien d'autre à en tirer. Les colonnes « N° » et

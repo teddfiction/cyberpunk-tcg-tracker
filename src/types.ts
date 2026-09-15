@@ -138,5 +138,7 @@ declare module "@tanstack/react-table" {
     decimal?: boolean
     /** Rendu CSV quand la valeur brute de la colonne ne suffit pas. */
     csv?: (row: AnyRow, codes: CodeMap) => string
+    /** Colonne purement visuelle : absente de l'export CSV. */
+    noCsv?: boolean
   }
 }

@@ -29,6 +29,7 @@ export function DataTable({ table }: { table: TanstackTable<Line> }) {
               {group.headers.map((header) => {
                 const right = header.column.columnDef.meta?.align === "right"
                 const sorted = header.column.getIsSorted()
+                const label = flexRender(header.column.columnDef.header, header.getContext())
                 return (
                   <TableHead
                     key={header.id}
@@ -37,20 +38,27 @@ export function DataTable({ table }: { table: TanstackTable<Line> }) {
                       sorted ? (sorted === "asc" ? "ascending" : "descending") : undefined
                     }
                   >
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={header.column.getToggleSortingHandler()}
-                      className={cn(
-                        "h-auto w-full justify-start gap-1 px-3 py-2 text-xs whitespace-nowrap",
-                        sorted ? "text-foreground font-semibold" : "text-muted-foreground",
-                        right && "justify-end"
-                      )}
-                    >
-                      {flexRender(header.column.columnDef.header, header.getContext())}
-                      {sorted === "asc" && <ChevronUp className="size-3" />}
-                      {sorted === "desc" && <ChevronDown className="size-3" />}
-                    </Button>
+                    {header.column.getCanSort() ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={header.column.getToggleSortingHandler()}
+                        className={cn(
+                          "h-auto w-full justify-start gap-1 px-3 py-2 text-xs whitespace-nowrap",
+                          sorted ? "text-foreground font-semibold" : "text-muted-foreground",
+                          right && "justify-end"
+                        )}
+                      >
+                        {label}
+                        {sorted === "asc" && <ChevronUp className="size-3" />}
+                        {sorted === "desc" && <ChevronDown className="size-3" />}
+                      </Button>
+                    ) : (
+                      // Sans tri, un bouton serait un leurre : rien ne s'y passe.
+                      <div className="text-muted-foreground px-3 py-2 text-xs whitespace-nowrap">
+                        {label}
+                      </div>
+                    )}
                   </TableHead>
                 )
               })}

@@ -6,6 +6,7 @@
 import type { ColumnDef } from "@tanstack/react-table"
 import { ExternalLink } from "lucide-react"
 
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
 import { CodeBadge } from "@/components/code-badge"
 import { CARDMARKET_SEARCH, cyberpunkTcgUrl } from "@/data/expansions"
 import { rarityLabel, rarityRank } from "@/data/rarities"
@@ -52,6 +53,41 @@ const percent = (
   },
 })
 
+/**
+ * Visuel de la carte : miniature en ligne, carte entière au survol.
+ *
+ * Les miniatures sont des data URI produites par `npm run data:netdeck:images`
+ * et n'existent qu'une fois cet import chargé. Il n'y a pas d'image plus grande
+ * à aller chercher : les URLs CloudFront de Netdeck exigent une signature qui
+ * expire, donc l'aperçu affiche la miniature à sa taille native (320 px).
+ */
+const thumbColumn: ColumnDef<TableRow> = {
+  id: "thumb",
+  header: "",
+  enableSorting: false,
+  enableGlobalFilter: false,
+  meta: { className: "w-[44px]", noCsv: true },
+  cell: ({ row }) => {
+    const r = row.original as AnyRow
+    if (!r.thumb) return <div className="border-border/60 bg-muted h-10 w-7 border" aria-hidden />
+    return (
+      <HoverCard openDelay={120} closeDelay={60}>
+        <HoverCardTrigger asChild>
+          <img
+            src={r.thumb}
+            alt={r.name}
+            loading="lazy"
+            className="border-border h-10 w-7 cursor-zoom-in border object-cover"
+          />
+        </HoverCardTrigger>
+        <HoverCardContent side="right" align="start" className="w-auto border p-1">
+          <img src={r.thumb} alt={r.name} className="block w-80 max-w-none" />
+        </HoverCardContent>
+      </HoverCard>
+    )
+  },
+}
+
 const nameColumn = (header: string): ColumnDef<TableRow> => ({
   id: "name",
   accessorKey: "name",
@@ -63,14 +99,6 @@ const nameColumn = (header: string): ColumnDef<TableRow> => ({
     const r = row.original as AnyRow
     return (
       <div className="flex items-center gap-2">
-        {r.thumb && (
-          <img
-            src={r.thumb}
-            alt=""
-            loading="lazy"
-            className="border-border h-10 w-7 shrink-0 border object-cover"
-          />
-        )}
         <div className="min-w-0">
           <a
             href={CARDMARKET_SEARCH + encodeURIComponent(r.name)}
@@ -247,6 +275,7 @@ const filterColumns = (mode: Mode): ColumnDef<TableRow>[] => [
  */
 const VISIBLE: Record<Mode, (enriched: boolean) => ColumnDef<TableRow>[]> = {
   normal: (enriched) => [
+    ...(enriched ? [thumbColumn] : []),
     nameColumn("Produit"),
     codeColumn,
     ...(enriched ? [numColumn, rarityColumn] : []),
@@ -258,6 +287,7 @@ const VISIBLE: Record<Mode, (enriched: boolean) => ColumnDef<TableRow>[]> = {
     idColumn,
   ],
   foil: (enriched) => [
+    ...(enriched ? [thumbColumn] : []),
     nameColumn("Produit"),
     codeColumn,
     ...(enriched ? [numColumn, rarityColumn] : []),
@@ -267,7 +297,8 @@ const VISIBLE: Record<Mode, (enriched: boolean) => ColumnDef<TableRow>[]> = {
     percent("df", "Δ moy./mini", (r) => r.df),
     idColumn,
   ],
-  card: () => [
+  card: (enriched) => [
+    ...(enriched ? [thumbColumn] : []),
     nameColumn("Carte"),
     printsColumn,
     money("bestLow", "Mini le moins cher", (r) => r.bestLow),
@@ -278,9 +309,11 @@ const VISIBLE: Record<Mode, (enriched: boolean) => ColumnDef<TableRow>[]> = {
 
 export function columnsFor(mode: Mode, enriched: boolean): ColumnDef<TableRow>[] {
   return [
-    // La recherche plein texte n'est déclarée que sur la première colonne : sinon
+    // La recherche plein texte n'est déclarée que sur la colonne Produit : sinon
     // TanStack rejouerait le même prédicat sur chaque colonne de chaque ligne.
-    ...VISIBLE[mode](enriched).map((c, i) => ({ ...c, enableGlobalFilter: i === 0 })),
+    // Viser l'id et non le rang — la première colonne est le visuel, qui n'a
+    // même pas d'accesseur et désactiverait la recherche en silence.
+    ...VISIBLE[mode](enriched).map((c) => ({ ...c, enableGlobalFilter: c.id === "name" })),
     ...filterColumns(mode),
   ]
 }
