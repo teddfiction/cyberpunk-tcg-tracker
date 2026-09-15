@@ -3,11 +3,12 @@
  * seulement quand elle est attribuable.
  */
 import { describe, expect, it } from "vitest"
-import type { Row as TanstackRow } from "@tanstack/react-table"
 
+import { GRID_COLUMNS } from "@/components/grid-columns"
 import { buildRows } from "@/lib/dataset"
+import { FACETS, facetOptions } from "@/lib/facets"
 import { emptyIndex } from "@/lib/enrich"
-import { buildPrintings, printingId, searchPrinting } from "@/lib/printings"
+import { buildGrid, buildPrintings } from "@/lib/printings"
 import {
   AMBIGUOUS_CATALOG,
   AMBIGUOUS_ENRICHED,
@@ -17,7 +18,7 @@ import {
   EXPANSIONS,
   PRICES,
 } from "@/test/fixtures"
-import type { EnrichedCard, PrintRow, Product } from "@/types"
+import type { EnrichedCard, Product } from "@/types"
 
 const build = (catalog: Product[], cards: EnrichedCard[]) =>
   buildPrintings({
@@ -102,29 +103,74 @@ describe("cote non attribuable", () => {
   })
 })
 
-describe("searchPrinting", () => {
-  const printings = build(CATALOG, ENRICHED)
-  const find = (q: string) =>
-    printings
-      .filter((p) => searchPrinting({ original: p } as TanstackRow<PrintRow>, "name", q, () => {}))
-      .map((p) => p.uuid)
+describe("buildGrid", () => {
+  const cards = buildGrid(ENRICHED, build(CATALOG, ENRICHED))
+  const byName = (name: string) => cards.find((c) => c.name === name)!
 
-  it("cherche sans accents ni ponctuation", () => {
-    expect(find("zebu calme").sort()).toEqual(["u1", "u2"])
+  it("rend une tuile par carte, pas par impression", () => {
+    expect(cards).toHaveLength(2)
+    expect(byName("Zébu - Calme").printings).toHaveLength(2)
   })
 
-  it("cherche dans le set, la rareté et l'artiste", () => {
-    expect(find("night city")).toEqual(["u2"])
-    expect(find("nova")).toEqual(["u1"])
+  it("agrège les facettes de ses impressions", () => {
+    const zebu = byName("Zébu - Calme")
+    expect(zebu.sets.sort()).toEqual(["Alpha Kit", "Welcome to Night City — Retail"])
+    // Triées de la plus commune à la plus rare, pas alphabétiquement.
+    expect(zebu.rarities).toEqual(["Common", "Nova Rare"])
   })
 
-  it("exige tous les mots", () => {
-    expect(find("zebu introuvable")).toEqual([])
+  it("met en tête l'impression qui porte un numéro", () => {
+    expect(byName("Zébu - Calme").printings[0].num).toBe("001")
+  })
+
+  it("retient la cote la plus basse toutes impressions confondues", () => {
+    expect(byName("Zébu - Calme").low).toBe(8)
+  })
+
+  it("rend une liste vide sans enrichissement", () => {
+    expect(buildGrid(null, [])).toEqual([])
   })
 })
 
-describe("printingId", () => {
-  it("prend l'uuid, unique sur toutes les impressions", () => {
-    expect(printingId({ uuid: "abc" } as PrintRow)).toBe("abc")
+describe("facettes", () => {
+  const cards = buildGrid(ENRICHED, build(CATALOG, ENRICHED))
+
+  it("compte les options de chaque facette", () => {
+    const rarete = FACETS.find((f) => f.id === "rarities")!
+    expect(facetOptions(rarete, cards)).toEqual([
+      { value: "Common", count: 1 },
+      { value: "Epic", count: 1 },
+      { value: "Nova Rare", count: 1 },
+    ])
+  })
+
+  it("range les raretés par rang et les nombres numériquement", () => {
+    const rarete = FACETS.find((f) => f.id === "rarities")!
+    expect(facetOptions(rarete, cards).map((o) => o.value)).toEqual([
+      "Common",
+      "Epic",
+      "Nova Rare",
+    ])
+    const cout = FACETS.find((f) => f.id === "cost")!
+    expect(facetOptions(cout, cards)).toEqual([])
+  })
+
+  it("couvre les neuf filtres demandés", () => {
+    expect(FACETS.map((f) => f.id)).toEqual([
+      "color",
+      "type",
+      "tags",
+      "cost",
+      "power",
+      "ram",
+      "eddiable",
+      "sets",
+      "rarities",
+    ])
+  })
+
+  it("chaque facette a sa colonne, sinon son filtre ne s'appliquerait à rien", () => {
+    const ids = new Set(GRID_COLUMNS.map((c) => c.id))
+    for (const facet of FACETS) expect(ids).toContain(facet.id)
   })
 })

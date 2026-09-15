@@ -41,7 +41,14 @@ export const PRICES: Record<string, Price> = {
   "24": { avg: null, low: 9, trend: null, avgF: null, lowF: null, foil: 0 },
 }
 
-const printing = (uuid: string, set: string, setCode: string, number: string, rarity: string) => ({
+/** `number` à null reproduit le cas réel : Netdeck ne numérote qu'une impression par carte. */
+const printing = (
+  uuid: string,
+  set: string,
+  setCode: string,
+  number: string | null,
+  rarity: string
+) => ({
   uuid,
   set,
   setCode,
@@ -57,7 +64,7 @@ export const ENRICHED: EnrichedCard[] = [
     slug: "zebu-calme",
     printings: [
       printing("u1", "Alpha Kit", "alphakit", "001", "Nova Rare"),
-      printing("u2", "Welcome to Night City — Retail", "welcometonightcityretail", "101", "Common"),
+      printing("u2", "Welcome to Night City — Retail", "welcometonightcityretail", null, "Common"),
     ],
   },
   {

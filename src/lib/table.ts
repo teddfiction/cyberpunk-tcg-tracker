@@ -54,6 +54,22 @@ export const filterExpansions: FilterFn<TableRow> = (row, id, value) => {
   return !selected?.length || (row.getValue(id) as string[]).some((e) => selected.includes(e))
 }
 
+/**
+ * Valeur scalaire parmi celles cochées. Aucune coche : aucun filtre — c'est ce
+ * qui permet à une facette inutilisée de ne pas vider la grille.
+ */
+export function filterIn<T>(row: TanstackRow<T>, id: string, value: unknown): boolean {
+  const selected = value as string[] | undefined
+  return !selected?.length || selected.includes(String(row.getValue(id) ?? ""))
+}
+
+/** Au moins une des valeurs de la ligne parmi celles cochées. */
+export function filterAny<T>(row: TanstackRow<T>, id: string, value: unknown): boolean {
+  const selected = value as string[] | undefined
+  if (!selected?.length) return true
+  return ((row.getValue(id) as string[] | undefined) ?? []).some((v) => selected.includes(v))
+}
+
 /** Case à cocher : inactive, elle ne filtre rien. */
 export const filterFlag: FilterFn<TableRow> = (row, id, value) =>
   !value || row.getValue(id) === true

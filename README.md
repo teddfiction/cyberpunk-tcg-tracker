@@ -115,7 +115,9 @@ src/
     app-sidebar.tsx     navigation, import, bascule de thème
     card-thumb.tsx      vignette et aperçu au survol
     columns.tsx         colonnes des cotes, une liste par mode
-    printing-columns.tsx colonnes de la base de cartes
+    grid-columns.ts     colonnes-facettes de la grille (ne rendent rien)
+    card-grid.tsx       grille de cartes, dépliable sur les impressions
+    facet-filter.tsx    filtre à facette générique
     netdeck-view.tsx    vue base de cartes
     data-table.tsx      rendu de la table depuis l'instance TanStack
     filters-bar.tsx     recherche, onglets, combobox, cases à cocher
@@ -139,7 +141,8 @@ src/
     dataset.ts          construction des lignes et regroupement par carte
     enrich.ts           jointure Netdeck ↔ Cardmarket
     modes.ts            registre des modes d'affichage
-    printings.ts        lignes de la base de cartes, une par impression
+    facets.ts           registre des facettes de la grille
+    printings.ts        impressions Netdeck et regroupement par carte
     table.ts            tri, filtres et recherche passés à TanStack
     format.ts           formatage et normalisation
     ingest.ts           lecture des trois formats JSON

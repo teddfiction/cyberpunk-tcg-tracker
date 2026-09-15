@@ -10,9 +10,10 @@
  * ne dit lequel est cette impression : on montre la fourchette, on ne choisit
  * pas. Même règle que la colonne Rareté de l'autre table.
  */
+import { rarityRank } from "@/data/rarities"
 import { matchExpansion } from "@/lib/enrich"
 import { minOf, norm, words } from "@/lib/format"
-import type { CodeMap, EnrichedCard, PrintRow, Row } from "@/types"
+import type { CodeMap, EnrichedCard, GridCard, PrintRow, Row } from "@/types"
 
 import type { FilterFn } from "@tanstack/react-table"
 
@@ -73,21 +74,67 @@ export function buildPrintings({ cards, rows, expansions, codes }: BuildArgs): P
   )
 }
 
-/** Clé de ligne : les uuid Netdeck sont uniques sur l'ensemble des impressions. */
-export const printingId = (p: PrintRow) => p.uuid
-
 /**
- * Recherche plein texte, mêmes règles que l'autre table : mots sans accents,
- * ponctuation ignorée, chaque mot devant commencer un mot de la ligne.
+ * Regroupe les impressions par carte, pour la grille.
+ *
+ * L'impression de référence est celle qui porte un numéro de collecteur —
+ * Netdeck n'en donne qu'à une par carte, c'est sa version « principale ». À
+ * défaut, la plus commune. C'est son visuel que porte la tuile.
  */
-export const searchPrinting: FilterFn<PrintRow> = (row, _columnId, needle) => {
+export function buildGrid(cards: EnrichedCard[] | null, printings: PrintRow[]): GridCard[] {
+  if (!cards?.length) return []
+
+  const byName = new Map<string, PrintRow[]>()
+  for (const p of printings) {
+    const group = byName.get(p.name)
+    if (group) group.push(p)
+    else byName.set(p.name, [p])
+  }
+
+  return cards
+    .map((card) => {
+      const ordered = [...(byName.get(card.name) ?? [])].sort(
+        (a, b) =>
+          Number(!!b.num) - Number(!!a.num) ||
+          rarityRank(a.rarity ?? "") - rarityRank(b.rarity ?? "")
+      )
+
+      const lows = ordered.map((p) => p.low ?? p.lowRange?.[0] ?? null)
+
+      return {
+        name: card.name,
+        subname: card.subname ?? null,
+        slug: card.slug,
+        type: card.type ?? null,
+        color: card.color ?? null,
+        tags: card.tags ?? [],
+        eddiable: !!card.eddiable,
+        cost: card.cost ?? null,
+        power: card.power ?? null,
+        ram: card.ram ?? null,
+        printings: ordered,
+        sets: [...new Set(ordered.map((p) => p.set))],
+        rarities: [...new Set(ordered.map((p) => p.rarity).filter((r): r is string => !!r))].sort(
+          (a, b) => rarityRank(a) - rarityRank(b)
+        ),
+        thumb: ordered.find((p) => p.thumb)?.thumb ?? null,
+        low: minOf(lows),
+      }
+    })
+    .sort((a, b) => a.name.localeCompare(b.name, "fr"))
+}
+
+/** Recherche de la grille : nom, sous-titre, tags, type, couleur, sets, raretés. */
+export const searchCard: FilterFn<GridCard> = (row, _columnId, needle) => {
   const terms = words(String(needle))
   if (!terms.length) return true
-  const p = row.original
+  const c = row.original
   const hay =
     " " +
     words(
-      `${p.name} ${p.set} ${p.num ?? ""} ${p.rarity ?? ""} ${p.type ?? ""} ${p.color ?? ""} ${p.artist ?? ""} ${p.code}`
+      [c.name, c.subname, c.type, c.color, ...c.tags, ...c.sets, ...c.rarities]
+        .filter(Boolean)
+        .join(" ")
     ).join(" ")
   return terms.every((term) => hay.includes(" " + term))
 }

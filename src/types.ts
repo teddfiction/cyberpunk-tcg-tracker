@@ -148,6 +148,32 @@ export type PrintRow = {
   variants: number
 }
 
+/**
+ * Une tuile de la grille : une carte, avec ses impressions et les facettes
+ * agrégées qui servent aux filtres.
+ */
+export type GridCard = {
+  name: string
+  subname: string | null
+  slug: string | null
+  type: string | null
+  color: string | null
+  tags: string[]
+  eddiable: boolean
+  cost: number | null
+  power: number | null
+  ram: number | null
+  /** Impressions de la carte, celle qui porte un numéro en tête. */
+  printings: PrintRow[]
+  sets: string[]
+  /** Raretés de ses impressions, de la plus commune à la plus rare. */
+  rarities: string[]
+  /** Visuel de référence : la première impression qui en a un. */
+  thumb: string | null
+  /** Cote la plus basse, toutes impressions confondues. */
+  low: number | null
+}
+
 /** Ce que la table manipule : une ligne produit, ou une ligne carte. */
 export type TableRow = Row | CardRow
 

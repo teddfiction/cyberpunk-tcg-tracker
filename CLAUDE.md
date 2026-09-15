@@ -72,6 +72,19 @@ C'est tout. Onglets, compteur, source de données et repli de tri se déduisent 
 registre. `Mode` est dérivé de `MODES` (`keyof typeof MODES`) : il n'y a pas
 d'union de chaînes à maintenir en parallèle.
 
+### Ajouter un filtre à la grille de cartes
+
+**Deux fichiers, et un test qui réclame le second.**
+
+1. `lib/facets.ts` → une entrée dans `FACETS` : identifiant de colonne, libellé,
+   valeurs qu'une carte apporte, ordre des options (`count`, `numeric`, `rarity`).
+2. `components/grid-columns.ts` → la colonne du même identifiant, avec son
+   `filterFn` : `filterIn` pour une valeur scalaire, `filterAny` pour une liste.
+
+Les effectifs affichés sont comptés sur **toutes** les cartes, jamais sur les
+seules visibles : sinon cocher une option ferait disparaître les autres et l'on
+ne pourrait plus élargir sa sélection.
+
 ### Ajouter une vue
 
 **Trois fichiers, et le compilateur indique les deux derniers.**
@@ -162,10 +175,17 @@ de la table**. Ne pas dupliquer l'un dans l'autre.
 L'app a **deux tables**, qui partagent toute la mécanique et ne diffèrent que par
 leurs lignes et leurs colonnes :
 
-| Vue | Ligne | Construite par | Colonnes |
-|---|---|---|---|
-| Data table | un produit Cardmarket, ou une carte regroupée | `lib/dataset.ts` | `components/columns.tsx` |
-| Base de cartes | une impression Netdeck | `lib/printings.ts` | `components/printing-columns.tsx` |
+| Vue | Ligne | Construite par | Colonnes | Rendu |
+|---|---|---|---|---|
+| Data table | un produit Cardmarket, ou une carte regroupée | `lib/dataset.ts` | `components/columns.tsx` | `DataTable` |
+| Base de cartes | une carte Netdeck, dépliable sur ses impressions | `lib/printings.ts` | `components/grid-columns.ts` | `CardGrid` |
+
+**La grille est une table sans table.** Ses colonnes ne rendent rien : elles
+portent les facettes, la recherche et l'export CSV, et `CardGrid` dessine les
+tuiles à partir de `table.getRowModel().rows`. C'est ce qui évite un second
+moteur de filtrage — ajouter une facette reste une ligne dans `lib/facets.ts`
+plus sa colonne dans `grid-columns.ts`, et un test vérifie que chaque facette a
+bien la sienne.
 
 La base de cartes montre ce que la table des cotes ne peut pas montrer : les
 cartes qu'aucun vendeur ne propose. Sa cote Cardmarket n'est rattachée que
