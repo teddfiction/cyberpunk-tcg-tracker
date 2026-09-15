@@ -118,7 +118,11 @@ const printingOf = (o) => ({
   uuid: o.printing_id ?? o.id ?? null,
   set: o.set?.name ?? null,
   setCode: o.set?.code ?? null,
-  number: o.print_number ?? o.number ?? null,
+  // Trois noms selon l'endpoint : la liste dit `print_number`, le detail dit
+  // `collector_number`. Sans ce dernier, seule l'impression de tete recevait un
+  // numero et les autres restaient vides — or elles en ont toutes un, distinct
+  // (« 005a », « 005b », « B005a »… le prefixe marquant les tirages Beta).
+  number: o.print_number ?? o.collector_number ?? o.number ?? null,
   rarity: o.rarity ?? null,
   artist: o.artist ?? null,
   image: o.image_url ?? null, // signee, a consommer tout de suite

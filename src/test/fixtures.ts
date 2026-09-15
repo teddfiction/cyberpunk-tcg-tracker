@@ -70,7 +70,7 @@ export const ENRICHED: EnrichedCard[] = [
     type: "Unit",
     printings: [
       printing("u1", "Alpha Kit", "alphakit", "001", "Nova Rare"),
-      printing("u2", "Welcome to Night City — Retail", "welcometonightcityretail", null, "Common"),
+      printing("u2", "Welcome to Night City — Retail", "welcometonightcityretail", "β001", "Common"),
     ],
   },
   {

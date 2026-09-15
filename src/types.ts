@@ -155,6 +155,12 @@ export type PrintRow = {
   lowRange: [number, number] | null
   /** Nombre de produits Cardmarket indistinguables pour cette carte ici. */
   variants: number
+  /**
+   * Rang de l'impression dans sa carte, tel que l'export Netdeck l'émet : 0 est
+   * l'impression par défaut de la carte, celle que sert l'endpoint liste. Le
+   * seul moyen de la retrouver après le tri à plat de `buildPrintings`.
+   */
+  rank: number
 }
 
 /**
