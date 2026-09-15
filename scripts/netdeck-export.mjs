@@ -10,7 +10,7 @@
  *
  * Node 18+. Aucune dépendance sauf sharp pour --images.
  *
- * Schéma de l'API (relevé le 14/09/2026) :
+ * Schéma de l'API (relevé le 15/09/2026) :
  *   { items: [ { id, external_id, name, subname, display_name, slug,
  *                printing_id, set: { code, name }, rarity, print_number,
  *                image_url (signée), source_image_url (non signée), artist,
@@ -20,11 +20,16 @@
  * Point important : dans la liste, `printings` est VIDE et chaque item ne porte
  * qu'une seule impression. Les autres impressions d'une même carte ne se
  * récupèrent que par la fiche détaillée — d'où la seconde passe.
+ *
+ * L'API n'est pas publique (netdeck.gg/for-developers : « Coming Soon ») et ses
+ * routes bougent : /api/cyberpunk renvoyait encore la liste la veille, il faut
+ * désormais /api/cards/cyberpunk. Si la liste part en 404, c'est la première
+ * chose à revérifier — embed.js sur netdeck.gg expose les routes courantes.
  */
 
 import { writeFile } from "node:fs/promises"
 
-const API = "https://api.netdeck.gg/api/cyberpunk"
+const API = "https://api.netdeck.gg/api/cards/cyberpunk"
 const ORIGIN = "https://cyberpunktcg.com"
 const PAGE = 60
 const DELAY = 250
@@ -67,12 +72,16 @@ async function fetchList() {
 
 /* ------------------------------------------- detail : toutes les impressions */
 
-/** On ne connait pas la route exacte : on essaie, on retient celle qui marche. */
+/**
+ * On ne connait pas la route exacte : on essaie, on retient celle qui marche.
+ * Relevé du 15/09/2026 : `${API}/${id}` repond 404. Les formes restent listees,
+ * l'API bougeant, et le script dit en fin de passe laquelle a repondu.
+ */
 const DETAIL_SHAPES = [
-  (c) => `${API}/${c.id}`,
-  (c) => `${API}/cards/${c.id}`,
-  (c) => `${API}?slug=${encodeURIComponent(c.slug)}`,
   (c) => `${API}/${encodeURIComponent(c.slug)}`,
+  (c) => `${API}?slug=${encodeURIComponent(c.slug)}`,
+  (c) => `${API}/${c.id}`,
+  (c) => `${API}/printings?card_id=${c.id}`,
 ]
 let detailShape = null
 
@@ -146,6 +155,17 @@ log(`${list.length} entrees. Champs : ${Object.keys(list[0] || {}).join(", ")}\n
 if (RAW_ONLY) {
   await writeFile("netdeck-raw.json", JSON.stringify(list, null, 2))
   log("→ netdeck-raw.json\n")
+  const tally = (get) => {
+    const m = new Map()
+    for (const it of list) { const k = get(it) ?? "—"; m.set(k, (m.get(k) ?? 0) + 1) }
+    return [...m.entries()].sort((a, b) => b[1] - a[1]).map(([k, n]) => `${k} (${n})`).join(", ")
+  }
+  log(`   raretes : ${tally((i) => i.rarity)}\n`)
+  log(`   sets    : ${tally((i) => i.set?.code)}\n`)
+  const bySlug = new Map()
+  for (const it of list) bySlug.set(it.slug, (bySlug.get(it.slug) ?? 0) + 1)
+  const multi = [...bySlug.entries()].filter(([, n]) => n > 1)
+  log(`   ${bySlug.size} slugs distincts, dont ${multi.length} presents plusieurs fois dans la liste\n`)
   process.exit(0)
 }
 
@@ -181,7 +201,8 @@ if (!FLAT) {
     await sleep(DELAY)
   }
   log("\n")
-  if (!detailShape) log("Aucune route detail n'a repondu : une seule impression par carte.\n")
+  if (detailShape) log(`Route detail retenue : ${detailShape({ id: "<id>", slug: "<slug>" })}\n`)
+  else log("Aucune route detail n'a repondu : une seule impression par carte.\n")
 }
 
 if (WANT_IMAGES) {
