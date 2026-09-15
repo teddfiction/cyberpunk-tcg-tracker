@@ -10,3 +10,4 @@ data/cardmarket/
 cards_enriched.json
 netdeck-raw.json
 tsconfig.tsbuildinfo
+.claude/settings.local.json
