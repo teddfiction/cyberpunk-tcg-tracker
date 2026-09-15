@@ -57,9 +57,11 @@ sans cote. Relancer `npm run dev` pour voir le nouveau jeu, puis committer
 Pour un simple coup d'œil sans toucher à l'amorce, `price_guide_23.json` seul
 suffit : bouton « Importer un JSON » dans l'app. L'import ne vit qu'en mémoire.
 
-**Bouton « Actualiser les prix »** (en-tête de la page, à droite) : télécharge
-le price guide du jour et l'applique sans passer par un fichier. Le résultat est
-conservé dans le navigateur comme n'importe quel import — il ne touche pas à
+**Bouton « Actualiser les données »** (en-tête de la page, à droite) : télécharge
+les **trois** exports du jour et les applique sans passer par un fichier — les
+catalogues d'abord, le price guide ensuite. Tout ou rien : un import partiel
+laisserait catalogue et cotes à des dates différentes. Le résultat est conservé
+dans le navigateur comme n'importe quel import — il ne touche pas à
 `src/data/dataset.json`, qui reste l'amorce du dépôt. Pour figer les cotes dans
 le dépôt, c'est toujours `npm run data:refresh` puis un commit.
 

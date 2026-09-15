@@ -153,13 +153,13 @@ export default function App() {
             className="ml-auto shrink-0"
             // Le libellé passe en `display:none` sous `sm` et quitte alors
             // l'arbre d'accessibilité : sans ça le bouton n'a plus de nom.
-            aria-label="Actualiser les prix"
-            onClick={() => void data.refreshPrices()}
+            aria-label="Actualiser les données"
+            onClick={() => void data.refreshData()}
             disabled={data.fetching}
           >
             <RefreshCw className={data.fetching ? "animate-spin" : undefined} />
             <span className="hidden sm:inline">
-              {data.fetching ? "Téléchargement…" : "Actualiser les prix"}
+              {data.fetching ? "Téléchargement…" : "Actualiser les données"}
             </span>
           </Button>
         </header>
