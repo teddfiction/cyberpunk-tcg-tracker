@@ -116,6 +116,8 @@ export default function App() {
               expansions={data.expansions}
               counts={data.expCounts}
               onMessage={(message) => data.setNotice({ tone: "ok", message })}
+              storedAt={data.storedAt}
+              onForget={() => void data.forget()}
             />
           ) : (
             <>

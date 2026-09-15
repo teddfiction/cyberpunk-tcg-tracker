@@ -1,5 +1,9 @@
-/** Vue Paramètres : saisie des codes d'impression et export du mapping. */
-import { Copy } from "lucide-react"
+/**
+ * Vue Paramètres : saisie des codes d'impression, et gestion de ce que le
+ * navigateur conserve d'une session à l'autre.
+ */
+import * as React from "react"
+import { Copy, Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -11,6 +15,7 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
+import { dateFr } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import type { CodeMap } from "@/types"
 
@@ -20,15 +25,26 @@ type Props = {
   expansions: Record<string, string>
   counts: Record<string, number>
   onMessage: (message: string) => void
+  /** Date du dernier import conservé, `null` si le navigateur n'en garde aucun. */
+  storedAt: string | null
+  onForget: () => void
 }
 
 /**
  * Les codes d'impression n'existent dans aucun export Cardmarket : ils sont
  * saisis à la main. Toute saisie vaut confirmation et fait passer le badge en
- * plein. Les modifications ne sont pas persistées — reporter le mapping dans
- * `src/data/expansions.ts` pour le figer.
+ * plein. La saisie est conservée dans ce navigateur, mais reporter le mapping
+ * dans `src/data/expansions.ts` reste ce qui le rend permanent et partagé.
  */
-export function SettingsView({ codes, setCodes, expansions, counts, onMessage }: Props) {
+export function SettingsView({
+  codes,
+  setCodes,
+  expansions,
+  counts,
+  onMessage,
+  storedAt,
+  onForget,
+}: Props) {
   const list = Object.keys(counts).sort((a, b) => counts[b] - counts[a])
   const confirmed = list.filter((e) => codes[e]?.sure).length
 
@@ -45,7 +61,8 @@ export function SettingsView({ codes, setCodes, expansions, counts, onMessage }:
   }
 
   return (
-    <Card>
+    <div className="flex flex-col gap-4">
+      <Card>
       <CardHeader>
         <CardTitle>Codes d'impression</CardTitle>
         <CardDescription>
@@ -96,6 +113,48 @@ export function SettingsView({ codes, setCodes, expansions, counts, onMessage }:
             Reporte le résultat dans <code>src/data/expansions.ts</code> pour le rendre permanent.
           </p>
         </div>
+      </CardContent>
+      </Card>
+
+      <StoredDataCard storedAt={storedAt} onForget={onForget} />
+    </div>
+  )
+}
+
+/**
+ * Ce que le navigateur retient. Oublier est destructif mais réparable par un
+ * nouvel import : une confirmation en deux temps suffit, sans boîte de dialogue.
+ */
+function StoredDataCard({ storedAt, onForget }: { storedAt: string | null; onForget: () => void }) {
+  const [confirming, setConfirming] = React.useState(false)
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Données conservées</CardTitle>
+        <CardDescription>
+          {storedAt
+            ? `Le catalogue, les cotes, l'enrichissement Netdeck et les codes saisis sont conservés dans ce navigateur depuis le ${dateFr(storedAt)}. Recharger la page les retrouve.`
+            : "Aucun import n'est conservé : l'app tourne sur le jeu de données embarqué."}{" "}
+          Ce stockage est local à ce navigateur — il ne suit ni le dépôt, ni une autre machine.
+        </CardDescription>
+      </CardHeader>
+
+      <CardContent>
+        <Button
+          variant={confirming ? "destructive" : "outline"}
+          size="sm"
+          disabled={!storedAt}
+          onClick={() => {
+            if (!confirming) return setConfirming(true)
+            setConfirming(false)
+            onForget()
+          }}
+          onBlur={() => setConfirming(false)}
+        >
+          <Trash2 />
+          {confirming ? "Confirmer l'oubli" : "Oublier les données conservées"}
+        </Button>
       </CardContent>
     </Card>
   )

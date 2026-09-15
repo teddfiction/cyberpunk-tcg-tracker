@@ -1,6 +1,11 @@
 /**
  * Source de vérité des données : jeu embarqué, imports à chaud, enrichissement
  * Netdeck, et les lignes de table qui en découlent.
+ *
+ * Les imports sont conservés dans IndexedDB, donc survivent au rechargement.
+ * L'écriture n'a lieu **qu'après un import réussi**, jamais sur un simple
+ * changement d'état : au premier rendu l'app est encore sur le jeu embarqué, et
+ * une sauvegarde automatique écraserait ce qu'on est en train de relire.
  */
 import * as React from "react"
 
@@ -9,18 +14,26 @@ import { DEFAULT_CODES, EXPANSIONS } from "@/data/expansions"
 import { buildCards, buildRows, countByExpansion } from "@/lib/dataset"
 import { buildEnrichIndex } from "@/lib/enrich"
 import { describe, mergeCatalog, parse, readJsonFile, IngestError } from "@/lib/ingest"
+import { idbDelete, idbGet, idbSet } from "@/lib/store"
 import type { CodeMap, Dataset, EnrichedCard, Price, Product } from "@/types"
 
 const seed = dataset as unknown as Dataset
 
+const KEY_DATA = "dataset"
+const KEY_CODES = "codes"
+
+/** Ce qui est conservé entre deux sessions. */
+type Stored = {
+  catalog: Product[]
+  prices: Record<string, Price>
+  pricesAt: string
+  catalogAt: string
+  enriched: EnrichedCard[] | null
+  savedAt: string
+}
+
 export type Notice = { tone: "ok" | "error"; message: string }
 
-/**
- * Source de vérité de l'application. Le jeu de données embarqué sert d'amorce ;
- * tout import le remplace en mémoire, sans persistance — relancer la page
- * revient au jeu embarqué. Régénérer `src/data/dataset.json` via
- * `npm run data:cardmarket` pour changer l'amorce.
- */
 export function useDataset() {
   const [catalog, setCatalog] = React.useState<Product[]>(seed.catalog)
   const [prices, setPrices] = React.useState<Record<string, Price>>(seed.prices)
@@ -29,6 +42,41 @@ export function useDataset() {
   const [codes, setCodes] = React.useState<CodeMap>(DEFAULT_CODES)
   const [enriched, setEnriched] = React.useState<EnrichedCard[] | null>(null)
   const [notice, setNotice] = React.useState<Notice | null>(null)
+  /** Date du dernier import conservé, `null` si rien n'est stocké. */
+  const [storedAt, setStoredAt] = React.useState<string | null>(null)
+
+  const hydrated = React.useRef(false)
+
+  React.useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      const [stored, storedCodes] = await Promise.all([
+        idbGet<Stored>(KEY_DATA),
+        idbGet<CodeMap>(KEY_CODES),
+      ])
+      if (!cancelled) {
+        if (stored) {
+          setCatalog(stored.catalog)
+          setPrices(stored.prices)
+          setPricesAt(stored.pricesAt)
+          setCatalogAt(stored.catalogAt)
+          setEnriched(stored.enriched)
+          setStoredAt(stored.savedAt)
+        }
+        if (storedCodes) setCodes(storedCodes)
+      }
+      hydrated.current = true
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  // Les codes se modifient à la frappe : on les suit, mais jamais avant relecture.
+  React.useEffect(() => {
+    if (!hydrated.current) return
+    void idbSet(KEY_CODES, codes)
+  }, [codes])
 
   const enrichIndex = React.useMemo(() => buildEnrichIndex(enriched, EXPANSIONS), [enriched])
 
@@ -43,31 +91,71 @@ export function useDataset() {
     async (files: FileList | File[] | null) => {
       const list = files ? Array.from(files) : []
       if (!list.length) return
+
       const messages: string[] = []
       let failed = false
+      let changed = false
+
+      // On accumule localement : les setters de React ne seraient pas lus à
+      // temps pour construire ce qu'on doit écrire dans IndexedDB.
+      let next: Omit<Stored, "savedAt"> = { catalog, prices, pricesAt, catalogAt, enriched }
 
       for (const file of list) {
         try {
           const parsed = parse(await readJsonFile(file), file.name)
-          messages.push(describe(parsed, file.name, catalog))
+          messages.push(describe(parsed, file.name, next.catalog))
           if (parsed.kind === "prices") {
-            setPrices(parsed.prices)
-            setPricesAt(parsed.pricesAt)
+            next = { ...next, prices: parsed.prices, pricesAt: parsed.pricesAt }
           } else if (parsed.kind === "catalog") {
-            setCatalog((c) => mergeCatalog(c, parsed.products))
-            setCatalogAt(parsed.catalogAt)
+            next = {
+              ...next,
+              catalog: mergeCatalog(next.catalog, parsed.products),
+              catalogAt: parsed.catalogAt,
+            }
           } else {
-            setEnriched(parsed.cards)
+            next = { ...next, enriched: parsed.cards }
           }
+          changed = true
         } catch (e) {
           failed = true
           messages.push(e instanceof IngestError ? e.message : `${file.name} : import impossible.`)
         }
       }
+
+      if (changed) {
+        setCatalog(next.catalog)
+        setPrices(next.prices)
+        setPricesAt(next.pricesAt)
+        setCatalogAt(next.catalogAt)
+        setEnriched(next.enriched)
+
+        const savedAt = new Date().toISOString()
+        const kept = await idbSet(KEY_DATA, { ...next, savedAt } satisfies Stored)
+        setStoredAt(kept ? savedAt : null)
+        if (!kept) {
+          messages.push(
+            "Ce navigateur refuse le stockage local : recharger la page reviendra au jeu embarqué."
+          )
+        }
+      }
+
       setNotice({ tone: failed ? "error" : "ok", message: messages.join(" ") })
     },
-    [catalog]
+    [catalog, prices, pricesAt, catalogAt, enriched]
   )
+
+  /** Efface ce qui est conservé et repart du jeu embarqué. */
+  const forget = React.useCallback(async () => {
+    await Promise.all([idbDelete(KEY_DATA), idbDelete(KEY_CODES)])
+    setCatalog(seed.catalog)
+    setPrices(seed.prices)
+    setPricesAt(seed.pricesAt)
+    setCatalogAt(seed.catalogAt)
+    setEnriched(null)
+    setCodes(DEFAULT_CODES)
+    setStoredAt(null)
+    setNotice({ tone: "ok", message: "Données importées oubliées. Retour au jeu embarqué." })
+  }, [])
 
   return {
     catalog,
@@ -80,9 +168,11 @@ export function useDataset() {
     enriched: enrichIndex.on,
     pricesAt,
     catalogAt,
+    storedAt,
     notice,
     setNotice,
     importFiles,
+    forget,
   }
 }
 
