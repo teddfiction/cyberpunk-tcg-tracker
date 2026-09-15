@@ -34,12 +34,12 @@ export const PRICES: Record<string, Price> = {
   "14": { avg: 20, low: 15, trend: 18, avgF: null, lowF: null, foil: 0 },
 }
 
-const printing = (uuid: string, set: string, setCode: string, number: string) => ({
+const printing = (uuid: string, set: string, setCode: string, number: string, rarity: string) => ({
   uuid,
   set,
   setCode,
   number,
-  rarity: "Rare",
+  rarity,
   artist: null,
 })
 
@@ -49,13 +49,41 @@ export const ENRICHED: EnrichedCard[] = [
     name: "Zébu - Calme",
     slug: "zebu-calme",
     printings: [
-      printing("u1", "Alpha Kit", "alphakit", "001"),
-      printing("u2", "Welcome to Night City — Retail", "welcometonightcityretail", "101"),
+      printing("u1", "Alpha Kit", "alphakit", "001", "Nova Rare"),
+      printing("u2", "Welcome to Night City — Retail", "welcometonightcityretail", "101", "Common"),
     ],
   },
   {
     name: "Éclair - Vif",
     slug: "eclair-vif",
-    printings: [printing("u3", "Beta Kit", "betakit", "007")],
+    printings: [printing("u3", "Beta Kit", "betakit", "007", "Epic")],
+  },
+]
+
+/**
+ * Le cas tordu de l'enrichissement : « Double - Face » existe en deux
+ * exemplaires Cardmarket dans la même extension, et Netdeck y connaît deux
+ * impressions de raretés différentes. Rien ne dit laquelle est laquelle.
+ * Fixture séparée pour ne pas déformer les comptes des autres tests.
+ */
+export const AMBIGUOUS_CATALOG: Product[] = [
+  { id: 20, name: "Double - Face", exp: 1, cat: "Single", mc: 200 },
+  { id: 21, name: "Double - Face", exp: 1, cat: "Single", mc: 200 },
+  { id: 22, name: "Unique - Sûre", exp: 1, cat: "Single", mc: 201 },
+]
+
+export const AMBIGUOUS_ENRICHED: EnrichedCard[] = [
+  {
+    name: "Double - Face",
+    slug: "double-face",
+    printings: [
+      printing("d1", "Alpha Kit", "alphakit", "010", "Rare"),
+      printing("d2", "Alpha Kit", "alphakit", "210", "Nova Rare"),
+    ],
+  },
+  {
+    name: "Unique - Sûre",
+    slug: "unique-sure",
+    printings: [printing("u9", "Alpha Kit", "alphakit", "011", "Epic")],
   },
 ]

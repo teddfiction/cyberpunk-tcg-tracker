@@ -8,8 +8,12 @@ import type { EnrichedCard, Printing } from "@/types"
 export type EnrichEntry = Printing & { name: string; slug: string | null }
 
 export type EnrichIndex = {
-  /** Clé `nomNormalisé|idExpansion` — appariement exact. */
-  byNameExp: Map<string, EnrichEntry>
+  /**
+   * Clé `nomNormalisé|idExpansion` → **toutes** les impressions connues.
+   * Une carte peut exister plusieurs fois dans une même extension (variantes de
+   * rareté) : n'en garder qu'une attribuerait sa rareté à toutes les autres.
+   */
+  byNameExp: Map<string, EnrichEntry[]>
   /** Toutes les impressions d'un nom, pour le repli. */
   byName: Map<string, EnrichEntry[]>
   on: boolean
@@ -54,28 +58,39 @@ export function buildEnrichIndex(
   if (!cards?.length) return index
   index.on = true
 
+  const push = (map: Map<string, EnrichEntry[]>, key: string, entry: EnrichEntry) => {
+    const list = map.get(key)
+    if (list) list.push(entry)
+    else map.set(key, [entry])
+  }
+
   for (const card of cards) {
     const key = norm(card.name)
     for (const printing of card.printings) {
       const entry: EnrichEntry = { ...printing, name: card.name, slug: card.slug }
       const exp = matchExpansion(printing.set, printing.setCode, expansions)
-      if (exp) index.byNameExp.set(`${key}|${exp}`, entry)
-      index.byName.set(key, [...(index.byName.get(key) ?? []), entry])
+      if (exp) push(index.byNameExp, `${key}|${exp}`, entry)
+      push(index.byName, key, entry)
     }
   }
   return index
 }
 
 /**
- * Retrouve l'impression correspondant à un produit Cardmarket.
- * Appariement strict nom + extension, repli sur le nom seul quand la carte
+ * Impressions connues pour un produit Cardmarket.
+ *
+ * Appariement strict nom + extension, avec repli sur le nom seul quand la carte
  * n'a qu'une impression connue — sans ce garde-fou, on attribuerait le mauvais
  * numéro de collecteur aux cartes réimprimées.
+ *
+ * Rend une liste, pas une impression : c'est à l'appelant de décider quoi faire
+ * quand il y en a plusieurs. Ici, rien ne permet de dire laquelle correspond à
+ * quel `idProduct`.
  */
-export function lookup(index: EnrichIndex, name: string, exp: number): EnrichEntry | null {
+export function printingsFor(index: EnrichIndex, name: string, exp: number): EnrichEntry[] {
   const key = norm(name)
   const exact = index.byNameExp.get(`${key}|${exp}`)
-  if (exact) return exact
-  const hits = index.byName.get(key)
-  return hits?.length === 1 ? hits[0] : null
+  if (exact?.length) return exact
+  const all = index.byName.get(key)
+  return all?.length === 1 ? all : []
 }

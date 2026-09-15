@@ -2,8 +2,8 @@
  * Construction des lignes de table à partir du catalogue et des cotes :
  * une ligne par produit, puis un regroupement par carte via idMetacard.
  */
-import { minOf } from "@/lib/format"
-import { lookup, type EnrichIndex } from "@/lib/enrich"
+import { minOf, norm } from "@/lib/format"
+import { printingsFor, type EnrichIndex } from "@/lib/enrich"
 import type { CardRow, CodeMap, Price, Product, Row } from "@/types"
 
 type BuildArgs = {
@@ -20,13 +20,27 @@ const codeOf = (codes: CodeMap, exp: number | string) => codes[String(exp)]?.cod
  *  TanStack retombe sur l'index d'origine, donc sur ce tri-ci. */
 const byName = <T extends { name: string }>(a: T, b: T) => a.name.localeCompare(b.name, "fr")
 
+const variantKey = (name: string, exp: number) => `${norm(name)}|${exp}`
+
 /** Produit + cotes + dérivés + enrichissement, une ligne par produit Cardmarket. */
 export function buildRows({ catalog, prices, expansions, codes, enrich }: BuildArgs): Row[] {
+  // Combien de produits Cardmarket partagent ce nom dans cette extension ?
+  // Au-delà d'un seul, ce sont des variantes que rien ne distingue : ni nom, ni
+  // numéro, ni rareté côté Cardmarket. Voir CLAUDE.md § « Limites des données ».
+  const variants = new Map<string, number>()
+  for (const p of catalog) {
+    const k = variantKey(p.name, p.exp)
+    variants.set(k, (variants.get(k) ?? 0) + 1)
+  }
+
   return catalog
     .map((p) => {
       const pr = prices[String(p.id)] ?? ({} as Partial<Price>)
       const expName = expansions[String(p.exp)] ?? `Extension ${p.exp}`
-      const e = enrich.on ? lookup(enrich, p.name, p.exp) : null
+      const printings = enrich.on ? printingsFor(enrich, p.name, p.exp) : []
+      // Certain uniquement quand un produit fait face à une seule impression.
+      const sure = printings.length === 1 && variants.get(variantKey(p.name, p.exp)) === 1
+      const e = sure ? printings[0] : null
 
       const d =
         pr.trend != null && pr.low != null && pr.low > 0
@@ -46,8 +60,13 @@ export function buildRows({ catalog, prices, expansions, codes, enrich }: BuildA
         df,
         num: e?.number ?? null,
         rarity: e?.rarity ?? null,
-        thumb: e?.thumb ?? null,
-        slug: e?.slug ?? null,
+        rarities: sure
+          ? []
+          : [...new Set(printings.map((x) => x.rarity).filter((x): x is string => !!x))],
+        // slug identifie la carte et non l'impression : toujours sûr. La
+        // miniature varie peu d'une variante à l'autre, on prend la première.
+        thumb: printings.find((x) => x.thumb)?.thumb ?? null,
+        slug: printings[0]?.slug ?? null,
         uuid: e?.uuid ?? null,
         hasPrice: [pr.avg, pr.low, pr.trend, pr.avgF, pr.lowF].some((v) => v != null),
         hasPriceF: pr.avgF != null || pr.lowF != null,

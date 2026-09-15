@@ -14,18 +14,18 @@ import { buildCards, buildRows } from "@/lib/dataset"
 import { emptyIndex } from "@/lib/enrich"
 import { MODES, type Mode } from "@/lib/modes"
 import { HIDDEN_COLUMNS, rowId, searchRow } from "@/lib/table"
-import { CATALOG, CODES, EXPANSIONS, PRICES } from "@/test/fixtures"
+import { buildEnrichIndex } from "@/lib/enrich"
+import { CATALOG, CODES, ENRICHED, EXPANSIONS, PRICES } from "@/test/fixtures"
 import type { TableRow } from "@/types"
 
-export const rows = buildRows({
-  catalog: CATALOG,
-  prices: PRICES,
-  expansions: EXPANSIONS,
-  codes: CODES,
-  enrich: emptyIndex(),
-})
+const build = (enrich = emptyIndex()) =>
+  buildRows({ catalog: CATALOG, prices: PRICES, expansions: EXPANSIONS, codes: CODES, enrich })
 
+export const rows = build()
 export const cards = buildCards(rows, EXPANSIONS, CODES)
+
+/** Mêmes produits, mais avec numéros et raretés Netdeck. */
+export const enrichedRows = build(buildEnrichIndex(ENRICHED, EXPANSIONS))
 
 type State = {
   sorting?: SortingState
@@ -33,12 +33,13 @@ type State = {
   globalFilter?: string
 }
 
-export function makeTable(mode: Mode, state: State = {}): Table<TableRow> {
-  const data: TableRow[] = MODES[mode].source === "cards" ? cards : rows
+export function makeTable(mode: Mode, state: State = {}, enriched = false): Table<TableRow> {
+  const data: TableRow[] =
+    MODES[mode].source === "cards" ? cards : enriched ? enrichedRows : rows
 
   const table = createTable<TableRow>({
     data,
-    columns: columnsFor(mode, false),
+    columns: columnsFor(mode, enriched),
     state: {},
     onStateChange: () => {},
     renderFallbackValue: null,

@@ -79,14 +79,20 @@ entrées de menu à la main — correct pour deux vues. **À la troisième**, fa
 pour les modes : un `VIEWS` dans `lib/`, un `Record<View, …>` côté rendu. Ne pas
 empiler les ternaires.
 
+### Ajouter une donnée venue de Netdeck
+
+`types.ts` → `Printing` et `Row`, `lib/dataset.ts` → `buildRows`, puis une
+colonne. **Se demander d'abord si la donnée est au niveau carte ou impression** :
+`slug` identifie la carte et se propage sans risque ; `rarity`, `number` et
+`uuid` identifient une impression et ne peuvent être attribués que lorsque
+l'appariement est certain (voir « Limites des données »).
+
 ### Changer ou ajouter une source de données
 
 - **Un nouveau format d'import** : `lib/ingest.ts`, fonction `parse()` — la
   reconnaissance se fait sur la clé racine du JSON. Ajouter la variante au type
   `Parsed`, et `describe()` devra la traiter (le `switch` est exhaustif, le
   compilateur le signale). Puis brancher dans `hooks/use-dataset.ts`.
-- **Un nouveau champ enrichi** (venant de Netdeck) : `types.ts` → `Printing` et
-  `Row`, `lib/dataset.ts` → `buildRows`, puis une colonne.
 - **Une nouvelle extension Cardmarket** : `data/expansions.ts`, `EXPANSIONS` et
   `DEFAULT_CODES`.
 
@@ -165,6 +171,10 @@ Tous couverts par des tests : si l'un saute, `npm run test` le dit.
 - **Jointure Netdeck** (`lib/enrich.ts`) : repli sur le nom seul **uniquement si
   la carte n'a qu'une impression connue**. Ce garde-fou évite d'attribuer le
   mauvais numéro de collecteur aux réimpressions. Ne pas l'assouplir.
+- **Rareté** (`data/rarities.ts`). La colonne trie par **rang**, pas par ordre
+  alphabétique — sinon « Epic » passerait avant « Common ». L'ordre de la liste
+  `RARITIES` est le rang ; les libellés Netdeck sont normalisés via `norm()`, et
+  une rareté inconnue est affichée telle quelle et rangée après les connues.
 - **`norm()` et `words()`** (`lib/format.ts`) se ressemblent mais ne servent pas
   à la même chose. `norm()` colle tout (« V - Streetkid » → `vstreetkid`) : c'est
   la clé de jointure entre sources, elle reproduit exactement le `set.code` de
@@ -243,9 +253,19 @@ Ces contraintes viennent des sources, pas du code. Ne pas « réparer » :
 - **`low` n'est pas un prix de vente** mais la plus petite annonce. Sur un marché à
   trois annonces, c'est du bruit ; `trend` est plus honnête. La somme des `low`
   n'est pas une valorisation — le libellé de `StatsStrip` doit rester prudent.
-- Cardmarket ne publie **ni numéro de collecteur ni rareté** : ils viennent de
-  l'enrichissement Netdeck, et la colonne « N° » n'apparaît qu'une fois
-  `cards_enriched.json` importé.
+- Cardmarket ne publie **ni numéro de collecteur ni rareté**. L'export brut ne
+  contient que `idProduct, name, idCategory, categoryName, idExpansion,
+  idMetacard, dateAdded` — rien d'autre à en tirer. Les colonnes « N° » et
+  « Rareté » n'apparaissent qu'une fois `cards_enriched.json` importé.
+- **Une impression n'a pas de dénomination côté Cardmarket.** 37 cartes (76
+  produits, 26 % des singles) existent en plusieurs exemplaires dans une même
+  extension, sous un nom strictement identique : seuls l'`idProduct` et
+  l'horodatage d'ajout les séparent. Ce sont les variantes de rareté.
+  `buildRows` n'attribue donc une rareté et un numéro **que lorsqu'un produit
+  fait face à une seule impression Netdeck** ; sinon il expose les raretés
+  candidates, affichées en pointillés. **Ne pas remplacer ça par une heuristique**
+  (apparier par le prix, par l'ordre des `idProduct`) sans décision explicite :
+  ce serait afficher une valeur inventée avec l'assurance d'une valeur mesurée.
 - Les **codes d'impression** (MS01B, SD02B…) n'existent dans aucune source. Seuls
   MS01B et SD02B sont confirmés (`sure: true`), le reste est déduit et affiché en
   pointillés.

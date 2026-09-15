@@ -71,7 +71,13 @@ export type Row = Product &
     /** Écart moyenne foil / mini foil, en %. */
     df: number | null
     num: string | null
+    /** Rareté de l'impression, seulement quand l'appariement est certain. */
     rarity: string | null
+    /**
+     * Raretés possibles quand plusieurs impressions coexistent dans l'extension
+     * et que rien ne dit laquelle est ce produit. Vide si `rarity` est connue.
+     */
+    rarities: string[]
     thumb: string | null
     slug: string | null
     uuid: string | null

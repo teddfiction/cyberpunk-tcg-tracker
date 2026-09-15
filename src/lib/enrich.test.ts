@@ -4,8 +4,8 @@
  */
 import { describe, expect, it } from "vitest"
 
-import { buildEnrichIndex, lookup, matchExpansion } from "@/lib/enrich"
-import { ENRICHED, EXPANSIONS } from "@/test/fixtures"
+import { buildEnrichIndex, matchExpansion, printingsFor } from "@/lib/enrich"
+import { AMBIGUOUS_ENRICHED, ENRICHED, EXPANSIONS } from "@/test/fixtures"
 
 const index = buildEnrichIndex(ENRICHED, EXPANSIONS)
 
@@ -28,18 +28,28 @@ describe("matchExpansion", () => {
   })
 })
 
-describe("lookup", () => {
+describe("printingsFor", () => {
+  const uuids = (name: string, exp: number) => printingsFor(index, name, exp).map((p) => p.uuid)
+
   it("apparie nom + extension", () => {
-    expect(lookup(index, "Zébu - Calme", 1)?.uuid).toBe("u1")
-    expect(lookup(index, "Zébu - Calme", 3)?.uuid).toBe("u2")
+    expect(uuids("Zébu - Calme", 1)).toEqual(["u1"])
+    expect(uuids("Zébu - Calme", 3)).toEqual(["u2"])
   })
 
   it("replie sur le nom seul quand la carte n'a qu'une impression", () => {
-    expect(lookup(index, "Éclair - Vif", 999)?.uuid).toBe("u3")
+    expect(uuids("Éclair - Vif", 999)).toEqual(["u3"])
   })
 
   it("refuse de replier quand la carte a plusieurs impressions", () => {
-    expect(lookup(index, "Zébu - Calme", 999)).toBeNull()
+    expect(uuids("Zébu - Calme", 999)).toEqual([])
+  })
+
+  it("conserve toutes les impressions d'une même extension", () => {
+    const ambigu = buildEnrichIndex(AMBIGUOUS_ENRICHED, EXPANSIONS)
+    expect(printingsFor(ambigu, "Double - Face", 1).map((p) => p.rarity)).toEqual([
+      "Rare",
+      "Nova Rare",
+    ])
   })
 
   it("index vide : aucune correspondance", () => {

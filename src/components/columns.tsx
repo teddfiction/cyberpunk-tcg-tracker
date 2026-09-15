@@ -8,6 +8,7 @@ import { ExternalLink } from "lucide-react"
 
 import { CodeBadge } from "@/components/code-badge"
 import { CARDMARKET_SEARCH, cyberpunkTcgUrl } from "@/data/expansions"
+import { rarityLabel, rarityRank } from "@/data/rarities"
 import { eur, pct } from "@/lib/format"
 import { MODES, type Mode } from "@/lib/modes"
 import { expansionsOf, filterExpansions, filterFlag, sortText } from "@/lib/table"
@@ -82,7 +83,6 @@ const nameColumn = (header: string): ColumnDef<TableRow> => ({
           </a>
           <span className="text-muted-foreground block truncate text-xs">
             {card ? r.expName : r.cat}
-            {r.rarity ? ` · ${r.rarity}` : ""}
             {r.foil && !card ? " · foil listé" : ""}
           </span>
         </div>
@@ -130,6 +130,45 @@ const numColumn: ColumnDef<TableRow> = {
       </a>
     ) : (
       `#${r.num}`
+    )
+  },
+}
+
+/**
+ * Rareté de l'impression. Affichée en clair quand l'appariement Netdeck est
+ * certain ; en pointillés, listant les candidates, quand plusieurs impressions
+ * de la carte coexistent dans l'extension — Cardmarket ne distingue alors ses
+ * variantes que par `idProduct`, et rien ne dit laquelle est laquelle.
+ */
+const rarityColumn: ColumnDef<TableRow> = {
+  id: "rarity",
+  // Le rang, pas le libellé : « Common » ne doit pas se ranger avant « Epic »
+  // par ordre alphabétique. Une ligne ambiguë prend le rang de sa candidate la
+  // plus commune, pour rester à sa place plutôt que d'être reléguée en bas.
+  accessorFn: (r) => {
+    const row = r as AnyRow
+    if (row.rarity) return rarityRank(row.rarity)
+    const ranks = (row.rarities ?? []).map(rarityRank)
+    return ranks.length ? Math.min(...ranks) : undefined
+  },
+  header: "Rareté",
+  sortUndefined: "last",
+  meta: {
+    className: "text-xs whitespace-nowrap",
+    csv: (r) => r.rarity ?? (r.rarities ?? []).map(rarityLabel).join(" / "),
+  },
+  cell: ({ row }) => {
+    const r = row.original as AnyRow
+    if (r.rarity) return rarityLabel(r.rarity)
+    const candidates = r.rarities ?? []
+    if (!candidates.length) return dash
+    return (
+      <span
+        className="text-muted-foreground underline decoration-dotted underline-offset-2"
+        title="Plusieurs impressions de cette carte dans cette extension : Cardmarket ne les distingue que par leur ID, la rareté exacte de ce produit n'est pas déterminable."
+      >
+        {candidates.map(rarityLabel).join(" · ")}
+      </span>
     )
   },
 }
@@ -206,7 +245,7 @@ const VISIBLE: Record<Mode, (enriched: boolean) => ColumnDef<TableRow>[]> = {
   normal: (enriched) => [
     nameColumn("Produit"),
     codeColumn,
-    ...(enriched ? [numColumn] : []),
+    ...(enriched ? [numColumn, rarityColumn] : []),
     expansionColumn,
     money("avg", "Moyenne", (r) => r.avg),
     money("low", "Mini", (r) => r.low),
@@ -217,7 +256,7 @@ const VISIBLE: Record<Mode, (enriched: boolean) => ColumnDef<TableRow>[]> = {
   foil: (enriched) => [
     nameColumn("Produit"),
     codeColumn,
-    ...(enriched ? [numColumn] : []),
+    ...(enriched ? [numColumn, rarityColumn] : []),
     expansionColumn,
     money("avgF", "Moyenne foil", (r) => r.avgF),
     money("lowF", "Mini foil", (r) => r.lowF),

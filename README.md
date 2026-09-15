@@ -122,6 +122,7 @@ src/
   data/
     dataset.json        jeu de données embarqué (généré, versionné)
     expansions.ts       libellés d'extensions, codes d'impression, URLs externes
+    rarities.ts         taxonomie des raretés et leur rang de tri
   hooks/
     use-dataset.ts      état des données et imports
     use-table.ts        instance TanStack : tri, filtres, recherche
@@ -172,6 +173,10 @@ Trois sources, toutes publiques.
   100 %** dans l'export, `trend-foil` vaut 0 partout : elles ne sont pas affichées.
 - `low` est le prix de la plus petite annonce, pas une cote ni un prix de vente.
   Sur un marché à trois annonces, c'est du bruit. `trend` est plus honnête.
+- **Les variantes d'une même carte dans une même extension sont indistinguables**
+  côté Cardmarket : même nom, même extension, seul l'`idProduct` diffère. Cela
+  concerne 37 cartes, soit 76 produits. La colonne Rareté affiche alors les
+  raretés possibles en pointillés plutôt que d'en choisir une.
 - Les **codes d'impression** (MS01B, SD02B…) n'existent dans aucune source :
   seuls MS01B et SD02B sont confirmés, les autres sont déduits. Ils s'éditent
   dans Paramètres et se figent dans `src/data/expansions.ts`.
