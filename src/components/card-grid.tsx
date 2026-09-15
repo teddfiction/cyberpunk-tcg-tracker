@@ -26,6 +26,9 @@ type Props = {
  */
 const OFFSCREEN = "[content-visibility:auto] [contain-intrinsic-size:auto_520px]"
 
+/** Libellés de badge : même Geist Mono en capitales que la ligne d'infos. */
+const BADGE = "font-mono text-[10px] uppercase tabular-nums"
+
 export function CardGrid({ cards }: Props) {
   // La carte n'est pas remise à `null` à la fermeture : la modale la rend
   // encore pendant son animation de sortie. C'est `open` qui pilote, pas elle.
@@ -99,17 +102,21 @@ function Tile({
           <div className="text-muted-foreground truncate text-xs">{card.subname}</div>
         )}
 
+        {/* Les deux badges en contour, même graisse que la ligne de
+            caractéristiques : ils accompagnent l'illustration, ils ne lui
+            disputent pas le regard. Seule la couleur du type les distingue. */}
         <div className="mt-1 flex flex-wrap gap-1">
           {card.type && (
             <Badge
               variant="outline"
+              className={BADGE}
               style={tint ? { color: tint, borderColor: tint } : undefined}
             >
               {card.type}
             </Badge>
           )}
           {card.printings.length > 1 && (
-            <Badge variant="secondary" className="gap-1 tabular-nums">
+            <Badge variant="outline" className={cn(BADGE, "text-muted-foreground gap-1")}>
               <Layers className="size-3" />
               {card.printings.length}
             </Badge>
