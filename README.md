@@ -57,6 +57,17 @@ sans cote. Relancer `npm run dev` pour voir le nouveau jeu, puis committer
 Pour un simple coup d'œil sans toucher à l'amorce, `price_guide_23.json` seul
 suffit : bouton « Importer un JSON » dans l'app. L'import ne vit qu'en mémoire.
 
+**Bouton « Actualiser les prix »** (en-tête de la page, à droite) : télécharge
+le price guide du jour et l'applique sans passer par un fichier. Le résultat est
+conservé dans le navigateur comme n'importe quel import — il ne touche pas à
+`src/data/dataset.json`, qui reste l'amorce du dépôt. Pour figer les cotes dans
+le dépôt, c'est toujours `npm run data:refresh` puis un commit.
+
+Ce bouton n'existe qu'avec `npm run dev` ou `npm run preview` : les exports
+Cardmarket n'envoient aucun en-tête CORS, et c'est le serveur Vite qui relaie
+l'appel. Un `dist/` servi en statique n'a personne pour le faire — le bouton le
+dit alors clairement au lieu d'échouer en silence.
+
 ### 2. Enrichir : numéros de collecteur, raretés, visuels
 
 Cardmarket ne publie ni numéro de collecteur ni rareté. L'API Netdeck les fournit.
@@ -149,6 +160,7 @@ src/
     table.ts            tri, filtres et recherche passés à TanStack
     format.ts           formatage et normalisation
     ingest.ts           lecture des trois formats JSON
+    remote.ts           téléchargement à chaud du price guide, et ses gardes
     utils.ts            cn()
   test/
     fixtures.ts         jeu synthétique des tests

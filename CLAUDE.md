@@ -128,6 +128,11 @@ l'appariement est certain (voir « Limites des données »).
   compilateur le signale). Puis brancher dans `hooks/use-dataset.ts`.
 - **Une nouvelle extension Cardmarket** : `data/expansions.ts`, `EXPANSIONS` et
   `DEFAULT_CODES`.
+- **Un téléchargement à chaud** : `lib/remote.ts`, plus une entrée dans le
+  `proxy` de `vite.config.ts`. Rendre un `File` et le passer à `importFiles`
+  plutôt que d'écrire un second chemin d'import — parse, compte rendu,
+  conservation et avis suivent alors tout seuls. C'est ce que fait
+  « Actualiser les prix ».
 
 ### Persister quelque chose
 
@@ -405,6 +410,13 @@ Ces contraintes viennent des sources, pas du code. Ne pas « réparer » :
 - **CORS Netdeck** : `api.netdeck.gg` restreint l'origine à
   `https://cyberpunktcg.com`. L'appel doit rester dans un script Node avec en-tête
   `Origin`, jamais depuis le navigateur.
+- **CORS Cardmarket** : `downloads.s3.cardmarket.com` n'envoie **aucun** en-tête
+  `Access-Control-Allow-Origin` — mesuré. Un `fetch` depuis la page échoue, et
+  `mode: "no-cors"` ne rend qu'une réponse opaque, illisible. D'où le `proxy` de
+  `vite.config.ts`, déclaré pour `server` **et** `preview`. Ce relais n'existe
+  pas dans un `dist/` servi en statique : `fetchPriceGuide` le détecte à la
+  réponse HTML renvoyée avec un 200, et le dit. Ne pas remplacer par un proxy
+  CORS public — ce serait faire transiter les données par un tiers.
 
 ### Un comportement à trancher
 

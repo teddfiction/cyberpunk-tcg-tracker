@@ -3,8 +3,10 @@
  * Aucune logique métier ici — tout vient des hooks et de lib/.
  */
 import * as React from "react"
+import { RefreshCw } from "lucide-react"
 import { toast } from "sonner"
 
+import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { Toaster } from "@/components/ui/sonner"
@@ -141,6 +143,25 @@ export default function App() {
               {dateFr(data.pricesAt)} · catalogue du {dateShort(data.catalogAt)}
             </p>
           </div>
+
+          {/* Dans l'en-tête et non dans la barre d'outils de la table : le
+              téléchargement touche les données de toute l'app, et il jouxte
+              ainsi la date qu'il actualise. */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-auto shrink-0"
+            // Le libellé passe en `display:none` sous `sm` et quitte alors
+            // l'arbre d'accessibilité : sans ça le bouton n'a plus de nom.
+            aria-label="Actualiser les prix"
+            onClick={() => void data.refreshPrices()}
+            disabled={data.fetching}
+          >
+            <RefreshCw className={data.fetching ? "animate-spin" : undefined} />
+            <span className="hidden sm:inline">
+              {data.fetching ? "Téléchargement…" : "Actualiser les prix"}
+            </span>
+          </Button>
         </header>
 
         <input
