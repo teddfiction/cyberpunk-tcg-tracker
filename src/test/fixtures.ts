@@ -17,13 +17,17 @@ export const CODES: CodeMap = {
   "3": { code: "C1", sure: false },
 }
 
-/** Couvre : une réimpression (mc 100), un scellé (mc 0), un produit sans cote. */
+/**
+ * Couvre : une réimpression (mc 100), un scellé (mc 0), un produit sans cote.
+ * Les `added` sont volontairement désordonnés et à cheval sur deux jours : le
+ * tri par date ne doit retomber ni sur l'ordre du tableau, ni sur le nom.
+ */
 export const CATALOG: Product[] = [
-  { id: 10, name: "Zébu - Calme", exp: 1, cat: "Single", mc: 100 },
-  { id: 11, name: "Éclair - Vif", exp: 2, cat: "Single", mc: 101 },
-  { id: 12, name: "Effet - Net", exp: 2, cat: "Single", mc: 102 },
-  { id: 13, name: "Booster Box", exp: 1, cat: "Booster Box", mc: 0 },
-  { id: 14, name: "Zébu - Calme", exp: 3, cat: "Single", mc: 100 },
+  { id: 10, name: "Zébu - Calme", exp: 1, cat: "Single", mc: 100, added: "2026-08-28 17:13:28" },
+  { id: 11, name: "Éclair - Vif", exp: 2, cat: "Single", mc: 101, added: "2026-09-11 09:02:00" },
+  { id: 12, name: "Effet - Net", exp: 2, cat: "Single", mc: 102, added: "2026-08-27 08:00:00" },
+  { id: 13, name: "Booster Box", exp: 1, cat: "Booster Box", mc: 0, added: "2026-09-07 12:30:00" },
+  { id: 14, name: "Zébu - Calme", exp: 3, cat: "Single", mc: 100, added: "2026-09-11 18:45:00" },
 ]
 
 /** 13 n'a aucune cote ; 11 n'a que du foil. */
@@ -90,11 +94,11 @@ export const ENRICHED: EnrichedCard[] = [
  * « Unique - Sûre » : un produit, une impression.
  */
 export const AMBIGUOUS_CATALOG: Product[] = [
-  { id: 20, name: "Double - Face", exp: 1, cat: "Single", mc: 200 },
-  { id: 21, name: "Double - Face", exp: 1, cat: "Single", mc: 200 },
-  { id: 22, name: "Unique - Sûre", exp: 1, cat: "Single", mc: 201 },
-  { id: 23, name: "Jumelle - Seule", exp: 1, cat: "Single", mc: 202 },
-  { id: 24, name: "Jumelle - Seule", exp: 1, cat: "Single", mc: 202 },
+  { id: 20, name: "Double - Face", exp: 1, cat: "Single", mc: 200, added: "2026-08-28 10:00:00" },
+  { id: 21, name: "Double - Face", exp: 1, cat: "Single", mc: 200, added: "2026-08-28 10:00:00" },
+  { id: 22, name: "Unique - Sûre", exp: 1, cat: "Single", mc: 201, added: "2026-08-28 10:00:00" },
+  { id: 23, name: "Jumelle - Seule", exp: 1, cat: "Single", mc: 202, added: "2026-08-28 10:00:00" },
+  { id: 24, name: "Jumelle - Seule", exp: 1, cat: "Single", mc: 202, added: "2026-08-28 10:00:00" },
 ]
 
 export const AMBIGUOUS_ENRICHED: EnrichedCard[] = [

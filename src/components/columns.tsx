@@ -10,7 +10,7 @@ import { CardThumb } from "@/components/card-thumb"
 import { CodeBadge } from "@/components/code-badge"
 import { CARDMARKET_SEARCH, cyberpunkTcgUrl } from "@/data/expansions"
 import { rarityLabel, rarityRank } from "@/data/rarities"
-import { eur, pct } from "@/lib/format"
+import { dateShort, eur, pct } from "@/lib/format"
 import { MODES, type Mode } from "@/lib/modes"
 import { expansionsOf, filterExpansions, filterFlag, sortText } from "@/lib/table"
 import { cn } from "@/lib/utils"
@@ -202,6 +202,29 @@ const expansionColumn: ColumnDef<TableRow> = {
   cell: ({ getValue }) => getValue<string>(),
 }
 
+/**
+ * `dateAdded` Cardmarket. Le seul repère de nouveauté du catalogue : c'est lui
+ * qui distingue les 304 produits du versement initial des quelques ajouts
+ * ultérieurs. Triée en chaîne — le format est à largeur fixe, donc
+ * lexicographique vaut chronologique, sans passer par un `Date` non standard.
+ */
+const addedColumn: ColumnDef<TableRow> = {
+  id: "added",
+  accessorFn: (r) => (r as AnyRow).added || undefined,
+  header: "Ajouté le",
+  sortingFn: sortText,
+  sortUndefined: "last",
+  meta: {
+    align: "right",
+    className: "text-muted-foreground text-xs",
+    csv: (r) => (r as AnyRow).added,
+  },
+  cell: ({ getValue }) => {
+    const v = getValue<string | undefined>()
+    return v ? dateShort(v.slice(0, 10)) : dash
+  },
+}
+
 const idColumn: ColumnDef<TableRow> = {
   id: "id",
   accessorKey: "id",
@@ -273,6 +296,7 @@ const VISIBLE: Record<Mode, (enriched: boolean) => ColumnDef<TableRow>[]> = {
     money("low", "Mini", (r) => r.low),
     money("trend", "Tendance", (r) => r.trend),
     percent("d", "Δ tend./mini", (r) => r.d),
+    addedColumn,
     idColumn,
   ],
   foil: (enriched) => [
@@ -284,6 +308,7 @@ const VISIBLE: Record<Mode, (enriched: boolean) => ColumnDef<TableRow>[]> = {
     money("avgF", "Moyenne foil", (r) => r.avgF),
     money("lowF", "Mini foil", (r) => r.lowF),
     percent("df", "Δ moy./mini", (r) => r.df),
+    addedColumn,
     idColumn,
   ],
   card: (enriched) => [
@@ -293,6 +318,7 @@ const VISIBLE: Record<Mode, (enriched: boolean) => ColumnDef<TableRow>[]> = {
     money("bestLow", "Mini le moins cher", (r) => r.bestLow),
     money("bestTrend", "Tendance mini", (r) => r.bestTrend),
     money("bestLowF", "Mini foil", (r) => r.bestLowF),
+    addedColumn,
   ],
 }
 
