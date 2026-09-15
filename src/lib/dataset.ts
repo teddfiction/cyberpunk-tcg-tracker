@@ -126,6 +126,10 @@ export function buildCards(
         single: true,
         id: rs[0].id,
         thumb: rs.find((r) => r.thumb)?.thumb ?? null,
+        // Le plus récent de ses produits : une carte est « nouvelle » dès
+        // qu'une de ses versions l'est. Comparaison de chaînes — le format
+        // Cardmarket est à largeur fixe, donc lexicographique = chronologique.
+        added: rs.reduce((max, r) => (r.added > max ? r.added : max), ""),
       }
     })
     .sort(byName)

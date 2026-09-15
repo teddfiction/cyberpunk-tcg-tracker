@@ -11,7 +11,7 @@ const lines = (mode: Parameters<typeof makeTable>[0], state = {}) =>
 describe("toCsv", () => {
   it("reprend les en-têtes des colonnes affichées", () => {
     expect(lines("normal")[0]).toBe(
-      '"Produit";"Code";"Extension";"Moyenne";"Mini";"Tendance";"Δ tend./mini";"ID"'
+      '"Produit";"Code";"Extension";"Moyenne";"Mini";"Tendance";"Δ tend./mini";"Ajouté le";"ID"'
     )
   })
 
@@ -33,7 +33,7 @@ describe("toCsv", () => {
 
   it("laisse une cellule vide pour une cote absente", () => {
     const out = lines("normal", { globalFilter: "Booster" })
-    expect(out[1]).toBe('"Booster Box";"A1";"Alpha Kit";;;;;13')
+    expect(out[1]).toBe('"Booster Box";"A1";"Alpha Kit";;;;;"2026-09-07 12:30:00";13')
   })
 
   it("garde un nombre de colonnes constant", () => {

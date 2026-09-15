@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest"
 import { columnsFor } from "@/components/columns"
 import { MODES, MODE_IDS } from "@/lib/modes"
 import { HIDDEN_COLUMNS, resolveSorting } from "@/lib/table"
-import { makeTable } from "@/test/table"
+import { makeTable, namesOf } from "@/test/table"
 
 const idsOf = (mode: "normal" | "foil" | "card", state: Parameters<typeof makeTable>[1]) =>
   makeTable(mode, state)
@@ -165,5 +165,18 @@ describe("colonnes masquées", () => {
   it("ne sont ni rendues ni exportées", () => {
     const visible = makeTable("normal").getVisibleLeafColumns().map((c) => c.id)
     for (const id of Object.keys(HIDDEN_COLUMNS)) expect(visible).not.toContain(id)
+  })
+})
+
+describe("colonne Ajouté le", () => {
+  it("range du plus récent au plus ancien, sans retomber sur le nom", () => {
+    // La fixture est volontairement désordonnée : l'ordre des noms et celui du
+    // tableau donneraient tous deux un autre résultat.
+    expect(namesOf(makeTable("normal", { sorting: [{ id: "added", desc: true }] }))[0]).toBe(
+      "Zébu - Calme"
+    )
+    expect(namesOf(makeTable("normal", { sorting: [{ id: "added", desc: false }] }))[0]).toBe(
+      "Effet - Net"
+    )
   })
 })
