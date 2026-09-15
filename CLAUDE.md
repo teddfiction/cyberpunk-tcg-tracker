@@ -79,6 +79,33 @@ entrées de menu à la main — correct pour deux vues. **À la troisième**, fa
 pour les modes : un `VIEWS` dans `lib/`, un `Record<View, …>` côté rendu. Ne pas
 empiler les ternaires.
 
+**Décision prise (sept. 2026) — la base de cartes Netdeck sera cette troisième
+vue**, pas un remplacement de la table Cardmarket.
+
+Le raisonnement, pour ne pas le re-débattre : l'entité qui compte pour la
+collection est l'**impression** (uuid, set, numéro, rareté, visuel), pas l'annonce
+Cardmarket ; une vue adossée à Netdeck montrerait enfin les cartes sans annonce,
+aujourd'hui invisibles. Mais en faire la colonne vertébrale de l'app existante a
+été écarté : **Netdeck n'a pas d'API publique** — la page for-developers annonce
+l'accès direct en « Coming Soon » avec liste d'attente, et `embed.js` ne propose
+qu'un `POST /cards/lookup` indexé par nom, soit la même clé lossy qu'aujourd'hui.
+Ce que `scripts/netdeck-export.mjs` interroge est le backend privé de
+cyberpunktcg.com, non versionné et sans conditions d'usage. En enrichissement
+optionnel c'est acceptable — sans export, l'app tourne. En colonne vertébrale, un
+changement de schéma viderait l'application.
+
+Contraintes qui s'appliqueront à cette vue :
+
+- **L'export Netdeck devient un artefact committé**, sur le modèle de
+  `dataset.json` : le script tourne, on committe le résultat, l'app n'appelle
+  jamais l'API au runtime.
+- **Les visuels restent locaux et gitignorés.** `image_url` est signée et expire
+  (d'où la miniature base64 du script), et committer les artworks les
+  redistribuerait — licence CD PROJEKT RED, usage local uniquement.
+- L'appariement avec Cardmarket reste incertain pour les 37 cartes à variantes.
+  Côté vue Netdeck, l'incertitude porte alors sur le **prix** et non sur
+  l'identité de la carte : c'est le bon endroit pour elle.
+
 ### Ajouter une donnée venue de Netdeck
 
 `types.ts` → `Printing` et `Row`, `lib/dataset.ts` → `buildRows`, puis une
