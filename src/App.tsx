@@ -3,10 +3,11 @@
  * Aucune logique métier ici — tout vient des hooks et de lib/.
  */
 import * as React from "react"
+import { toast } from "sonner"
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+import { Toaster } from "@/components/ui/sonner"
 import { AppSidebar } from "@/components/app-sidebar"
 import { columnsFor } from "@/components/columns"
 import { DataTable } from "@/components/data-table"
@@ -31,6 +32,15 @@ export default function App() {
   const [mode, setMode] = React.useState<Mode>("normal")
   const fileRef = React.useRef<HTMLInputElement>(null)
   const openImport = () => fileRef.current?.click()
+
+  // useDataset rend un avis, App choisit comment le montrer — le hook n'importe
+  // rien de sonner. setNotice pose un objet neuf à chaque fois, donc deux
+  // imports au message identique déclenchent bien deux toasts.
+  React.useEffect(() => {
+    if (!data.notice) return
+    const { tone, message } = data.notice
+    ;(tone === "error" ? toast.error : toast.success)(message)
+  }, [data.notice])
 
   const columns = React.useMemo(() => columnsFor(mode, data.enriched), [mode, data.enriched])
   const source = { rows: data.rows, cards: data.cards }[MODES[mode].source]
@@ -145,19 +155,12 @@ export default function App() {
           }}
         />
 
-        <div className="flex flex-col gap-4 p-4">
-          {data.notice && (
-            <Alert variant={data.notice.tone === "error" ? "destructive" : "default"}>
-              <AlertTitle>
-                {data.notice.tone === "error" ? "Import incomplet" : "Import réussi"}
-              </AlertTitle>
-              <AlertDescription>{data.notice.message}</AlertDescription>
-            </Alert>
-          )}
-
-          {render[view]()}
-        </div>
+        <div className="flex flex-col gap-4 p-4">{render[view]()}</div>
       </SidebarInset>
+
+      {/* Thème imposé : le Toaster du registry le lit dans next-themes, sans
+          provider ici. Son {...props} passe après, donc la prop l'emporte. */}
+      <Toaster theme={dark ? "dark" : "light"} />
     </SidebarProvider>
   )
 }
