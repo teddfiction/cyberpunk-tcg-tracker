@@ -83,7 +83,8 @@ Les codes (MS01B, SD02B…) n'existent dans aucune source et sont saisis à la m
 2. **Copier le mapping JSON**.
 3. Reporter le résultat dans `DEFAULT_CODES` (`src/data/expansions.ts`) et committer.
 
-Sans cette étape, les saisies sont perdues au rechargement.
+La saisie est conservée dans le navigateur, mais seule cette étape la rend
+permanente et partagée.
 
 ### 4. Exporter
 
@@ -130,6 +131,7 @@ src/
     use-mobile.ts       requis par sidebar.tsx
   lib/
     csv.ts              export CSV depuis l'instance de table
+    store.ts            conservation des imports dans IndexedDB
     dataset.ts          construction des lignes et regroupement par carte
     enrich.ts           jointure Netdeck ↔ Cardmarket
     modes.ts            registre des modes d'affichage
@@ -162,7 +164,8 @@ Trois sources, toutes publiques.
    Extraits par `npm run data:netdeck`, chargés à chaud.
 3. **Import à chaud** — le bouton « Importer un JSON » accepte les trois formats,
    reconnus à leur clé racine : `priceGuides`, `products`, `cards`. Les imports
-   vivent en mémoire ; recharger la page revient au jeu embarqué.
+   sont conservés dans ce navigateur (IndexedDB) et survivent au rechargement.
+   Paramètres → « Oublier les données conservées » repart du jeu embarqué.
 
 ## Limites connues des données
 

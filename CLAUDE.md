@@ -125,10 +125,16 @@ l'appariement est certain (voir « Limites des données »).
 
 ### Persister quelque chose
 
-Rien n'est persisté aujourd'hui, sauf le thème (`use-theme.ts`, localStorage). Les
-imports et les codes d'impression vivent en mémoire — c'est **voulu**, pas un oubli
-(voir README). Si un besoin de persistance apparaît, le point d'accroche est
-`hooks/use-dataset.ts`, pas les composants.
+Deux stockages, choisis selon la taille : `localStorage` pour le thème
+(`use-theme.ts`), **IndexedDB pour les imports et les codes** (`lib/store.ts`,
+orchestré par `hooks/use-dataset.ts`). Au-delà de quelques kilo-octets c'est
+IndexedDB — `localStorage` plafonne vers 5 Mo et ne stocke que du texte, là où
+IndexedDB range les objets tels quels, sans `JSON.stringify` sur 14 Mo.
+
+`lib/store.ts` ne lève jamais : navigation privée, quota plein ou stockage bloqué
+rendent `false` et l'app continue. Mais l'échec est **rendu, pas avalé** —
+`importFiles` prévient alors l'utilisateur que rien ne sera conservé. Garder cette
+propriété : un stockage qui échoue en silence est pire que pas de stockage.
 
 ## Architecture
 
@@ -168,6 +174,19 @@ imports JSON (mémoire) ──┘        ▲                                  �
 
 `useDataset` est la source de vérité des **données**, `useTable` celle de l'**état
 de la table**. Ne pas dupliquer l'un dans l'autre.
+
+Sur la conservation des imports :
+
+- **L'écriture n'a lieu qu'après un import réussi**, jamais sur un changement
+  d'état. Au premier rendu l'app est encore sur le jeu embarqué : une sauvegarde
+  automatique écraserait ce que la relecture est en train de restaurer. Pour la
+  même raison `importFiles` accumule dans une variable locale au lieu de relire
+  les setters de React, qui ne seraient pas à jour à temps.
+- Le stockage est **local à un navigateur** : il ne suit ni le dépôt, ni une
+  autre machine. Paramètres → « Oublier les données conservées » repart du jeu
+  embarqué.
+- `codes` est conservé lui aussi, mais le reporter dans `src/data/expansions.ts`
+  reste ce qui le rend permanent et partagé.
 
 ## Invariants à ne pas casser
 
