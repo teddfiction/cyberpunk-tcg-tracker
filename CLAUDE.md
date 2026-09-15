@@ -349,6 +349,14 @@ La consigne du projet : **uniquement Tailwind et les composants shadcn natifs.**
   lui impose le thème par la prop `theme`, que son `{...props}` laisse gagner.
   Pas de `richColors` : la distinction succès/erreur passe par l'icône, la
   surface reste sur `--popover`.
+
+  **Dix secondes et un bouton de fermeture**, posés à l'appel dans `App.tsx`.
+  Un import de trois fichiers rend quatre à six phrases : les quatre secondes
+  par défaut de sonner ne laissaient pas le temps de les lire. Le compte rendu
+  est découpé par `sentences` (`lib/format.ts`) et rendu en
+  `whitespace-pre-line` — la coupure exige un point **suivi d'une majuscule ou
+  d'un chiffre**, ce qui protège les noms de fichiers, où le point précède une
+  minuscule ou une ponctuation.
 - **TanStack Table épinglé en 8.21.3.** La v9 est en `latest` mais change toute
   l'API ; la recette data-table de shadcn est écrite pour la v8. Migrer est un
   chantier, pas un `npm update`.

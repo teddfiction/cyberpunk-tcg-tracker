@@ -21,7 +21,7 @@ import { useDataset } from "@/hooks/use-dataset"
 import { useTable } from "@/hooks/use-table"
 import { useTheme } from "@/hooks/use-theme"
 import { download, toCsv } from "@/lib/csv"
-import { dateFr, dateShort } from "@/lib/format"
+import { dateFr, dateShort, sentences } from "@/lib/format"
 import { MODES, type Mode } from "@/lib/modes"
 import { HIDDEN_COLUMNS, INITIAL_FILTERS, rowId, searchRow } from "@/lib/table"
 import { VIEWS, type View } from "@/lib/views"
@@ -41,7 +41,15 @@ export default function App() {
   React.useEffect(() => {
     if (!data.notice) return
     const { tone, message } = data.notice
-    ;(tone === "error" ? toast.error : toast.success)(message)
+    // Dix secondes et un bouton de fermeture : un import de trois fichiers rend
+    // quatre à six phrases, que les quatre secondes par défaut de sonner ne
+    // laissaient pas le temps de lire. `whitespace-pre-line` fait rendre les
+    // sauts de ligne posés par `sentences`, qui reste une transformation pure.
+    ;(tone === "error" ? toast.error : toast.success)(sentences(message).join("\n"), {
+      duration: 10_000,
+      closeButton: true,
+      className: "whitespace-pre-line",
+    })
   }, [data.notice])
 
   const columns = React.useMemo(() => columnsFor(mode, data.enriched), [mode, data.enriched])
