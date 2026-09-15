@@ -14,6 +14,7 @@ import { DEFAULT_CODES, EXPANSIONS } from "@/data/expansions"
 import { buildCards, buildRows, countByExpansion } from "@/lib/dataset"
 import { buildEnrichIndex } from "@/lib/enrich"
 import { describe, mergeCatalog, parse, readJsonFile, IngestError } from "@/lib/ingest"
+import { fetchPriceGuide } from "@/lib/remote"
 import { idbDelete, idbGet, idbSet } from "@/lib/store"
 import type { CodeMap, Dataset, EnrichedCard, Price, Product } from "@/types"
 
@@ -44,6 +45,8 @@ export function useDataset() {
   const [notice, setNotice] = React.useState<Notice | null>(null)
   /** Date du dernier import conservé, `null` si rien n'est stocké. */
   const [storedAt, setStoredAt] = React.useState<string | null>(null)
+  /** Un téléchargement est en cours : le bouton doit le montrer et se bloquer. */
+  const [fetching, setFetching] = React.useState(false)
 
   const hydrated = React.useRef(false)
 
@@ -144,6 +147,27 @@ export function useDataset() {
     [catalog, prices, pricesAt, catalogAt, enriched]
   )
 
+  /**
+   * Télécharge le price guide du jour et le passe par `importFiles`.
+   *
+   * Aucune logique d'import n'est redupliquée ici : le fichier récupéré suit
+   * exactement le chemin d'un fichier choisi à la main, compte rendu et
+   * conservation compris.
+   */
+  const refreshPrices = React.useCallback(async () => {
+    setFetching(true)
+    try {
+      await importFiles([await fetchPriceGuide()])
+    } catch (e) {
+      setNotice({
+        tone: "error",
+        message: e instanceof Error ? e.message : "Téléchargement impossible.",
+      })
+    } finally {
+      setFetching(false)
+    }
+  }, [importFiles])
+
   /** Efface ce qui est conservé et repart du jeu embarqué. */
   const forget = React.useCallback(async () => {
     await Promise.all([idbDelete(KEY_DATA), idbDelete(KEY_CODES)])
@@ -174,6 +198,8 @@ export function useDataset() {
     notice,
     setNotice,
     importFiles,
+    refreshPrices,
+    fetching,
     forget,
   }
 }
