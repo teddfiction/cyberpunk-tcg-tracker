@@ -340,9 +340,14 @@ La consigne du projet : **uniquement Tailwind et les composants shadcn natifs.**
 - **Aucune couleur en dur.** Toujours les tokens : `bg-card`,
   `text-muted-foreground`, `text-destructive`. Ils vivent dans les blocs `:root` /
   `.dark` de `src/index.css`. Thème : base **Slate**, accent **Yellow**,
-  graphiques **Cyan**, `--radius: 0`, police **Geist** (locale). Base et accent
-  sont deux axes : changer de base ne touche pas aux tons `primary` / `ring` /
-  `sidebar-primary`, qui restent jaunes.
+  graphiques **Cyan**, `--radius: 0`, polices **Geist** et **Geist Mono**
+  (locales, SIL OFL 1.1). Base et accent sont deux axes : changer de base ne
+  touche pas aux tons `primary` / `ring` / `sidebar-primary`, qui restent jaunes.
+- **Les couleurs de carte du jeu sont des données, pas du thème**, mais elles
+  suivent la même règle : `--card-red/-yellow/-green/-blue` dans `index.css`,
+  réglées par thème (Tailwind 600 en clair, 400 en sombre — une teinte lisible
+  sur slate-50 ne l'est pas sur slate-950). `data/colors.ts` fait la jointure ;
+  aucun composant n'écrit de couleur.
 - **Toasts : `sonner`.** Le registry ne sert plus de `toast` Radix — `sonner` est
   le composant shadcn natif aujourd'hui, seule entorse admise à la règle Radix.
   Son fichier lit le thème dans `next-themes`, absent de provider ici : `App.tsx`

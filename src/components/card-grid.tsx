@@ -8,9 +8,10 @@ import { Layers } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { CardDialog } from "@/components/card-dialog"
-import { eur } from "@/lib/format"
-import { cardStats } from "@/lib/printings"
+import { colorVar } from "@/data/colors"
+import { tileStats } from "@/lib/printings"
 import { cn } from "@/lib/utils"
+import type { CardStat } from "@/lib/printings"
 import type { GridCard } from "@/types"
 
 type Props = {
@@ -50,7 +51,9 @@ export function CardGrid({ cards }: Props) {
     <>
       {/* Quatre colonnes au plus : au-delà, la tuile passe sous les 320 px de
           la miniature et le visuel — le fond de cette vue — devient illisible. */}
-      <div className="grid grid-cols-2 items-start gap-4 sm:grid-cols-3 lg:grid-cols-4">
+      {/* Espacement vertical doublé : les tuiles n'ont plus de bordure, c'est
+          le blanc qui les sépare. */}
+      <div className="grid grid-cols-2 items-start gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
         {cards.map((c) => (
           <Tile key={c.name} card={c} onSelect={(el) => select(c, el)} />
         ))}
@@ -70,7 +73,8 @@ function Tile({
   card: GridCard
   onSelect: (trigger: HTMLButtonElement) => void
 }) {
-  const stats = cardStats(card)
+  const stats = tileStats(card)
+  const tint = colorVar(card.color)
 
   return (
     <div className={cn("flex flex-col gap-2", OFFSCREEN)}>
@@ -80,12 +84,13 @@ function Tile({
         aria-label={`${card.name} — voir les versions`}
         className="focus-visible:ring-ring/50 block cursor-pointer outline-none focus-visible:ring-[3px]"
       >
+        {/* Sans bordure : l'illustration se suffit, et le cadre dessiné sur la
+            carte elle-même en tenait déjà lieu. */}
         {card.thumb ? (
-          <img src={card.thumb} alt={card.name} className="border-border w-full border" />
+          <img src={card.thumb} alt={card.name} className="w-full" />
         ) : (
-          <div className="border-border bg-muted aspect-[5/7] w-full border" />
+          <div className="bg-muted aspect-[5/7] w-full" />
         )}
-
       </button>
 
       <div className="min-w-0">
@@ -95,8 +100,14 @@ function Tile({
         )}
 
         <div className="mt-1 flex flex-wrap gap-1">
-          {card.color && <Badge variant="outline">{card.color}</Badge>}
-          {card.type && <Badge variant="secondary">{card.type}</Badge>}
+          {card.type && (
+            <Badge
+              variant="outline"
+              style={tint ? { color: tint, borderColor: tint } : undefined}
+            >
+              {card.type}
+            </Badge>
+          )}
           {card.printings.length > 1 && (
             <Badge variant="secondary" className="gap-1 tabular-nums">
               <Layers className="size-3" />
@@ -105,16 +116,44 @@ function Tile({
           )}
         </div>
 
-        {stats.length > 0 && (
-          <div className="text-muted-foreground mt-1 text-xs tabular-nums">
-            {stats.join(" · ")}
-          </div>
-        )}
-
-        {card.low != null && (
-          <div className="mt-1 text-xs font-medium tabular-nums">dès {eur(card.low)}</div>
-        )}
+        {stats.length > 0 && <Stats stats={stats} tint={tint} color={card.color} />}
       </div>
+    </div>
+  )
+}
+
+/**
+ * La ligne d'informations : libellé terne, valeur contrastée, en Geist Mono et
+ * en capitales.
+ *
+ * Chaque information est un bloc insécable — c'est elle qui passe à la ligne,
+ * jamais ses caractères. Pas de séparateur : c'est l'écart qui sépare, ce qui
+ * évite aussi qu'un point se retrouve orphelin en bout de ligne.
+ */
+function Stats({
+  stats,
+  tint,
+  color,
+}: {
+  stats: CardStat[]
+  tint: string | null
+  color: string | null
+}) {
+  return (
+    <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[10px] uppercase">
+      {stats.map((s) => (
+        <span key={s.label} className="flex items-center gap-1 whitespace-nowrap">
+          {s.dot && tint && (
+            <span
+              className="size-2 shrink-0 rounded-full"
+              style={{ backgroundColor: tint }}
+              title={color ?? undefined}
+            />
+          )}
+          <span className="text-muted-foreground">{s.label}</span>
+          {s.value && <span className="text-foreground font-medium">{s.value}</span>}
+        </span>
+      ))}
     </div>
   )
 }

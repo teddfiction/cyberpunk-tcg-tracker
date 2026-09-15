@@ -8,7 +8,7 @@ import { GRID_COLUMNS } from "@/components/grid-columns"
 import { buildRows } from "@/lib/dataset"
 import { FACETS, facetOptions, matchOptions } from "@/lib/facets"
 import { emptyIndex } from "@/lib/enrich"
-import { buildGrid, buildPrintings, cardStats } from "@/lib/printings"
+import { buildGrid, buildPrintings, cardStats, statText, tileStats } from "@/lib/printings"
 import { COLOR_RANK, SORT_IDS, SORTS, TYPE_RANK, sortIdOf } from "@/lib/sorts"
 import { gridNames, makeGrid } from "@/test/table"
 import {
@@ -144,25 +144,45 @@ describe("buildGrid", () => {
 })
 
 describe("cardStats", () => {
-  const card = buildGrid(
-    [
-      {
-        name: "Stat - Test",
-        slug: null,
-        cost: 3,
-        power: 0,
-        ram: null,
-        eddiable: true,
-        printings: [],
-      },
-    ],
-    []
-  )[0]
+  const make = (over: Partial<Parameters<typeof buildGrid>[0] extends (infer C)[] | null ? C : never>) =>
+    buildGrid(
+      [{ name: "Stat - Test", slug: null, cost: 3, power: 0, ram: 2, printings: [], ...over }],
+      []
+    )[0]
 
   it("garde les caractéristiques renseignées, y compris un zéro", () => {
     // Une force de 0 est une valeur, pas une absence : c'est `!= null` qui
     // tranche, jamais la véracité.
-    expect(cardStats(card)).toEqual(["Coût 3", "Force 0", "€$"])
+    expect(cardStats(make({ ram: null, eddiable: true })).map(statText)).toEqual([
+      "Coût 3",
+      "Force 0",
+      "€$",
+    ])
+  })
+
+  it("accroche la pastille de couleur à la RAM", () => {
+    const stats = cardStats(make({ color: "Red" }))
+    expect(stats.find((s) => s.dot)?.label).toBe("RAM")
+  })
+
+  it("replie la pastille sur la première info quand la carte n'a pas de RAM", () => {
+    // Une carte sur 151 est dans ce cas : sans ce repli, sa couleur ne
+    // s'afficherait nulle part.
+    const stats = cardStats(make({ ram: null, color: "Blue" }))
+    expect(stats.find((s) => s.dot)?.label).toBe("Coût")
+  })
+
+  it("n'invente pas de pastille pour une carte sans couleur", () => {
+    expect(cardStats(make({ color: null })).some((s) => s.dot)).toBe(false)
+    expect(cardStats(make({ color: null, ram: null })).some((s) => s.dot)).toBe(false)
+  })
+
+  it("la tuile ajoute la cote Cardmarket, la modale non", () => {
+    const card = make({ color: "Green" })
+    expect(tileStats(card).map(statText)).toEqual(cardStats(card).map(statText))
+    const cote = { ...card, low: 0.45 }
+    expect(tileStats(cote).map(statText).at(-1)).toMatch(/^Cardmarket dès 0,45/)
+    expect(cardStats(cote).map(statText).at(-1)).not.toMatch(/Cardmarket/)
   })
 })
 
