@@ -113,7 +113,10 @@ src/
   components/
     ui/                 composants shadcn/ui, registry new-york-v4, non modifiés
     app-sidebar.tsx     navigation, import, bascule de thème
-    columns.tsx         définition des colonnes TanStack, une liste par mode
+    card-thumb.tsx      vignette et aperçu au survol
+    columns.tsx         colonnes des cotes, une liste par mode
+    printing-columns.tsx colonnes de la base de cartes
+    netdeck-view.tsx    vue base de cartes
     data-table.tsx      rendu de la table depuis l'instance TanStack
     filters-bar.tsx     recherche, onglets, combobox, cases à cocher
     extension-combobox.tsx
@@ -132,9 +135,11 @@ src/
   lib/
     csv.ts              export CSV depuis l'instance de table
     store.ts            conservation des imports dans IndexedDB
+    views.ts            registre des vues
     dataset.ts          construction des lignes et regroupement par carte
     enrich.ts           jointure Netdeck ↔ Cardmarket
     modes.ts            registre des modes d'affichage
+    printings.ts        lignes de la base de cartes, une par impression
     table.ts            tri, filtres et recherche passés à TanStack
     format.ts           formatage et normalisation
     ingest.ts           lecture des trois formats JSON

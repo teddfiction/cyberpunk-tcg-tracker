@@ -6,7 +6,7 @@
 import type { ColumnDef } from "@tanstack/react-table"
 import { ExternalLink } from "lucide-react"
 
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
+import { CardThumb } from "@/components/card-thumb"
 import { CodeBadge } from "@/components/code-badge"
 import { CARDMARKET_SEARCH, cyberpunkTcgUrl } from "@/data/expansions"
 import { rarityLabel, rarityRank } from "@/data/rarities"
@@ -69,22 +69,7 @@ const thumbColumn: ColumnDef<TableRow> = {
   meta: { className: "w-[44px]", noCsv: true },
   cell: ({ row }) => {
     const r = row.original as AnyRow
-    if (!r.thumb) return <div className="border-border/60 bg-muted h-10 w-7 border" aria-hidden />
-    return (
-      <HoverCard openDelay={120} closeDelay={60}>
-        <HoverCardTrigger asChild>
-          <img
-            src={r.thumb}
-            alt={r.name}
-            loading="lazy"
-            className="border-border h-10 w-7 cursor-zoom-in border object-cover"
-          />
-        </HoverCardTrigger>
-        <HoverCardContent side="right" align="start" className="w-auto border p-1">
-          <img src={r.thumb} alt={r.name} className="block w-80 max-w-none" />
-        </HoverCardContent>
-      </HoverCard>
-    )
+    return <CardThumb thumb={r.thumb} name={r.name} />
   },
 }
 
@@ -187,7 +172,10 @@ const rarityColumn: ColumnDef<TableRow> = {
   sortUndefined: "last",
   meta: {
     className: "text-xs whitespace-nowrap",
-    csv: (r) => r.rarity ?? (r.rarities ?? []).map(rarityLabel).join(" / "),
+    csv: (r) => {
+      const row = r as AnyRow
+      return row.rarity ?? (row.rarities ?? []).map(rarityLabel).join(" / ")
+    },
   },
   cell: ({ row }) => {
     const r = row.original as AnyRow
@@ -227,7 +215,8 @@ const printsColumn: ColumnDef<TableRow> = {
   accessorKey: "nExp",
   header: "Impressions",
   meta: {
-    csv: (r, codes) => r.prints.map((p) => codes[String(p.exp)]?.code || `#${p.exp}`).join(" "),
+    csv: (r, codes) =>
+      (r as AnyRow).prints.map((p) => codes[String(p.exp)]?.code || `#${p.exp}`).join(" "),
   },
   cell: ({ row, table }) => {
     const meta = table.options.meta

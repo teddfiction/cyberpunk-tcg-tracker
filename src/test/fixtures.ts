@@ -32,6 +32,13 @@ export const PRICES: Record<string, Price> = {
   "11": { avg: null, low: null, trend: null, avgF: 4, lowF: 2, foil: 1 },
   "12": { avg: 3, low: 2, trend: 4, avgF: null, lowF: null, foil: 0 },
   "14": { avg: 20, low: 15, trend: 18, avgF: null, lowF: null, foil: 0 },
+  // Produits de la fixture d'ambiguïté : cotes écartées exprès, pour que la
+  // fourchette rattachée à une impression soit vérifiable.
+  "20": { avg: null, low: 5, trend: null, avgF: null, lowF: null, foil: 0 },
+  "21": { avg: null, low: 30, trend: null, avgF: null, lowF: null, foil: 0 },
+  "22": { avg: null, low: 12, trend: null, avgF: null, lowF: null, foil: 0 },
+  "23": { avg: null, low: 7, trend: null, avgF: null, lowF: null, foil: 0 },
+  "24": { avg: null, low: 9, trend: null, avgF: null, lowF: null, foil: 0 },
 }
 
 const printing = (uuid: string, set: string, setCode: string, number: string, rarity: string) => ({

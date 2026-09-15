@@ -3,18 +3,24 @@
  * Fonctions pures, sans JSX : les décisions métier (collation française, valeurs
  * manquantes toujours en bas, extensions multiples) vivent ici.
  */
-import type { FilterFn, SortingFn, SortingState } from "@tanstack/react-table"
+import type {
+  FilterFn,
+  Row as TanstackRow,
+  SortingState,
+} from "@tanstack/react-table"
 
 import { words } from "@/lib/format"
-import { MODES, type Mode } from "@/lib/modes"
 import type { AnyRow, TableRow } from "@/types"
 
 /**
  * Collation française. `localeCompare` range « Éclat » avant « Effet » ;
  * la comparaison binaire par défaut de TanStack le mettrait après.
+ *
+ * Générique : elle ne lit qu'une valeur de colonne, et sert aux deux tables.
  */
-export const sortText: SortingFn<TableRow> = (a, b, id) =>
-  String(a.getValue(id) ?? "").localeCompare(String(b.getValue(id) ?? ""), "fr")
+export function sortText<T>(a: TanstackRow<T>, b: TanstackRow<T>, id: string): number {
+  return String(a.getValue(id) ?? "").localeCompare(String(b.getValue(id) ?? ""), "fr")
+}
 
 /**
  * Recherche plein texte, tolérante à la saisie naturelle.
@@ -62,17 +68,21 @@ export const rowId = (r: TableRow) => ("nExp" in r ? `c${r.mc}` : `p${r.id}`)
 /** Colonnes masquées en permanence : elles ne portent que les filtres de la barre. */
 export const HIDDEN_COLUMNS = { exps: false, priced: false, single: false }
 
+/** « Masquer les lignes sans prix » est actif au départ, et rétabli par la réinitialisation. */
+export const INITIAL_FILTERS = [{ id: "priced", value: true }]
+
 /**
- * Le tri courant, ou celui par défaut du mode quand la colonne triée n'existe
- * pas dans ce mode. Dérivé à chaque rendu plutôt que remis à zéro par un effet :
- * pas d'état transitoire incohérent entre deux peintures.
+ * Le tri courant, ou celui par défaut quand la colonne triée n'existe pas dans
+ * ce jeu de colonnes. Dérivé à chaque rendu plutôt que remis à zéro par un
+ * effet : pas d'état transitoire incohérent entre deux peintures.
  */
 export function resolveSorting(
   sorting: SortingState,
   columnIds: (string | undefined)[],
-  mode: Mode
+  defaultSort: string,
+  defaultDesc = true
 ): SortingState {
   const ids = new Set(columnIds)
   const kept = sorting.filter((s) => ids.has(s.id))
-  return kept.length ? kept : [{ id: MODES[mode].defaultSort, desc: true }]
+  return kept.length ? kept : [{ id: defaultSort, desc: defaultDesc }]
 }

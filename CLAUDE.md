@@ -72,39 +72,23 @@ C'est tout. Onglets, compteur, source de données et repli de tri se déduisent 
 registre. `Mode` est dérivé de `MODES` (`keyof typeof MODES`) : il n'y a pas
 d'union de chaînes à maintenir en parallèle.
 
-### Ajouter une vue (à côté de Data table et Paramètres)
+### Ajouter une vue
 
-Aujourd'hui `App.tsx` fait un ternaire sur `view` et `app-sidebar.tsx` liste les
-entrées de menu à la main — correct pour deux vues. **À la troisième**, faire comme
-pour les modes : un `VIEWS` dans `lib/`, un `Record<View, …>` côté rendu. Ne pas
-empiler les ternaires.
+**Trois fichiers, et le compilateur indique les deux derniers.**
 
-**Décision prise (sept. 2026) — la base de cartes Netdeck sera cette troisième
-vue**, pas un remplacement de la table Cardmarket.
+1. `lib/views.ts` → une entrée dans `VIEWS` : libellé, et sous-titre facultatif.
+2. `npm run typecheck` échoue alors sur `ICONS` (`components/app-sidebar.tsx`)
+   puis sur `render` (`App.tsx`), tous deux des `Record<View, …>` : donner
+   l'icône, puis le rendu.
 
-Le raisonnement, pour ne pas le re-débattre : l'entité qui compte pour la
-collection est l'**impression** (uuid, set, numéro, rareté, visuel), pas l'annonce
-Cardmarket ; une vue adossée à Netdeck montrerait enfin les cartes sans annonce,
-aujourd'hui invisibles. Mais en faire la colonne vertébrale de l'app existante a
-été écarté : **Netdeck n'a pas d'API publique** — la page for-developers annonce
-l'accès direct en « Coming Soon » avec liste d'attente, et `embed.js` ne propose
-qu'un `POST /cards/lookup` indexé par nom, soit la même clé lossy qu'aujourd'hui.
-Ce que `scripts/netdeck-export.mjs` interroge est le backend privé de
-cyberpunktcg.com, non versionné et sans conditions d'usage. En enrichissement
-optionnel c'est acceptable — sans export, l'app tourne. En colonne vertébrale, un
-changement de schéma viderait l'application.
+`View` est dérivé de `VIEWS` (`keyof typeof VIEWS`) : il n'y a pas d'union de
+chaînes à maintenir à côté. Même mécanique que les modes.
 
-Contraintes qui s'appliqueront à cette vue :
-
-- **L'export Netdeck devient un artefact committé**, sur le modèle de
-  `dataset.json` : le script tourne, on committe le résultat, l'app n'appelle
-  jamais l'API au runtime.
-- **Les visuels restent locaux et gitignorés.** `image_url` est signée et expire
-  (d'où la miniature base64 du script), et committer les artworks les
-  redistribuerait — licence CD PROJEKT RED, usage local uniquement.
-- L'appariement avec Cardmarket reste incertain pour les 37 cartes à variantes.
-  Côté vue Netdeck, l'incertitude porte alors sur le **prix** et non sur
-  l'identité de la carte : c'est le bon endroit pour elle.
+**Pour une vue qui affiche une table**, ne pas recâbler TanStack : `useTable`
+est générique sur la forme de ligne. Lui passer `data`, `columns`, `defaultSort`,
+`getRowId`, `globalFilterFn` et `meta`, et `DataTable` rend l'instance telle
+quelle. C'est ce que fait la base de cartes, dont les lignes n'ont rien à voir
+avec celles des cotes.
 
 ### Ajouter une donnée venue de Netdeck
 
@@ -174,6 +158,20 @@ imports JSON (mémoire) ──┘        ▲                                  �
 
 `useDataset` est la source de vérité des **données**, `useTable` celle de l'**état
 de la table**. Ne pas dupliquer l'un dans l'autre.
+
+L'app a **deux tables**, qui partagent toute la mécanique et ne diffèrent que par
+leurs lignes et leurs colonnes :
+
+| Vue | Ligne | Construite par | Colonnes |
+|---|---|---|---|
+| Data table | un produit Cardmarket, ou une carte regroupée | `lib/dataset.ts` | `components/columns.tsx` |
+| Base de cartes | une impression Netdeck | `lib/printings.ts` | `components/printing-columns.tsx` |
+
+La base de cartes montre ce que la table des cotes ne peut pas montrer : les
+cartes qu'aucun vendeur ne propose. Sa cote Cardmarket n'est rattachée que
+lorsqu'un seul produit correspond à la carte dans l'extension ; sinon elle
+affiche la fourchette en pointillés, sans élire de produit — **même règle que la
+colonne Rareté**, et pour la même raison.
 
 Sur la conservation des imports :
 

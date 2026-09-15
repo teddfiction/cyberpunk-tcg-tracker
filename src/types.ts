@@ -4,8 +4,6 @@
  */
 import type { RowData } from "@tanstack/react-table"
 
-import type { Mode } from "@/lib/modes"
-
 /** Un produit du catalogue Cardmarket (single ou scellé). */
 export type Product = {
   id: number
@@ -113,6 +111,37 @@ export type CardRow = {
   thumb: string | null
 }
 
+/**
+ * Une ligne de la base de cartes : une impression Netdeck, enrichie de la cote
+ * Cardmarket quand celle-ci est attribuable.
+ */
+export type PrintRow = {
+  /** uuid de l'impression — unique sur les 502, sert de clé de ligne. */
+  uuid: string
+  name: string
+  slug: string | null
+  /** Nom du set chez Netdeck : la source officielle, y compris hors Cardmarket. */
+  set: string
+  /** idExpansion Cardmarket correspondant, `null` si ce set n'y existe pas. */
+  exp: string | null
+  code: string
+  num: string | null
+  rarity: string | null
+  artist: string | null
+  thumb: string | null
+  type: string | null
+  color: string | null
+  cost: number | null
+  power: number | null
+  ram: number | null
+  /** Cote mini Cardmarket, quand un seul produit correspond à cette impression. */
+  low: number | null
+  /** Fourchette des cotes quand plusieurs produits partagent ce nom dans l'extension. */
+  lowRange: [number, number] | null
+  /** Nombre de produits Cardmarket indistinguables pour cette carte ici. */
+  variants: number
+}
+
 /** Ce que la table manipule : une ligne produit, ou une ligne carte. */
 export type TableRow = Row | CardRow
 
@@ -124,7 +153,6 @@ export type AnyRow = Row & CardRow
 
 declare module "@tanstack/react-table" {
   interface TableMeta<TData extends RowData> {
-    mode: Mode
     codes: CodeMap
     expansions: Record<string, string>
   }
@@ -137,7 +165,7 @@ declare module "@tanstack/react-table" {
     /** Décimal → virgule française à l'export CSV. */
     decimal?: boolean
     /** Rendu CSV quand la valeur brute de la colonne ne suffit pas. */
-    csv?: (row: AnyRow, codes: CodeMap) => string
+    csv?: (row: TData, codes: CodeMap) => string
     /** Colonne purement visuelle : absente de l'export CSV. */
     noCsv?: boolean
   }

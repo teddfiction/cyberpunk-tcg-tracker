@@ -45,7 +45,7 @@ export function makeTable(mode: Mode, state: State = {}, enriched = false): Tabl
     renderFallbackValue: null,
     getRowId: rowId,
     globalFilterFn: searchRow,
-    meta: { mode, codes: CODES, expansions: EXPANSIONS },
+    meta: { codes: CODES, expansions: EXPANSIONS },
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),

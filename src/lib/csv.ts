@@ -5,11 +5,11 @@
  */
 import type { Table } from "@tanstack/react-table"
 
-import type { AnyRow, CodeMap, TableRow } from "@/types"
+import type { CodeMap } from "@/types"
 
 const quote = (s: string) => `"${s.replace(/"/g, '""')}"`
 
-export function toCsv(table: Table<TableRow>, codes: CodeMap): string {
+export function toCsv<T>(table: Table<T>, codes: CodeMap): string {
   const columns = table.getVisibleLeafColumns().filter((c) => !c.columnDef.meta?.noCsv)
   const lines = [columns.map((c) => quote(String(c.columnDef.header))).join(";")]
 
@@ -18,7 +18,7 @@ export function toCsv(table: Table<TableRow>, codes: CodeMap): string {
       columns
         .map((c) => {
           const meta = c.columnDef.meta
-          if (meta?.csv) return quote(meta.csv(row.original as AnyRow, codes))
+          if (meta?.csv) return quote(meta.csv(row.original, codes))
           const v = row.getValue(c.id)
           if (v == null) return ""
           if (typeof v === "number")

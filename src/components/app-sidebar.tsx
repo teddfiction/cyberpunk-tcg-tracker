@@ -1,5 +1,5 @@
 /** Navigation latérale : vues, import de fichiers, bascule de thème. */
-import { Moon, Settings2, Sun, Table2, Upload } from "lucide-react"
+import { Library, Moon, Settings2, Sun, Table2, Upload, type LucideIcon } from "lucide-react"
 
 import {
   Sidebar,
@@ -14,8 +14,14 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
 } from "@/components/ui/sidebar"
+import { VIEWS, VIEW_IDS, type View } from "@/lib/views"
 
-export type View = "table" | "settings"
+/** L'icône de chaque vue. `Record<View, …>` : en ajouter une sans icône ne compile pas. */
+const ICONS: Record<View, LucideIcon> = {
+  table: Table2,
+  netdeck: Library,
+  settings: Settings2,
+}
 
 type Props = {
   view: View
@@ -49,26 +55,21 @@ export function AppSidebar({ view, onView, onImport, dark, onToggleTheme }: Prop
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  isActive={view === "table"}
-                  onClick={() => onView("table")}
-                  tooltip="Data table"
-                >
-                  <Table2 />
-                  <span>Data table</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  isActive={view === "settings"}
-                  onClick={() => onView("settings")}
-                  tooltip="Paramètres"
-                >
-                  <Settings2 />
-                  <span>Paramètres</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {VIEW_IDS.map((id) => {
+                const Icon = ICONS[id]
+                return (
+                  <SidebarMenuItem key={id}>
+                    <SidebarMenuButton
+                      isActive={view === id}
+                      onClick={() => onView(id)}
+                      tooltip={VIEWS[id].label}
+                    >
+                      <Icon />
+                      <span>{VIEWS[id].label}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

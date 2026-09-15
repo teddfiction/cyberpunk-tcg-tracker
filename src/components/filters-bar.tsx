@@ -3,7 +3,7 @@
  * Lit et écrit directement dans l'instance TanStack — aucun état local.
  */
 import type { Table } from "@tanstack/react-table"
-import { RotateCcw, Search } from "lucide-react"
+import { Download, RotateCcw, Search, Upload } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -23,6 +23,10 @@ type Props = {
   expansions: Record<string, string>
   shown: number
   total: number
+  onExport: () => void
+  /** Faux tant que `cards_enriched.json` n'est pas chargé. */
+  enriched: boolean
+  onImport: () => void
 }
 
 const FLAGS = [
@@ -39,6 +43,9 @@ export function FiltersBar({
   expansions,
   shown,
   total,
+  onExport,
+  enriched,
+  onImport,
 }: Props) {
   const search = (table.getState().globalFilter as string) ?? ""
   const selected = (table.getColumn("exps")?.getFilterValue() as string[]) ?? []
@@ -71,7 +78,28 @@ export function FiltersBar({
             ))}
           </TabsList>
         </Tabs>
+
+        <Button variant="outline" size="sm" onClick={onExport}>
+          <Download />
+          <span className="hidden sm:inline">Exporter en CSV</span>
+        </Button>
       </div>
+
+      {/* Trois colonnes dorment derrière le bouton d'import : le dire, sinon
+          personne ne les découvre. */}
+      {!enriched && (
+        <div className="text-muted-foreground flex flex-wrap items-center gap-2 border border-dashed px-3 py-2 text-xs">
+          <span>
+            Visuel, N° de collecteur et Rareté apparaissent une fois{" "}
+            <code>cards_enriched.json</code> importé — voir{" "}
+            <code>npm run data:netdeck:images</code>.
+          </span>
+          <Button variant="ghost" size="sm" className="ml-auto" onClick={onImport}>
+            <Upload />
+            Importer
+          </Button>
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
         <ExtensionCombobox

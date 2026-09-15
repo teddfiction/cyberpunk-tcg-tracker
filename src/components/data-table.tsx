@@ -15,9 +15,9 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
-import type { TableRow as Line } from "@/types"
 
-export function DataTable({ table }: { table: TanstackTable<Line> }) {
+/** Générique : sert aussi bien aux cotes Cardmarket qu'aux impressions Netdeck. */
+export function DataTable<T>({ table }: { table: TanstackTable<T> }) {
   const rows = table.getRowModel().rows
 
   return (

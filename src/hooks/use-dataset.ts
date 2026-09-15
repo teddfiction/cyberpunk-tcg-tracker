@@ -166,6 +166,8 @@ export function useDataset() {
     expCounts,
     expansions: EXPANSIONS,
     enriched: enrichIndex.on,
+    /** Cartes Netdeck telles qu'importées — la base de cartes s'y adosse. */
+    enrichedCards: enriched,
     pricesAt,
     catalogAt,
     storedAt,

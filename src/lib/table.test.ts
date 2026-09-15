@@ -4,6 +4,8 @@
  */
 import { describe, expect, it } from "vitest"
 
+import { columnsFor } from "@/components/columns"
+import { MODES, MODE_IDS } from "@/lib/modes"
 import { HIDDEN_COLUMNS, resolveSorting } from "@/lib/table"
 import { makeTable } from "@/test/table"
 
@@ -33,16 +35,23 @@ describe("tri", () => {
 
 describe("resolveSorting", () => {
   it("conserve un tri dont la colonne existe", () => {
-    expect(resolveSorting([{ id: "low", desc: false }], ["name", "low"], "normal")).toEqual([
+    expect(resolveSorting([{ id: "low", desc: false }], ["name", "low"], "low")).toEqual([
       { id: "low", desc: false },
     ])
   })
 
-  it("retombe sur le tri par défaut du mode quand la colonne a disparu", () => {
-    expect(resolveSorting([{ id: "low", desc: false }], ["name", "lowF"], "foil")).toEqual([
+  it("retombe sur le tri par défaut quand la colonne a disparu", () => {
+    expect(resolveSorting([{ id: "low", desc: false }], ["name", "lowF"], "lowF")).toEqual([
       { id: "lowF", desc: true },
     ])
-    expect(resolveSorting([], ["bestLow"], "card")).toEqual([{ id: "bestLow", desc: true }])
+    expect(resolveSorting([], ["bestLow"], "bestLow")).toEqual([{ id: "bestLow", desc: true }])
+  })
+
+  it("chaque mode apporte son tri par défaut", () => {
+    for (const mode of MODE_IDS) {
+      const columns = columnsFor(mode, false).map((c) => c.id)
+      expect(columns).toContain(MODES[mode].defaultSort)
+    }
   })
 })
 
