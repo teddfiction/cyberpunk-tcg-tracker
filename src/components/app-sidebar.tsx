@@ -1,5 +1,5 @@
 /** Navigation latérale : vues, import de fichiers, bascule de thème. */
-import { Library, Moon, Settings2, Sun, Table2, Upload, type LucideIcon } from "lucide-react"
+import { Library, Microchip, Moon, Settings2, Sun, Table2, Upload, type LucideIcon } from "lucide-react"
 
 import {
   Sidebar,
@@ -37,13 +37,13 @@ export function AppSidebar({ view, onView, onImport, dark, onToggleTheme }: Prop
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" onClick={() => onView("table")} tooltip="Data table">
+            <SidebarMenuButton size="lg" onClick={() => onView("table")} tooltip="Cyberpunk Tracker">
               <div className="bg-primary text-primary-foreground flex aspect-square size-8 items-center justify-center">
-                <Table2 className="size-4" />
+                <Microchip className="size-4" />
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">Cyberpunk TCG</span>
-                <span className="text-muted-foreground truncate text-xs">Cotes Cardmarket</span>
+                <span className="truncate font-medium">Cyberpunk Tracker</span>
+                <span className="text-muted-foreground truncate text-xs">Trading Card Game</span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
