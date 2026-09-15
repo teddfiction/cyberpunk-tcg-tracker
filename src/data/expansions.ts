@@ -10,16 +10,19 @@ import type { CodeMap } from "@/types"
  * Les exports Cardmarket ne contiennent que des `idExpansion`. Ces noms ont été
  * reconstruits en croisant les produits scellés avec leur idExpansion : un
  * « Welcome to Night City - Beta Booster Box » en 6714 nomme l'extension 6714.
- * 6717 et 6719 n'ont aucun produit scellé associé, leur nom reste inconnu —
- * l'export Netdeck devrait les identifier (« Set 1 Promos » probablement).
+ * 6717 et 6719 n'avaient aucun produit scellé : leurs noms viennent du
+ * recoupement avec l'export Netdeck du 15/09/2026, par intersection des noms de
+ * cartes. 6719 = « Set 1 Promos » (2 cartes sur 2, certain). 6717 = « Box
+ * Toppers », 6 cartes sur 6 — la variante Beta plutôt que Retail est déduite de
+ * sa place dans la série d'identifiants, pas confirmée.
  */
 export const EXPANSIONS: Record<string, string> = {
   "6714": "Welcome to Night City — Beta",
   "6715": "The Heist — Beta Starter Deck",
   "6716": "Embracing Power — Beta Starter Deck",
-  "6717": "Extension 6717",
+  "6717": "Box Toppers — Beta",
   "6718": "Pre-Release Beta Kit",
-  "6719": "Extension 6719",
+  "6719": "Set 1 Promos",
   "6720": "The Heist — Demo Deck",
   "6721": "Embracing Power — Demo Deck",
   "6722": "Alpha Kit",
@@ -52,6 +55,22 @@ export const DEFAULT_CODES: CodeMap = {
   "6761": { code: "MS01", sure: false },
   "6762": { code: "SD01", sure: false },
   "6763": { code: "SD02", sure: false },
+}
+
+/**
+ * Sets Netdeck dont le nom ne ressemble pas à celui de l'extension Cardmarket
+ * correspondante — l'appariement par libellé ne peut rien pour eux.
+ *
+ * Établi par intersection des noms de cartes sur l'export du 15/09/2026, et
+ * cohérent sur le fond : le deck de démo « Embracing Power » est le deck
+ * Arasaka, celui de « The Heist » est le deck Merc. Les deux recoupements sont
+ * à 100 % (14/14 et 15/15).
+ *
+ * Clé : nom du set normalisé par `norm()`. Valeur : idExpansion Cardmarket.
+ */
+export const SET_ALIASES: Record<string, string> = {
+  arasakademodeck: "6721",
+  mercdemodeck: "6720",
 }
 
 /** Raccourcit les `categoryName` Cardmarket : « Cyberpunk Booster Boxes » → « Booster Box ». */

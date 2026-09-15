@@ -2,6 +2,7 @@
  * Jointure Netdeck ↔ Cardmarket : index par nom normalisé et extension, avec
  * repli prudent sur le nom seul.
  */
+import { SET_ALIASES } from "@/data/expansions"
 import { norm } from "@/lib/format"
 import type { EnrichedCard, Printing } from "@/types"
 
@@ -28,6 +29,10 @@ export const emptyIndex = (): EnrichIndex => ({
 /**
  * Rapproche un nom de set Netdeck d'un idExpansion Cardmarket.
  *
+ * `SET_ALIASES` passe en premier : certains sets portent chez Netdeck un nom
+ * qui n'a rien à voir avec celui de Cardmarket, et aucune comparaison de
+ * libellés ne les rattrapera.
+ *
  * `norm()` produit exactement le `set.code` de l'API (« Welcome to Night City —
  * Retail » → `welcometonightcityretail`), donc l'égalité est la règle. Le
  * préfixe couvre les libellés partiels : « Pre-Release Beta » contre
@@ -40,6 +45,8 @@ export function matchExpansion(
 ): string | null {
   const s = setCode || (setName ? norm(setName) : null)
   if (!s) return null
+  const alias = SET_ALIASES[norm(setName ?? "")] ?? SET_ALIASES[norm(s)]
+  if (alias) return alias
   let best: string | null = null
   for (const [id, label] of Object.entries(expansions)) {
     const l = norm(label)

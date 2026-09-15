@@ -5,6 +5,7 @@
 import { describe, expect, it } from "vitest"
 
 import { buildEnrichIndex, matchExpansion, printingsFor } from "@/lib/enrich"
+import { EXPANSIONS as REAL_EXPANSIONS } from "@/data/expansions"
 import { AMBIGUOUS_ENRICHED, ENRICHED, EXPANSIONS } from "@/test/fixtures"
 
 const index = buildEnrichIndex(ENRICHED, EXPANSIONS)
@@ -21,6 +22,13 @@ describe("matchExpansion", () => {
   it("garde le libellé le plus long en cas d'ambiguïté", () => {
     const ambigu = { ...EXPANSIONS, "4": "Beta Kit Deluxe" }
     expect(matchExpansion("Beta Kit", "betakit", ambigu)).toBe("4")
+  })
+
+  it("passe par les alias quand les libellés n'ont rien en commun", () => {
+    // « Arasaka Demo Deck » chez Netdeck est « Embracing Power — Demo Deck »
+    // chez Cardmarket : aucune comparaison de libellés ne les rapprocherait.
+    expect(matchExpansion("Arasaka Demo Deck", "arasakademodeck", REAL_EXPANSIONS)).toBe("6721")
+    expect(matchExpansion("Merc Demo Deck", null, REAL_EXPANSIONS)).toBe("6720")
   })
 
   it("rend null sans rien d'exploitable", () => {
