@@ -6,6 +6,7 @@
 import type {
   FilterFn,
   Row as TanstackRow,
+  SortingFn,
   SortingState,
 } from "@tanstack/react-table"
 
@@ -21,6 +22,22 @@ import type { AnyRow, TableRow } from "@/types"
 export function sortText<T>(a: TanstackRow<T>, b: TanstackRow<T>, id: string): number {
   return String(a.getValue(id) ?? "").localeCompare(String(b.getValue(id) ?? ""), "fr")
 }
+
+/**
+ * Tri par rang déclaré plutôt qu'alphabétique — même raison que `rarityRank` :
+ * « Legend » doit précéder « Unit », et « Red » précéder « Green ». Une valeur
+ * hors liste passe après les connues, elle n'est jamais silencieusement rangée
+ * en tête.
+ */
+export const sortRank =
+  <T,>(order: readonly string[]): SortingFn<T> =>
+  (a, b, id) => {
+    const rank = (r: TanstackRow<T>) => {
+      const i = order.indexOf(String(r.getValue(id) ?? ""))
+      return i === -1 ? order.length : i
+    }
+    return rank(a) - rank(b)
+  }
 
 /**
  * Recherche plein texte, tolérante à la saisie naturelle.
@@ -95,10 +112,9 @@ export const INITIAL_FILTERS = [{ id: "priced", value: true }]
 export function resolveSorting(
   sorting: SortingState,
   columnIds: (string | undefined)[],
-  defaultSort: string,
-  defaultDesc = true
+  fallback: SortingState
 ): SortingState {
   const ids = new Set(columnIds)
   const kept = sorting.filter((s) => ids.has(s.id))
-  return kept.length ? kept : [{ id: defaultSort, desc: defaultDesc }]
+  return kept.length ? kept : fallback
 }

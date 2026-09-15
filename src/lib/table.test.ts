@@ -35,16 +35,27 @@ describe("tri", () => {
 
 describe("resolveSorting", () => {
   it("conserve un tri dont la colonne existe", () => {
-    expect(resolveSorting([{ id: "low", desc: false }], ["name", "low"], "low")).toEqual([
+    const fallback = [{ id: "low", desc: true }]
+    expect(resolveSorting([{ id: "low", desc: false }], ["name", "low"], fallback)).toEqual([
       { id: "low", desc: false },
     ])
   })
 
   it("retombe sur le tri par défaut quand la colonne a disparu", () => {
-    expect(resolveSorting([{ id: "low", desc: false }], ["name", "lowF"], "lowF")).toEqual([
-      { id: "lowF", desc: true },
+    expect(
+      resolveSorting([{ id: "low", desc: false }], ["name", "lowF"], [{ id: "lowF", desc: true }])
+    ).toEqual([{ id: "lowF", desc: true }])
+    expect(resolveSorting([], ["bestLow"], [{ id: "bestLow", desc: true }])).toEqual([
+      { id: "bestLow", desc: true },
     ])
-    expect(resolveSorting([], ["bestLow"], "bestLow")).toEqual([{ id: "bestLow", desc: true }])
+
+    // Un repli à plusieurs clés passe entier : c'est ce dont vit le tri par
+    // défaut de la grille.
+    const grid = [
+      { id: "color", desc: false },
+      { id: "type", desc: false },
+    ]
+    expect(resolveSorting([{ id: "disparue", desc: false }], ["color", "type"], grid)).toEqual(grid)
   })
 
   it("chaque mode apporte son tri par défaut", () => {

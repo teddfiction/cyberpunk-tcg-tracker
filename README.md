@@ -118,7 +118,8 @@ src/
     grid-columns.ts     colonnes-facettes de la grille (ne rendent rien)
     card-grid.tsx       grille de cartes, quatre colonnes au plus
     card-dialog.tsx     versions d'une carte, en modale
-    facet-filter.tsx    filtre à facette générique
+    facet-filter.tsx    filtre à facette générique (menu à cases à cocher)
+    sort-menu.tsx       menu de tri de la grille
     netdeck-view.tsx    vue base de cartes
     data-table.tsx      rendu de la table depuis l'instance TanStack
     filters-bar.tsx     recherche, onglets, combobox, cases à cocher
@@ -143,6 +144,7 @@ src/
     enrich.ts           jointure Netdeck ↔ Cardmarket
     modes.ts            registre des modes d'affichage
     facets.ts           registre des facettes de la grille
+    sorts.ts            registre des tris de la grille, et rangs couleur/type
     printings.ts        impressions Netdeck et regroupement par carte
     table.ts            tri, filtres et recherche passés à TanStack
     format.ts           formatage et normalisation
