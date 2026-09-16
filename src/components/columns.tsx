@@ -224,7 +224,7 @@ const addedColumn: ColumnDef<TableRow> = {
   sortUndefined: "last",
   meta: {
     align: "right",
-    className: "text-muted-foreground text-xs",
+    className: "text-muted-foreground",
     csv: (r) => (r as AnyRow).added,
   },
   cell: ({ getValue }) => {
@@ -237,7 +237,7 @@ const idColumn: ColumnDef<TableRow> = {
   id: "id",
   accessorKey: "id",
   header: "ID",
-  meta: { align: "right", className: "text-muted-foreground text-xs" },
+  meta: { align: "right", className: "text-muted-foreground" },
   cell: ({ getValue }) => getValue<number>(),
 }
 
