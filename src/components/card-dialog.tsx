@@ -4,9 +4,9 @@
  *
  * La modale existe parce qu'une tuile de grille ne laissait à chaque version
  * qu'une vignette de 40 px — or l'artwork est justement la seule chose qui
- * distingue deux impressions que Cardmarket confond. Le grand visuel est plafonné
- * à 320 px : c'est la largeur native des miniatures, et il n'existe pas d'image
- * plus grande à aller chercher (voir « Limites des données »).
+ * distingue deux impressions que Cardmarket confond. Le grand visuel est affiché
+ * à 320 px CSS pour un fichier de 640 px : net sur Retina (voir « Limites des
+ * données »).
  */
 import * as React from "react"
 import { ExternalLink } from "lucide-react"
@@ -136,7 +136,7 @@ export function CardDialog({
   )
 }
 
-/** Le visuel de la version choisie, à sa taille native au plus. */
+/** Le visuel de la version choisie : 320 px CSS au plus, pour un fichier de 640 px. */
 function Artwork({ printing: p }: { printing: PrintRow }) {
   if (!p.thumb) {
     return (
