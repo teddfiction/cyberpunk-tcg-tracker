@@ -34,7 +34,7 @@ structure ne couvre pas le besoin — mieux vaut la faire évoluer que la contou
 
 1. Écrire la `ColumnDef` — ou réutiliser les fabriques `money()` / `percent()`.
 2. L'insérer dans l'entrée `VISIBLE[mode]` voulue.
-3. Renseigner son `meta` : `align: "right"` pour un nombre, `decimal: true` pour la
+3. Renseigner son `meta` : `align: "right"` pour un nombre — rendu en Geist Mono —, `decimal: true` pour la
    virgule française au CSV, `csv: (row, codes) => …` quand la valeur brute de la
    colonne n'est pas ce qu'on veut exporter.
 
@@ -159,17 +159,21 @@ Deux stockages, choisis selon la taille : `localStorage` pour le thème
 (`use-theme.ts`), **IndexedDB pour les imports, les codes et la collection**
 (`lib/store.ts`, clés dans `KEYS`, orchestré par `hooks/use-dataset.ts`). Au-delà de quelques kilo-octets c'est
 IndexedDB — `localStorage` plafonne vers 5 Mo et ne stocke que du texte, là où
-IndexedDB range les objets tels quels, sans `JSON.stringify` sur 14 Mo.
+IndexedDB range les objets tels quels, sans `JSON.stringify` sur 43 Mo.
 
 `lib/store.ts` ne lève jamais : navigation privée, quota plein ou stockage bloqué
 rendent `false` et l'app continue. Mais l'échec est **rendu, pas avalé** —
 `importFiles` prévient alors l'utilisateur que rien ne sera conservé. Garder cette
 propriété : un stockage qui échoue en silence est pire que pas de stockage.
 
-**La collection est la seule donnée qu'aucun import ne reconstitue.** D'où trois
+**La collection est la seule donnée qu'aucun import ne reconstitue.** D'où quatre
 choses à préserver : l'export d'une sauvegarde (Paramètres), un avis d'échec
-d'écriture — une fois, pas à chaque clic —, et son absence de `FORGETTABLE` :
-« Oublier les données conservées » ne la touche pas, et un test le verrouille.
+d'écriture — une fois, pas à chaque clic —, son absence de `FORGETTABLE` :
+« Oublier les données conservées » ne la touche pas, et un test le verrouille —,
+et une suppression qui ne passe que par « Supprimer ma collection », derrière
+une `AlertDialog` qui offre l'export sur place. `clearCollection` pose une
+collection vide et laisse l'effet de conservation l'écrire : pas de second
+chemin d'écriture, donc pas d'avis d'échec à dupliquer.
 
 ## Architecture
 
@@ -245,8 +249,9 @@ bien la sienne.
 
 Elle est la seule vue à **plafonner sa largeur** (`max-w-7xl`, quatre colonnes
 au plus) là où la table des cotes s'étale : à 1280 px les tuiles font 308 px,
-soit juste sous les 320 px natifs des miniatures, et il n'existe pas d'image
-plus grande à aller chercher (voir « Limites des données »). Les versions
+soit juste sous les 320 px CSS pour lesquels les visuels sont exportés — en
+640 px, pour Retina ; l'original n'en fait que 733 (voir « Limites des
+données »). Les versions
 s'ouvrent en modale plutôt qu'en dépliant la tuile — sous une tuile, les
 artworks tenaient dans 40 px de haut, illisibles, et déplier repoussait toute la
 grille. Radix ne rend pas le focus à la tuile en sortant : `CardDialog` le fait
@@ -305,7 +310,9 @@ Sur la conservation des imports :
   les setters de React, qui ne seraient pas à jour à temps.
 - Le stockage est **local à un navigateur** : il ne suit ni le dépôt, ni une
   autre machine. Paramètres → « Oublier les données conservées » repart du jeu
-  embarqué.
+  embarqué — cotes, catalogue, base de cartes et codes —, « Supprimer ma
+  collection » vide la collection. Aucun des deux ne touche à ce que l'autre
+  efface.
 - `codes` est conservé lui aussi, mais le reporter dans `src/data/expansions.ts`
   reste ce qui le rend permanent et partagé.
 - `codes` et `collection`, saisis à la main, s'écrivent **à chaque changement**
@@ -439,20 +446,42 @@ La consigne du projet : **uniquement Tailwind et les composants shadcn natifs.**
 - **Confirmer une action destructive : en deux temps, dans le bouton.** Le
   bouton passe en `destructive` et change de libellé, perdre le focus annule
   (`StoredDataCard`, `CollectionControl`). Pas d'`AlertDialog` : dans la modale
-  de carte, il s'empilerait sur une autre modale.
+  de carte, il s'empilerait sur une autre modale. **Une exception**, la
+  suppression de la collection (`ClearCollection`, Paramètres) : rien ne la
+  répare, sauf une sauvegarde exportée avant — le geste doit s'arrêter sur ce
+  qui sera perdu, et Paramètres n'est pas une modale. Un oubli qu'un import
+  répare reste en deux temps.
+- **Voile des modales : un flou, pas un aplat.** `bg-black/10` et
+  `backdrop-blur-xs`, celui de l'AlertDialog des styles récents de shadcn (nova,
+  vega) ; le registry new-york pose `bg-black/50` sans flou. La règle vit dans
+  `index.css` et vise les `data-slot` des voiles (`dialog`, `alert-dialog`,
+  `sheet`), **hors de toute couche** : c'est ce qui la fait passer devant les
+  utilitaires du registry. Dans `@layer base` ou `components`, elle perdrait
+  contre `bg-black/50`, en silence.
+- **Informations de carte : Geist Mono en capitales** (`components/card-info.tsx`).
+  Tuile et modale partagent badges, ligne de caractéristiques et liste
+  libellé / valeur ; seule la taille change, par `className` (`text-[10px]`
+  dans la tuile, `text-xs` dans la modale). Les **numéros de collecteur restent
+  hors capitales** (`normal-case`) : « 005a » n'est pas « 005A », et le « β »
+  des tirages Beta passerait pour un B latin. Dans la table des cotes, c'est
+  `align: "right"` qui fait passer une cellule en Geist Mono `text-xs` — la
+  taille du N°, parce qu'en `text-sm` la table s'élargissait de 37 px.
 - **Aucune couleur en dur.** Toujours les tokens : `bg-card`,
   `text-muted-foreground`, `text-destructive`. Ils vivent dans les blocs `:root` /
-  `.dark` de `src/index.css`. Thème : base **Slate**, accent **Yellow**,
+  `.dark` de `src/index.css`. Thème : base **Neutral**, accent **Yellow**,
   graphiques **Cyan**, `--radius: 0`, polices **Geist** et **Geist Mono**
-  (locales, SIL OFL 1.1). Base et accent sont deux axes : changer de base ne
-  touche pas aux tons `primary` / `ring` / `sidebar-primary`, qui restent jaunes.
-- **Le thème sombre s'écarte de Slate, exprès.** `--background` et `--sidebar`
-  sont un noir pur et non slate-950/900 : rien ne doit disputer l'éclat des
+  (locales, SIL OFL 1.1). Base et accent sont deux axes : la base est passée de
+  Slate à Neutral — un chrome noir, blanc et gris, sans nuance bleutée — sans
+  toucher aux tons `primary` / `ring` / `sidebar-primary` / `sidebar-active`,
+  qui restent jaunes. `--muted-foreground` est neutral-600 en clair, et non le
+  500 du registry, qui tombe à la limite des 4,5:1 sur le fond neutral-50.
+- **Le thème sombre s'écarte de Neutral, exprès.** `--background` et `--sidebar`
+  sont un noir pur et non neutral-950/900 : rien ne doit disputer l'éclat des
   visuels de carte, qui sont ce que la base de cartes montre. Le chrome et le
   contenu ne se distinguent donc plus que par une bordure. Celle-ci est adoucie
-  (`--border`, `--input`, `--sidebar-border` entre slate-900 et slate-800) :
+  (`--border`, `--input`, `--sidebar-border` entre neutral-900 et neutral-800) :
   assez sombre pour s'effacer sur le noir, assez claire pour rester visible sur
-  le slate-900 des cartes. Le thème clair n'y touche pas — un fond noir n'y
+  le neutral-900 des cartes. Le thème clair n'y touche pas — un fond noir n'y
   aurait aucun sens.
 - **Entrées de la barre latérale : le texte signale l'état, jamais le fond.**
   Repos un cran sous le blanc, survol en blanc plein, actif en jaune — y compris
@@ -462,14 +491,15 @@ La consigne du projet : **uniquement Tailwind et les composants shadcn natifs.**
   à préfixe égal, la classe passée l'emporte, sans toucher au fichier du
   registry. Le jaune actif a son propre token, `--sidebar-active`, et **pas**
   `--sidebar-primary` : ce dernier est calibré pour un aplat, et en texte sur la
-  barre claire il ne fait que 1,74:1. Mesuré sur le rendu : yellow-700 tombe
-  pile sur 4,5:1 sans marge, d'où yellow-800 (6,24:1) en clair ; en sombre le
-  jaune de l'accent passe tel quel (13,35:1).
+  barre claire il ne fait que 1,75:1. yellow-700 tombe pile sur 4,5:1 sans
+  marge, d'où yellow-800 (6,3:1) en clair ; en sombre le jaune de l'accent passe
+  tel quel (13,35:1). Valeurs recalculées sur la barre neutral-100 : le passage
+  de Slate à Neutral ne les a pas déplacées.
 - **Les couleurs de carte du jeu sont des données, pas du thème**, mais elles
   suivent la même règle : `--card-red/-yellow/-green/-blue` dans `index.css`,
   réglées par thème (Tailwind 600 en clair, 400 en sombre — une teinte lisible
-  sur slate-50 ne l'est pas sur slate-950). `data/colors.ts` fait la jointure ;
-  aucun composant n'écrit de couleur.
+  sur un fond clair ne l'est pas sur le noir). `data/colors.ts` fait la
+  jointure ; aucun composant n'écrit de couleur.
 - **Toasts : `sonner`.** Le registry ne sert plus de `toast` Radix — `sonner` est
   le composant shadcn natif aujourd'hui, seule entorse admise à la règle Radix.
   Son fichier lit le thème dans `next-themes`, absent de provider ici : `App.tsx`
@@ -537,15 +567,21 @@ Ces contraintes viennent des sources, pas du code. Ne pas « réparer » :
   (29), Iconic Legend (21), Iconic Other (10), Secret (8), Iconic Secret (4).
 - **Pas d'URL d'image publique.** `image_url` est signée et expire ;
   `source_image_url`, sa variante nue, est refusée par CloudFront (« Missing
-  Key-Pair-Id »). La miniature produite par `npm run data:netdeck:images` est
-  donc la seule image dont dispose l'app, pour la colonne comme pour l'aperçu au
-  survol — d'où sa largeur de 320 px et le poids du fichier (~14 Mo en 320 px,
-  réglable par `--width=`). Ce fichier reste local et gitignoré : les visuels
-  sont sous licence CD PROJEKT RED.
+  Key-Pair-Id »). Le visuel produit par `npm run data:netdeck:images` est donc
+  la seule image dont dispose l'app — vignette, aperçu au survol, tuile et
+  modale. Il est exporté en **640 px**, deux fois les 320 px CSS auxquels tuile,
+  modale et aperçu l'affichent : en 320 px, un écran Retina l'agrandissait et
+  il était flou. L'original fait 733 × 1024 (relevé du 16/09/2026) ; `sharp` ne
+  l'agrandit jamais. Poids : ~43 Mo de JSON, contre ~15 Mo en 320 px — réglable
+  par `--width=`. Un import de 43 Mo prend moins de 3 s. Ce fichier reste local
+  et gitignoré : les visuels sont sous licence CD PROJEKT RED.
 - **Netdeck nomme le numéro de collecteur différemment selon l'endpoint** : la
   liste dit `print_number`, le détail dit `collector_number`. `printingOf`
   (`scripts/netdeck-export.mjs`) lit les deux. N'en lire qu'un laisse 351 des
-  502 impressions sans numéro, et les fait passer pour non numérotées. Les
+  502 impressions sans numéro, et les fait passer pour non numérotées — c'est ce
+  que montre encore un fichier produit avant le correctif, conservé dans
+  IndexedDB : la modale affiche un tiret. Le compte rendu d'import compte donc
+  les impressions sans numéro et dit de régénérer le fichier. Les
   numéros distinguent les variantes qu'aucun autre champ ne sépare : « 005a » et
   « 005b » sont deux Rare du même illustrateur, le préfixe « β » marquant les
   tirages Beta.
