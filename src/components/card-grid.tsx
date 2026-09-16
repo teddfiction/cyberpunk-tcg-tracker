@@ -1,26 +1,34 @@
 /**
  * Grille de cartes. Une tuile par carte ; cliquer l'ouvre en modale sur ses
  * impressions, dont chacune a son propre visuel — c'est là que se voient les
- * variantes de rareté que Cardmarket ne distingue pas.
+ * variantes de rareté que Cardmarket ne distingue pas. Dans la collection, une
+ * tuile par version possédée.
  *
  * Filtrer par rareté change l'illustration des tuiles : c'est l'impression qui
  * porte cette rareté qui est montrée, et la modale s'ouvre sur elle.
  */
 import * as React from "react"
-import { Layers } from "lucide-react"
+import { Check, Layers } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { CardDialog } from "@/components/card-dialog"
 import { colorVar } from "@/data/colors"
+import { rarityLabel } from "@/data/rarities"
 import { printingIndex, tileStats } from "@/lib/printings"
 import { cn } from "@/lib/utils"
+import type { Scope } from "@/lib/collection"
 import type { CardStat } from "@/lib/printings"
-import type { GridCard } from "@/types"
+import type { Collection, GridCard, PrintRow } from "@/types"
 
 type Props = {
   cards: GridCard[]
   /** Raretés cochées dans les filtres : la tuile montre alors cette version. */
   rarities: string[]
+  scope: Scope
+  collection: Collection
+  onQty: (printing: PrintRow, qty: number) => void
+  /** Ce qui remplace la grille quand elle est vide. Par défaut, un constat de filtres. */
+  empty?: React.ReactNode
 }
 
 /**
@@ -34,7 +42,7 @@ const OFFSCREEN = "[content-visibility:auto] [contain-intrinsic-size:auto_520px]
 /** Libellés de badge : même Geist Mono en capitales que la ligne d'infos. */
 const BADGE = "font-mono text-[10px] uppercase tabular-nums"
 
-export function CardGrid({ cards, rarities }: Props) {
+export function CardGrid({ cards, rarities, scope, collection, onQty, empty }: Props) {
   // La carte n'est pas remise à `null` à la fermeture : la modale la rend
   // encore pendant son animation de sortie. C'est `open` qui pilote, pas elle.
   const [card, setCard] = React.useState<GridCard | null>(null)
@@ -51,30 +59,34 @@ export function CardGrid({ cards, rarities }: Props) {
     setOpen(true)
   }
 
-  if (!cards.length) {
-    return (
-      <div className="text-muted-foreground border p-8 text-center text-sm">
-        Aucune carte ne correspond à ces filtres.
-      </div>
-    )
-  }
-
   return (
     <>
-      {/* Quatre colonnes au plus : au-delà, la tuile passe sous les 320 px de
-          la miniature et le visuel — le fond de cette vue — devient illisible. */}
-      {/* Espacement vertical doublé : les tuiles n'ont plus de bordure, c'est
-          le blanc qui les sépare. */}
-      <div className="grid grid-cols-2 items-start gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
-        {cards.map((c) => (
-          <Tile
-            key={c.name}
-            card={c}
-            rarities={rarities}
-            onSelect={(index, el) => select(c, index, el)}
-          />
-        ))}
-      </div>
+      {/* La grille vide ne démonte pas la modale : ajouter la dernière carte
+          d'un filtre « Manquante », ou retirer la dernière version de la
+          collection, fait disparaître sa tuile sous la modale encore ouverte. */}
+      {!cards.length ? (
+        (empty ?? (
+          <div className="text-muted-foreground border p-8 text-center text-sm">
+            Aucune carte ne correspond à ces filtres.
+          </div>
+        ))
+      ) : (
+        // Quatre colonnes au plus : au-delà, la tuile passe sous les 320 px de
+        // la miniature et le visuel — le fond de cette vue — devient illisible.
+        // Espacement vertical doublé : les tuiles n'ont plus de bordure, c'est
+        // le blanc qui les sépare.
+        <div className="grid grid-cols-2 items-start gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
+          {cards.map((c) => (
+            <Tile
+              key={c.id}
+              card={c}
+              rarities={rarities}
+              scope={scope}
+              onSelect={(index, el) => select(c, index, el)}
+            />
+          ))}
+        </div>
+      )}
 
       {card && (
         <CardDialog
@@ -83,6 +95,9 @@ export function CardGrid({ cards, rarities }: Props) {
           open={open}
           onOpenChange={setOpen}
           trigger={trigger}
+          scope={scope}
+          collection={collection}
+          onQty={onQty}
         />
       )}
     </>
@@ -92,10 +107,12 @@ export function CardGrid({ cards, rarities }: Props) {
 function Tile({
   card,
   rarities,
+  scope,
   onSelect,
 }: {
   card: GridCard
   rarities: string[]
+  scope: Scope
   onSelect: (index: number, trigger: HTMLButtonElement) => void
 }) {
   const stats = tileStats(card)
@@ -110,7 +127,7 @@ function Tile({
       <button
         onClick={(e) => onSelect(pick, e.currentTarget)}
         aria-haspopup="dialog"
-        aria-label={`${card.name} — voir les versions`}
+        aria-label={`${card.name} — ${scope === "owned" ? "voir la version" : "voir les versions"}`}
         className="focus-visible:ring-ring/50 block cursor-pointer outline-none focus-visible:ring-[3px]"
       >
         {/* Sans bordure : l'illustration se suffit, et le cadre dessiné sur la
@@ -141,10 +158,29 @@ function Tile({
               {card.type}
             </Badge>
           )}
-          {card.printings.length > 1 && (
+          {/* Dans la collection la tuile est une version : sa rareté la
+              distingue d'une autre version de la même carte, que seul
+              l'artwork séparerait sinon. */}
+          {scope === "owned" && shown?.rarity && (
+            <Badge variant="outline" className={cn(BADGE, "text-muted-foreground")}>
+              {rarityLabel(shown.rarity)}
+            </Badge>
+          )}
+          {scope === "all" && card.printings.length > 1 && (
             <Badge variant="outline" className={cn(BADGE, "text-muted-foreground gap-1")}>
               <Layers className="size-3" />
               {card.printings.length}
+            </Badge>
+          )}
+          {/* Contour neutre et texte plein : le jaune de l'accent, en texte sur
+              le thème clair, tomberait sous le contraste lisible. */}
+          {card.owned > 0 && (
+            <Badge
+              variant="outline"
+              className={cn(BADGE, "border-foreground/40 text-foreground gap-1")}
+              title={`${card.owned} dans ma collection`}
+            >
+              <Check className="size-3" />×{card.owned}
             </Badge>
           )}
         </div>

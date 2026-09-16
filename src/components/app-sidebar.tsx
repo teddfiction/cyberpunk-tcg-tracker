@@ -8,6 +8,7 @@ import {
   Sun,
   Table2,
   Upload,
+  WalletCards,
   type LucideIcon,
 } from "lucide-react"
 
@@ -31,6 +32,8 @@ import { VIEWS, VIEW_IDS, type View } from "@/lib/views"
 const ICONS: Record<View, LucideIcon> = {
   table: Table2,
   netdeck: Library,
+  // Pas une seconde bibliothèque : l'icône doit se distinguer de la base d'un coup d'œil.
+  collection: WalletCards,
   settings: Settings2,
 }
 
