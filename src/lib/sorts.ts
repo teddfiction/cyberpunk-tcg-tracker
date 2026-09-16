@@ -37,6 +37,8 @@ export const SORTS = {
   power: { label: "Puissance", sorting: [asc("power")] },
   ram: { label: "RAM", sorting: [asc("ram")] },
   num: { label: "Numéro de carte", sorting: [asc("num")] },
+  // Décroissant : on cherche d'abord ce qu'on a en nombre.
+  qty: { label: "Exemplaires", sorting: [{ id: "qty", desc: true }] },
 } as const satisfies Record<string, SortConfig>
 
 export type SortId = keyof typeof SORTS

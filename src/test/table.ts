@@ -18,7 +18,7 @@ import { MODES, type Mode } from "@/lib/modes"
 import { HIDDEN_COLUMNS, rowId, searchRow } from "@/lib/table"
 import { buildEnrichIndex } from "@/lib/enrich"
 import { CATALOG, CODES, ENRICHED, EXPANSIONS, PRICES } from "@/test/fixtures"
-import type { GridCard, TableRow } from "@/types"
+import type { Collection, GridCard, TableRow } from "@/types"
 
 const build = (enrich = emptyIndex()) =>
   buildRows({ catalog: CATALOG, prices: PRICES, expansions: EXPANSIONS, codes: CODES, enrich })
@@ -71,24 +71,28 @@ export function makeTable(mode: Mode, state: State = {}, enriched = false): Tabl
 export const namesOf = (table: Table<TableRow>) =>
   table.getRowModel().rows.map((r) => r.original.name)
 
-/** Les mêmes cartes, vues par la grille. */
-export const gridCards = buildGrid(
-  ENRICHED,
-  buildPrintings({ cards: ENRICHED, rows, expansions: EXPANSIONS, codes: CODES })
-)
+/** Les mêmes cartes, vues par la grille, avec les quantités d'une collection. */
+export const gridOf = (collection: Collection = {}) =>
+  buildGrid(
+    ENRICHED,
+    buildPrintings({ cards: ENRICHED, rows, expansions: EXPANSIONS, codes: CODES, collection })
+  )
+
+export const gridCards = gridOf()
 
 /**
  * Instance headless de la grille. Le tri et les filtres s'y testent par l'ordre
- * qu'ils produisent, pas par les fonctions prises isolément.
+ * qu'ils produisent, pas par les fonctions prises isolément. `data` permet d'y
+ * passer la grille de la collection, qui partage colonnes et facettes.
  */
-export function makeGrid(state: State = {}): Table<GridCard> {
+export function makeGrid(state: State = {}, data: GridCard[] = gridCards): Table<GridCard> {
   const table = createTable<GridCard>({
-    data: gridCards,
+    data,
     columns: GRID_COLUMNS,
     state: {},
     onStateChange: () => {},
     renderFallbackValue: null,
-    getRowId: (c) => c.name,
+    getRowId: (c) => c.id,
     globalFilterFn: searchCard,
     meta: { codes: CODES, expansions: EXPANSIONS },
     getCoreRowModel: getCoreRowModel(),

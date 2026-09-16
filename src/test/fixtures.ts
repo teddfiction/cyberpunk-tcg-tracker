@@ -3,7 +3,7 @@
  * les cotes changent à chaque `npm run data:refresh`, des tests assis dessus
  * casseraient sans qu'aucun code n'ait bougé.
  */
-import type { CodeMap, EnrichedCard, Price, Product } from "@/types"
+import type { CodeMap, Collection, EnrichedCard, Price, Product } from "@/types"
 
 export const EXPANSIONS: Record<string, string> = {
   "1": "Alpha Kit",
@@ -141,3 +141,28 @@ export const AMBIGUOUS_ENRICHED: EnrichedCard[] = [
     printings: [printing("j1", "Alpha Kit", "alphakit", "012", "Secret")],
   },
 ]
+
+/**
+ * Une collection sur `ENRICHED`. Zébu n'y est possédée qu'en Common, alors que
+ * la carte existe aussi en Nova Rare : de quoi vérifier qu'un filtre de rareté
+ * de la collection ne remonte pas une version qu'on n'a pas. Les quantités
+ * inversent l'ordre des noms, pour qu'un tri par exemplaires se voie.
+ */
+export const COLLECTION: Collection = {
+  u2: {
+    qty: 3,
+    addedAt: "2026-09-16T10:00:00.000Z",
+    name: "Zébu - Calme",
+    set: "Welcome to Night City — Retail",
+    num: "β001",
+    rarity: "Common",
+  },
+  u3: {
+    qty: 1,
+    addedAt: "2026-09-16T11:00:00.000Z",
+    name: "Éclair - Vif",
+    set: "Beta Kit",
+    num: "007",
+    rarity: "Epic",
+  },
+}

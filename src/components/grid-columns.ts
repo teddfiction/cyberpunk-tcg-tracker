@@ -5,6 +5,7 @@
  */
 import type { ColumnDef } from "@tanstack/react-table"
 
+import { MISSING, OWNED, OWNED_FACET } from "@/lib/collection"
 import { COLOR_RANK, TYPE_RANK } from "@/lib/sorts"
 import { filterAny, filterIn, sortRank, sortText } from "@/lib/table"
 import type { GridCard } from "@/types"
@@ -96,5 +97,20 @@ export const GRID_COLUMNS: ColumnDef<GridCard>[] = [
     header: "Mini Cardmarket",
     sortUndefined: "last",
     meta: { align: "right", decimal: true },
+  },
+  // Deux colonnes pour une donnée : l'une filtre en Possédée / Manquante,
+  // l'autre trie et s'exporte en nombre. Le CSV n'en garde qu'une.
+  {
+    id: OWNED_FACET,
+    accessorFn: (c) => (c.owned > 0 ? OWNED : MISSING),
+    header: "Collection",
+    filterFn: filterIn,
+    meta: { noCsv: true },
+  },
+  {
+    id: "qty",
+    accessorFn: (c) => c.owned,
+    header: "Exemplaires",
+    meta: { align: "right" },
   },
 ]
