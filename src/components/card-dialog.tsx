@@ -156,18 +156,19 @@ export function CardDialog({
   )
 }
 
-/** Le visuel de la version choisie : 320 px CSS au plus, pour un fichier de 640 px. */
+/**
+ * Le visuel de la version choisie : 320 px CSS au plus, pour un fichier de 640 px.
+ * Sans bordure, comme la tuile : le cadre dessiné sur la carte en tient lieu.
+ */
 function Artwork({ printing: p }: { printing: PrintRow }) {
   if (!p.thumb) {
-    return (
-      <div className="border-border bg-muted aspect-[5/7] w-full max-w-[320px] shrink-0 border" />
-    )
+    return <div className="bg-muted aspect-[5/7] w-full max-w-[320px] shrink-0" />
   }
   return (
     <img
       src={p.thumb}
       alt={`${p.name} — ${p.set}`}
-      className="border-border w-full max-w-[320px] shrink-0 self-start border"
+      className="w-full max-w-[320px] shrink-0 self-start"
     />
   )
 }
