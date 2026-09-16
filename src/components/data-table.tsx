@@ -85,9 +85,17 @@ export function DataTable<T>({ table }: { table: TanstackTable<T> }) {
                 {row.getVisibleCells().map((cell) => {
                   const { align, className } = cell.column.columnDef.meta ?? {}
                   return (
+                    // `align: "right"` désigne une colonne numérique : cotes,
+                    // écarts, dates, ID. Elles passent en Geist Mono, comme le
+                    // N° — un nombre s'y distingue d'un libellé. En `text-xs`,
+                    // taille du N° : Geist Mono est plus large que Geist, et en
+                    // `text-sm` la table gagnait 37 px, contre 2 ici. Mesuré.
                     <TableCell
                       key={cell.id}
-                      className={cn(align === "right" && "text-right tabular-nums", className)}
+                      className={cn(
+                        align === "right" && "text-right font-mono text-xs tabular-nums",
+                        className
+                      )}
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
