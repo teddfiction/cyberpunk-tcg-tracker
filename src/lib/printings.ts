@@ -209,7 +209,7 @@ export const tileStats = (card: GridCard): CardStat[] =>
     ? [...cardStats(card), { label: "Cardmarket dès", value: eur(card.low) ?? "" }]
     : cardStats(card)
 
-/** Rendu texte d'une information, pour la description de la modale. */
+/** Rendu texte d'une information : ce que les tests comparent, sans passer par le DOM. */
 export const statText = (s: CardStat) => [s.label, s.value].filter(Boolean).join(" ")
 
 /** Recherche de la grille : nom, sous-titre, tags, type, couleur, sets, raretés. */

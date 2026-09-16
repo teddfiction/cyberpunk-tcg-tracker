@@ -6,10 +6,10 @@
  * qu'une vignette de 40 px — or l'artwork est justement la seule chose qui
  * distingue deux impressions que Cardmarket confond. Le grand visuel est affiché
  * à 320 px CSS pour un fichier de 640 px : net sur Retina (voir « Limites des
- * données »).
+ * données »). Les informations parlent la voix de la grille, `card-info.tsx`.
  */
 import * as React from "react"
-import { ExternalLink } from "lucide-react"
+import { ExternalLink, Layers } from "lucide-react"
 
 import {
   Dialog,
@@ -18,12 +18,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  InfoBadge,
+  InfoList,
+  InfoRow,
+  StatLine,
+  TypeBadge,
+  Unknown,
+} from "@/components/card-info"
 import { CollectionControl } from "@/components/collection-control"
 import { cyberpunkTcgUrl } from "@/data/expansions"
 import { rarityLabel } from "@/data/rarities"
 import { qtyOf } from "@/lib/collection"
-import { eur } from "@/lib/format"
-import { cardStats, statText } from "@/lib/printings"
+import { eur, plural } from "@/lib/format"
+import { cardStats } from "@/lib/printings"
 import { cn } from "@/lib/utils"
 import type { Scope } from "@/lib/collection"
 import type { Collection, GridCard, PrintRow } from "@/types"
@@ -79,17 +87,28 @@ export function CardDialog({
           trigger.current?.focus()
         }}
       >
-        <DialogHeader>
+        {/* `text-left` : le registry centre l'en-tête sur mobile, ce qui
+            décalerait le titre des badges alignés à gauche en dessous. */}
+        <DialogHeader className="text-left">
           <DialogTitle className="pr-6">{card.name}</DialogTitle>
-          {/* Dans la collection la carte ne porte que sa version : compter ses
-              impressions y dirait « 1 », ce qui est faux pour la carte. */}
-          <DialogDescription>
-            {[
-              scope === "all" && (n > 1 ? `${n} impressions` : "1 impression"),
-              ...stats.map(statText),
-            ]
-              .filter(Boolean)
-              .join(" · ")}
+          {/* Mêmes badges et même ligne de caractéristiques que la tuile. La
+              quantité possédée n'y figure pas : elle se lit par version, dans
+              `collection`, jamais dans cet instantané de la carte. */}
+          <DialogDescription asChild>
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-wrap gap-1">
+                <TypeBadge type={card.type} color={card.color} className="text-xs" />
+                {/* Dans la collection la carte ne porte que sa version : compter
+                    ses impressions y dirait « 1 », ce qui est faux pour la carte. */}
+                {scope === "all" && (
+                  <InfoBadge className="text-muted-foreground gap-1 text-xs">
+                    <Layers className="size-3" />
+                    {plural(n, "impression")}
+                  </InfoBadge>
+                )}
+              </div>
+              {stats.length > 0 && <StatLine stats={stats} color={card.color} className="text-xs" />}
+            </div>
           </DialogDescription>
 
           {card.slug && (
@@ -204,19 +223,19 @@ function Picker({
   )
 }
 
-/** Ce que l'on sait de la version choisie. */
+/** Ce que l'on sait de la version choisie, dans la voix de la grille. */
 function Details({ printing: p }: { printing: PrintRow }) {
   return (
-    <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
-      <Row label="Set">{p.set}</Row>
-      <Row label="Rareté">
-        {p.rarity ? rarityLabel(p.rarity) : <Unknown />}
-      </Row>
-      <Row label="Numéro">
-        {p.num ? <span className="font-mono">{p.num}</span> : <Unknown />}
-      </Row>
-      <Row label="Illustration">{p.artist ?? <Unknown />}</Row>
-      <Row label="Prix Cardmarket">
+    <InfoList>
+      <InfoRow label="Set">{p.set}</InfoRow>
+      <InfoRow label="Rareté">{p.rarity ? rarityLabel(p.rarity) : <Unknown />}</InfoRow>
+      <InfoRow label="Numéro">
+        {/* Hors capitales : « 005a » n'est pas « 005A », et le « β » des
+            tirages Beta passerait pour un B latin. */}
+        {p.num ? <span className="normal-case">#{p.num}</span> : <Unknown />}
+      </InfoRow>
+      <InfoRow label="Illustration">{p.artist ?? <Unknown />}</InfoRow>
+      <InfoRow label="Prix Cardmarket">
         {p.low != null ? (
           <span className="tabular-nums">{eur(p.low)}</span>
         ) : p.lowRange ? (
@@ -229,18 +248,7 @@ function Details({ printing: p }: { printing: PrintRow }) {
         ) : (
           <Unknown />
         )}
-      </Row>
-    </dl>
+      </InfoRow>
+    </InfoList>
   )
 }
-
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <>
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="min-w-0 break-words">{children}</dd>
-    </>
-  )
-}
-
-const Unknown = () => <span className="text-muted-foreground/50">—</span>

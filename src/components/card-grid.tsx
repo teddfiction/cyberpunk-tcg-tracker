@@ -10,14 +10,12 @@
 import * as React from "react"
 import { Check, Layers } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
 import { CardDialog } from "@/components/card-dialog"
-import { colorVar } from "@/data/colors"
+import { InfoBadge, StatLine, TypeBadge } from "@/components/card-info"
 import { rarityLabel } from "@/data/rarities"
 import { printingIndex, tileStats } from "@/lib/printings"
 import { cn } from "@/lib/utils"
 import type { Scope } from "@/lib/collection"
-import type { CardStat } from "@/lib/printings"
 import type { Collection, GridCard, PrintRow } from "@/types"
 
 type Props = {
@@ -38,9 +36,6 @@ type Props = {
  * réserve la hauteur pour que la barre de défilement ne saute pas.
  */
 const OFFSCREEN = "[content-visibility:auto] [contain-intrinsic-size:auto_520px]"
-
-/** Libellés de badge : même Geist Mono en capitales que la ligne d'infos. */
-const BADGE = "font-mono text-[10px] uppercase tabular-nums"
 
 export function CardGrid({ cards, rarities, scope, collection, onQty, empty }: Props) {
   // La carte n'est pas remise à `null` à la fermeture : la modale la rend
@@ -117,7 +112,6 @@ function Tile({
   onSelect: (index: number, trigger: HTMLButtonElement) => void
 }) {
   const stats = tileStats(card)
-  const tint = colorVar(card.color)
   // L'impression mise en avant : celle de la rareté filtrée, à défaut la
   // version par défaut de la carte.
   const pick = printingIndex(card, rarities)
@@ -146,84 +140,35 @@ function Tile({
           <div className="text-muted-foreground truncate text-xs">{card.subname}</div>
         )}
 
-        {/* Les deux badges en contour, même graisse que la ligne de
-            caractéristiques : ils accompagnent l'illustration, ils ne lui
-            disputent pas le regard. Seule la couleur du type les distingue. */}
+        {/* Seule la couleur du type distingue les badges : voir `card-info.tsx`. */}
         <div className="mt-1 flex flex-wrap gap-1">
-          {card.type && (
-            <Badge
-              variant="outline"
-              className={BADGE}
-              style={tint ? { color: tint, borderColor: tint } : undefined}
-            >
-              {card.type}
-            </Badge>
-          )}
+          <TypeBadge type={card.type} color={card.color} />
           {/* Dans la collection la tuile est une version : sa rareté la
               distingue d'une autre version de la même carte, que seul
               l'artwork séparerait sinon. */}
           {scope === "owned" && shown?.rarity && (
-            <Badge variant="outline" className={cn(BADGE, "text-muted-foreground")}>
-              {rarityLabel(shown.rarity)}
-            </Badge>
+            <InfoBadge className="text-muted-foreground">{rarityLabel(shown.rarity)}</InfoBadge>
           )}
           {scope === "all" && card.printings.length > 1 && (
-            <Badge variant="outline" className={cn(BADGE, "text-muted-foreground gap-1")}>
+            <InfoBadge className="text-muted-foreground gap-1">
               <Layers className="size-3" />
               {card.printings.length}
-            </Badge>
+            </InfoBadge>
           )}
           {/* Contour neutre et texte plein : le jaune de l'accent, en texte sur
               le thème clair, tomberait sous le contraste lisible. */}
           {card.owned > 0 && (
-            <Badge
-              variant="outline"
-              className={cn(BADGE, "border-foreground/40 text-foreground gap-1")}
+            <InfoBadge
+              className="border-foreground/40 text-foreground gap-1"
               title={`${card.owned} dans ma collection`}
             >
               <Check className="size-3" />×{card.owned}
-            </Badge>
+            </InfoBadge>
           )}
         </div>
 
-        {stats.length > 0 && <Stats stats={stats} tint={tint} color={card.color} />}
+        {stats.length > 0 && <StatLine stats={stats} color={card.color} className="mt-1.5" />}
       </div>
-    </div>
-  )
-}
-
-/**
- * La ligne d'informations : libellé terne, valeur contrastée, en Geist Mono et
- * en capitales.
- *
- * Chaque information est un bloc insécable — c'est elle qui passe à la ligne,
- * jamais ses caractères. Pas de séparateur : c'est l'écart qui sépare, ce qui
- * évite aussi qu'un point se retrouve orphelin en bout de ligne.
- */
-function Stats({
-  stats,
-  tint,
-  color,
-}: {
-  stats: CardStat[]
-  tint: string | null
-  color: string | null
-}) {
-  return (
-    <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[10px] uppercase">
-      {stats.map((s) => (
-        <span key={s.label} className="flex items-center gap-1 whitespace-nowrap">
-          {s.dot && tint && (
-            <span
-              className="size-2 shrink-0 rounded-full"
-              style={{ backgroundColor: tint }}
-              title={color ?? undefined}
-            />
-          )}
-          <span className="text-muted-foreground">{s.label}</span>
-          {s.value && <span className="text-foreground font-medium">{s.value}</span>}
-        </span>
-      ))}
     </div>
   )
 }
