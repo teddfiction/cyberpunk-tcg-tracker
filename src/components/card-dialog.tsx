@@ -203,7 +203,9 @@ function Picker({
     <div
       role="listbox"
       aria-label="Versions de la carte"
-      className="grid grid-cols-[repeat(auto-fill,minmax(5.5rem,1fr))] gap-2"
+      // `gap-3` : l'outline de sélection déborde de 4 px. À `gap-2`, il tombait à
+      // mi-chemin de la miniature voisine, sans qu'on sache à laquelle il est.
+      className="grid grid-cols-[repeat(auto-fill,minmax(5.5rem,1fr))] gap-3"
     >
       {printings.map((p, i) => {
         const qty = qtyOf(collection, p.uuid)
@@ -219,11 +221,22 @@ function Picker({
               (qty ? ` — ${qty} dans ma collection` : "")
             }
             className={cn(
-              "focus-visible:ring-ring/50 flex cursor-pointer flex-col gap-1 text-left outline-none focus-visible:ring-[3px]",
+              // `gap-2` et non `gap-1` : l'outline de sélection toucherait le numéro.
+              "focus-visible:ring-ring/50 flex cursor-pointer flex-col gap-2 text-left outline-none focus-visible:ring-[3px]",
               !selected && "opacity-60 hover:opacity-100"
             )}
           >
-            <span className={cn("block border", selected ? "border-ring" : "border-border")}>
+            {/* Sélection en `outline` et non en bordure : l'outline ne prend
+                pas de place. La bordure de 1 px reste, devenue transparente, et
+                l'outline se pose 3 px au-delà — 4 px d'air autour du visuel,
+                sans qu'aucune dimension change. Une bordure épaissie ou un
+                padding feraient bouger toute la grille à chaque clic. */}
+            <span
+              className={cn(
+                "block border",
+                selected ? "outline-ring border-transparent outline outline-offset-3" : "border-border"
+              )}
+            >
               {p.thumb ? (
                 <img src={p.thumb} alt="" className="block w-full" />
               ) : (
