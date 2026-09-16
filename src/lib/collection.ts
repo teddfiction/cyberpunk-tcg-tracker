@@ -15,6 +15,12 @@ export const OWNED_FACET = "owned"
 export const OWNED = "Possédée"
 export const MISSING = "Manquante"
 
+/**
+ * Périmètre de la grille de cartes : la base entière, une tuile par carte, ou la
+ * collection, une tuile par version possédée. Même vue, mêmes composants.
+ */
+export type Scope = "all" | "owned"
+
 export const qtyOf = (collection: Collection, uuid: string) => collection[uuid]?.qty ?? 0
 
 /**

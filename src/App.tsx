@@ -110,13 +110,35 @@ export default function App() {
       </>
     ),
 
+    // Même composant, même place dans l'arbre : sans `key`, React garderait
+    // l'état TanStack d'une vue à l'autre, filtres de la base compris.
     netdeck: () => (
       <NetdeckView
+        key="netdeck"
+        scope="all"
         cards={data.enrichedCards}
         rows={data.rows}
         codes={data.codes}
         expansions={data.expansions}
+        collection={data.collection}
+        onQty={data.setQty}
         onImport={openImport}
+        onBrowse={() => setView("netdeck")}
+      />
+    ),
+
+    collection: () => (
+      <NetdeckView
+        key="collection"
+        scope="owned"
+        cards={data.enrichedCards}
+        rows={data.rows}
+        codes={data.codes}
+        expansions={data.expansions}
+        collection={data.collection}
+        onQty={data.setQty}
+        onImport={openImport}
+        onBrowse={() => setView("netdeck")}
       />
     ),
 
