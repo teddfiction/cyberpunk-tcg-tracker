@@ -1,5 +1,15 @@
 /** Navigation latérale : vues, import de fichiers, bascule de thème. */
-import { Library, Microchip, Moon, Settings2, Sun, Table2, Upload, type LucideIcon } from "lucide-react"
+import {
+  Library,
+  Microchip,
+  Moon,
+  RefreshCw,
+  Settings2,
+  Sun,
+  Table2,
+  Upload,
+  type LucideIcon,
+} from "lucide-react"
 
 import {
   Sidebar,
@@ -27,11 +37,23 @@ type Props = {
   view: View
   onView: (v: View) => void
   onImport: () => void
+  /** Télécharge les trois exports Cardmarket du jour. */
+  onRefresh: () => void
+  /** Téléchargement en cours : l'icône tourne et le bouton ne se reclique pas. */
+  fetching: boolean
   dark: boolean
   onToggleTheme: () => void
 }
 
-export function AppSidebar({ view, onView, onImport, dark, onToggleTheme }: Props) {
+export function AppSidebar({
+  view,
+  onView,
+  onImport,
+  onRefresh,
+  fetching,
+  dark,
+  onToggleTheme,
+}: Props) {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
@@ -82,6 +104,16 @@ export function AppSidebar({ view, onView, onImport, dark, onToggleTheme }: Prop
                 <SidebarMenuButton onClick={onImport} tooltip="Importer un JSON">
                   <Upload />
                   <span>Importer un JSON</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={onRefresh}
+                  disabled={fetching}
+                  tooltip="Actualiser les données"
+                >
+                  <RefreshCw className={fetching ? "animate-spin" : undefined} />
+                  <span>{fetching ? "Téléchargement…" : "Actualiser les données"}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
