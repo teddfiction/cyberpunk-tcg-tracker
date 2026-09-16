@@ -101,8 +101,10 @@ où elle n'aurait qu'une valeur.
 ### Ajouter un tri à la grille de cartes
 
 **Un fichier : `lib/sorts.ts`**, une entrée dans `SORTS` — un libellé et l'état
-TanStack correspondant. Le menu se remplit tout seul, et un test vérifie que
-chaque tri vise une colonne qui existe dans `grid-columns.ts`.
+TanStack correspondant, passé par `thenName(…)` pour que le nom départage les
+ex æquo. Le menu se remplit tout seul, et des tests vérifient que chaque tri vise
+une colonne qui existe dans `grid-columns.ts`, se termine par le nom, et ne trie
+qu'en ascendant une colonne à valeurs manquantes.
 
 Le tri ne se double pas d'un `useState` : `sortIdOf` retrouve l'entrée active
 depuis l'état de la table, qui en reste seule dépositaire.
@@ -347,17 +349,26 @@ Sur la conservation des imports :
 
 Tous couverts par des tests : si l'un saute, `npm run test` le dit.
 
-- **Valeurs manquantes.** Accesseurs en `undefined`, colonnes en
-  `sortUndefined: "last"`. TanStack traite ce cas *avant* d'inverser pour le tri
-  décroissant — c'est ce qui garde les lignes sans cote en bas dans les deux sens.
-  Renvoyer `null` casse ça silencieusement.
-  *Limite connue* : l'ordre **entre** deux lignes sans cote n'est pas spécifié
-  (le comparateur de TanStack n'est pas cohérent sur ce cas). Ne pas écrire de
-  test qui en dépend.
-- **Ex æquo.** `buildRows` et `buildCards` trient par nom en collation française.
-  À valeur égale TanStack retombe sur l'index d'origine, donc sur ce tri-là. Il
-  n'y a pas de comparateur secondaire à écrire — mais supprimer ce tri amont
-  rendrait l'ordre des ex æquo aléatoire.
+- **Valeurs manquantes.** Accesseurs en `undefined`, jamais `null` — renvoyer
+  `null` casse le tri silencieusement. Le réglage de `sortUndefined` diffère
+  entre les deux tables, et ce n'est pas un oubli :
+  - **Table des cotes : `"last"`.** TanStack traite ce cas *avant* d'inverser
+    pour le tri décroissant — c'est ce qui garde les lignes sans cote en bas
+    dans les deux sens, puisqu'on y trie en cliquant les en-têtes.
+    *Limite connue* : entre deux lignes sans cote, `"last"` répond « après »
+    dans les deux sens et ne consulte jamais le critère suivant. Leur ordre
+    n'est pas spécifié. Ne pas écrire de test qui en dépend.
+  - **Grille : `1`** (`MISSING_LAST`, `grid-columns.ts`). Les cartes sans
+    valeur passent en fin de tri ascendant, mais restent ex æquo entre elles :
+    le nom les départage. Avec `"last"`, les cinq Legend jaunes sans coût ne
+    l'étaient pas. Contrepartie : en décroissant elles passeraient en tête —
+    la grille ne trie ces colonnes qu'en ascendant, et un test le vérifie.
+- **Ex æquo.** Table des cotes : `buildRows` et `buildCards` trient par nom en
+  collation française, et à valeur égale TanStack retombe sur l'index
+  d'origine, donc sur ce tri-là — supprimer ce tri amont rendrait l'ordre des
+  ex æquo aléatoire. Grille : chaque tri de `SORTS` se termine **explicitement**
+  par le nom (`thenName`), sans dépendre de l'ordre dans lequel les cartes
+  arrivent. Un test passe la grille à rebours pour le vérifier.
 - **Recherche : la déclarer par `id`, jamais par rang.** `enableGlobalFilter`
   n'est vrai que sur la colonne `name`. La viser par sa position casserait la
   recherche en silence dès qu'une colonne passe devant — la colonne Visuel n'a

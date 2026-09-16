@@ -21,6 +21,16 @@ export type SortConfig = { label: string; sorting: SortingState }
 const asc = (id: string) => ({ id, desc: false })
 
 /**
+ * Ajoute le nom en dernier critère : deux cartes ex æquo — même coût, ou coût
+ * absent — se lisent dans l'ordre alphabétique.
+ *
+ * Explicite plutôt que laissé à l'ordre d'origine des lignes : celui-ci ne
+ * départage que si les lignes arrivent déjà triées par nom, ce que rien
+ * n'impose à la grille qu'on passe à `useTable`.
+ */
+const thenName = (...keys: SortingState): SortingState => [...keys, asc("name")]
+
+/**
  * Les tris proposés. Une entrée ici suffit : `SortMenu` lit le registre, et
  * `sortIdOf` retrouve l'entrée active depuis l'état TanStack — il n'y a pas de
  * copie React du tri à tenir à côté.
@@ -28,17 +38,17 @@ const asc = (id: string) => ({ id, desc: false })
 export const SORTS = {
   default: {
     label: "Défaut (Couleur › Type › Coût)",
-    sorting: [asc("color"), asc("type"), asc("cost")],
+    sorting: thenName(asc("color"), asc("type"), asc("cost")),
   },
   name: { label: "Nom", sorting: [asc("name")] },
-  color: { label: "Couleur", sorting: [asc("color")] },
-  type: { label: "Type", sorting: [asc("type")] },
-  cost: { label: "Coût", sorting: [asc("cost")] },
-  power: { label: "Puissance", sorting: [asc("power")] },
-  ram: { label: "RAM", sorting: [asc("ram")] },
-  num: { label: "Numéro de carte", sorting: [asc("num")] },
+  color: { label: "Couleur", sorting: thenName(asc("color")) },
+  type: { label: "Type", sorting: thenName(asc("type")) },
+  cost: { label: "Coût", sorting: thenName(asc("cost")) },
+  power: { label: "Puissance", sorting: thenName(asc("power")) },
+  ram: { label: "RAM", sorting: thenName(asc("ram")) },
+  num: { label: "Numéro de carte", sorting: thenName(asc("num")) },
   // Décroissant : on cherche d'abord ce qu'on a en nombre.
-  qty: { label: "Exemplaires", sorting: [{ id: "qty", desc: true }] },
+  qty: { label: "Exemplaires", sorting: thenName({ id: "qty", desc: true }) },
 } as const satisfies Record<string, SortConfig>
 
 export type SortId = keyof typeof SORTS

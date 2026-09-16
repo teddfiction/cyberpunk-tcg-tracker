@@ -292,9 +292,28 @@ describe("tri de la grille", () => {
     expect(TYPE_RANK.indexOf("Legend")).toBeLessThan(TYPE_RANK.indexOf("Gear"))
   })
 
-  it("le tri par défaut enchaîne couleur, type puis coût", () => {
-    expect(SORTS.default.sorting.map((s) => s.id)).toEqual(["color", "type", "cost"])
+  it("le tri par défaut enchaîne couleur, type, coût puis nom", () => {
+    expect(SORTS.default.sorting.map((s) => s.id)).toEqual(["color", "type", "cost", "name"])
     expect(SORTS.default.sorting.every((s) => !s.desc)).toBe(true)
+  })
+
+  it("chaque tri se termine par le nom, qui départage les ex æquo", () => {
+    for (const id of SORT_IDS) {
+      expect(SORTS[id].sorting.at(-1)).toEqual({ id: "name", desc: false })
+    }
+  })
+
+  it("ne trie qu'en ascendant les colonnes à valeurs manquantes", () => {
+    // `sortUndefined: 1` range les cartes sans valeur en fin de tri ascendant
+    // seulement : en descendant, elles passeraient en tête. Et `"last"`, qui
+    // tient dans les deux sens, ne départage pas deux valeurs manquantes.
+    const withMissing = GRID_COLUMNS.filter((c) => c.sortUndefined !== undefined)
+    for (const c of withMissing) expect(c.sortUndefined).toBe(1)
+
+    const ids = new Set(withMissing.map((c) => c.id))
+    for (const id of SORT_IDS) {
+      for (const s of SORTS[id].sorting) if (ids.has(s.id)) expect(s.desc).toBe(false)
+    }
   })
 
   it("chaque tri vise une colonne qui existe", () => {
@@ -322,6 +341,47 @@ describe("tri de la grille", () => {
       "Éclair - Vif",
       "Zébu - Calme",
     ])
+  })
+
+  it("départage les ex æquo par nom, cartes sans coût comprises", () => {
+    // Relevé sur la base réelle : cinq Legend jaunes sans coût, après Rogue
+    // Amendiares (7). Deux cartes de coût 2 couvrent l'ex æquo sur une valeur.
+    // La grille est passée à rebours : l'ordre d'origine des lignes ne doit pas
+    // faire le travail du nom.
+    const legend = (name: string, cost: number | null): EnrichedCard => ({
+      name,
+      slug: null,
+      color: "Yellow",
+      type: "Legend",
+      cost,
+      printings: [],
+    })
+    const grid = buildGrid(
+      [
+        legend("Viktor Vektor - Sit Down and Relax", null),
+        legend("Rogue Amendiares - Preem Solo", 7),
+        legend("Muamar Reyes - El Capitán", null),
+        legend("Zed - Deux", 2),
+        legend("Dum Dum - Maelstrom Triggerman", null),
+        legend("River Ward - Detective on the Hunt", null),
+        legend("Abe - Deux", 2),
+        legend("Kerry Eurodyne - Axe, Attitude, Audience", null),
+      ],
+      []
+    ).reverse()
+
+    const expected = [
+      "Abe - Deux",
+      "Zed - Deux",
+      "Rogue Amendiares - Preem Solo",
+      "Dum Dum - Maelstrom Triggerman",
+      "Kerry Eurodyne - Axe, Attitude, Audience",
+      "Muamar Reyes - El Capitán",
+      "River Ward - Detective on the Hunt",
+      "Viktor Vektor - Sit Down and Relax",
+    ]
+    expect(gridNames(makeGrid({ sorting: [...SORTS.default.sorting] }, grid))).toEqual(expected)
+    expect(gridNames(makeGrid({ sorting: [...SORTS.cost.sorting] }, grid))).toEqual(expected)
   })
 
   it("trie par numéro de collecteur, celui de l'impression numérotée", () => {
