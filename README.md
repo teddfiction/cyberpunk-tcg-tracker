@@ -27,7 +27,8 @@ ce qu'elle montre, puis comment rafraîchir ses données.
   collecteur et rareté s'y ajoutent une fois l'enrichissement Netdeck importé.
 - **Base de cartes** — la grille des cartes officielles, y compris celles
   qu'aucun vendeur ne propose. Facettes, tris (« Couleur › Type › Coût » par
-  défaut, comme sur cyberpunktcg.com), et une modale par carte pour parcourir ses
+  défaut, comme sur cyberpunktcg.com ; les ex æquo toujours par nom), et une
+  modale par carte pour parcourir ses
   impressions — visuel, rareté, numéro et cote de chacune, chaque version
   numérotée sous sa miniature, et des liens vers la fiche officielle et la
   recherche Cardmarket. Elle se remplit une fois `cards_enriched.json` importé.

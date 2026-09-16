@@ -10,6 +10,19 @@ import { COLOR_RANK, TYPE_RANK } from "@/lib/sorts"
 import { filterAny, filterIn, sortRank, sortText } from "@/lib/table"
 import type { GridCard } from "@/types"
 
+/**
+ * Valeurs manquantes en fin de tri ascendant, et ex æquo entre elles.
+ *
+ * Pas `"last"`, que prend la table des cotes : TanStack y répond « après » dans
+ * les deux sens quand deux cartes n'ont pas de valeur, et ne consulte jamais le
+ * critère suivant. Les cinq Legend jaunes sans coût n'étaient alors pas
+ * départagées par leur nom. Avec `1`, elles sont ex æquo et le nom tranche.
+ *
+ * Contrepartie : en tri descendant, les cartes sans valeur passeraient en tête.
+ * La grille ne trie ces colonnes qu'en ascendant — un test le vérifie.
+ */
+const MISSING_LAST = 1
+
 export const GRID_COLUMNS: ColumnDef<GridCard>[] = [
   { id: "name", accessorKey: "name", header: "Carte", sortingFn: sortText },
   { id: "subname", accessorFn: (c) => c.subname ?? "", header: "Sous-titre" },
@@ -39,7 +52,7 @@ export const GRID_COLUMNS: ColumnDef<GridCard>[] = [
     accessorFn: (c) => c.cost ?? undefined,
     header: "Coût",
     filterFn: filterIn,
-    sortUndefined: "last",
+    sortUndefined: MISSING_LAST,
     meta: { align: "right" },
   },
   {
@@ -47,7 +60,7 @@ export const GRID_COLUMNS: ColumnDef<GridCard>[] = [
     accessorFn: (c) => c.power ?? undefined,
     header: "Puissance",
     filterFn: filterIn,
-    sortUndefined: "last",
+    sortUndefined: MISSING_LAST,
     meta: { align: "right" },
   },
   {
@@ -55,7 +68,7 @@ export const GRID_COLUMNS: ColumnDef<GridCard>[] = [
     accessorFn: (c) => c.ram ?? undefined,
     header: "RAM",
     filterFn: filterIn,
-    sortUndefined: "last",
+    sortUndefined: MISSING_LAST,
     meta: { align: "right" },
   },
   {
@@ -83,7 +96,7 @@ export const GRID_COLUMNS: ColumnDef<GridCard>[] = [
     accessorFn: (c) => c.printings.find((p) => p.num)?.num ?? undefined,
     header: "N°",
     sortingFn: sortText,
-    sortUndefined: "last",
+    sortUndefined: MISSING_LAST,
   },
   {
     id: "printings",
@@ -95,7 +108,7 @@ export const GRID_COLUMNS: ColumnDef<GridCard>[] = [
     id: "low",
     accessorFn: (c) => c.low ?? undefined,
     header: "Mini Cardmarket",
-    sortUndefined: "last",
+    sortUndefined: MISSING_LAST,
     meta: { align: "right", decimal: true },
   },
   // Deux colonnes pour une donnée : l'une filtre en Possédée / Manquante,
