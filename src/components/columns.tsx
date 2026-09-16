@@ -78,7 +78,7 @@ const nameColumn = (header: string): ColumnDef<TableRow> => ({
   accessorKey: "name",
   header,
   sortingFn: sortText,
-  meta: { className: "max-w-[300px] min-w-[180px]" },
+  meta: { className: "max-w-[250px] min-w-[150px]" },
   cell: ({ row }) => {
     const card = "nExp" in row.original
     const r = row.original as AnyRow
@@ -171,7 +171,10 @@ const rarityColumn: ColumnDef<TableRow> = {
   header: "Rareté",
   sortUndefined: "last",
   meta: {
-    className: "text-xs whitespace-nowrap",
+    // Plafonnée à la plus longue rareté connue (« Iconic Legend »). Sans ce
+    // plafond, les lignes ambiguës — qui listent leurs candidates — étiraient la
+    // colonne de moitié pour 63 lignes sur 248.
+    className: "max-w-[100px] truncate text-xs whitespace-nowrap",
     csv: (r) => {
       const row = r as AnyRow
       return row.rarity ?? (row.rarities ?? []).map(rarityLabel).join(" / ")
@@ -184,8 +187,12 @@ const rarityColumn: ColumnDef<TableRow> = {
     if (!candidates.length) return dash
     return (
       <span
-        className="text-muted-foreground underline decoration-dotted underline-offset-2"
-        title="Les impressions connues de cette carte ne s'accordent pas sur une rareté."
+        className="text-muted-foreground block truncate underline decoration-dotted underline-offset-2"
+        // Le titre porte les candidates, et pas seulement l'explication : la
+        // colonne est plafonnée, la liste peut donc être tronquée à l'écran.
+        title={`Les impressions connues de cette carte ne s'accordent pas sur une rareté : ${candidates
+          .map(rarityLabel)
+          .join(", ")}.`}
       >
         {candidates.map(rarityLabel).join(" · ")}
       </span>
@@ -198,7 +205,7 @@ const expansionColumn: ColumnDef<TableRow> = {
   accessorKey: "expName",
   header: "Extension",
   sortingFn: sortText,
-  meta: { className: "text-muted-foreground max-w-[200px] truncate text-sm" },
+  meta: { className: "text-muted-foreground max-w-[150px] truncate text-sm" },
   cell: ({ getValue }) => getValue<string>(),
 }
 

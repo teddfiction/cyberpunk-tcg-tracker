@@ -40,6 +40,13 @@ structure ne couvre pas le besoin — mieux vaut la faire évoluer que la contou
 Le rendu et l'export CSV suivent tout seuls — `toCsv` lit les colonnes visibles et
 leur `meta`. Il n'y a rien à câbler ailleurs.
 
+**La largeur d'une colonne se règle par son `meta.className`**, en `max-w-[…]`
+plus `truncate` — il n'y a pas de largeur déclarée à TanStack. Les colonnes
+textuelles (Produit, Extension, Rareté) sont plafonnées parce que leur contenu
+le plus long, et non leur en-tête, dictait sinon la largeur de la table : une
+seule ligne ambiguë étirait Rareté de moitié. Mesurer avant de plafonner, le
+coupable n'est pas toujours celui qu'on croit.
+
 **Si la colonne peut être vide**, son accesseur doit renvoyer `undefined` (jamais
 `null`) et la colonne porter `sortUndefined: "last"`. Voir « Invariants » plus bas.
 

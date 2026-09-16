@@ -44,7 +44,10 @@ export function DataTable<T>({ table }: { table: TanstackTable<T> }) {
                         size="sm"
                         onClick={header.column.getToggleSortingHandler()}
                         className={cn(
-                          "h-auto w-full justify-start gap-1 px-3 py-2 text-xs whitespace-nowrap",
+                          // `px-2` et non `px-3` : c'est le retrait des cellules
+                          // du registry, donc l'en-tête s'aligne enfin sur sa
+                          // colonne — et douze colonnes y gagnent 8 px chacune.
+                          "h-auto w-full justify-start gap-1 px-2 py-2 text-xs whitespace-nowrap",
                           sorted ? "text-foreground font-semibold" : "text-muted-foreground",
                           right && "justify-end"
                         )}
@@ -55,7 +58,7 @@ export function DataTable<T>({ table }: { table: TanstackTable<T> }) {
                       </Button>
                     ) : (
                       // Sans tri, un bouton serait un leurre : rien ne s'y passe.
-                      <div className="text-muted-foreground px-3 py-2 text-xs whitespace-nowrap">
+                      <div className="text-muted-foreground px-2 py-2 text-xs whitespace-nowrap">
                         {label}
                       </div>
                     )}
