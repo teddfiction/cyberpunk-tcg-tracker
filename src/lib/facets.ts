@@ -57,9 +57,18 @@ export type FacetOption = { value: string; count: number }
  * Comptées sur **toutes** les cartes et non sur les seules visibles : sinon
  * cocher une option ferait disparaître les autres, et l'on ne pourrait plus
  * élargir sa sélection.
+ *
+ * Une valeur cochée reste proposée, fût-ce à zéro, sans quoi on ne pourrait
+ * plus la décocher. Le cas se produit : les onglets de la collection partagent
+ * leurs filtres, et un set coché dans « Collectées » peut n'avoir aucune version
+ * dans « Manquantes » — ou disparaître quand on en retire la dernière version.
  */
-export function facetOptions(facet: Facet, cards: GridCard[]): FacetOption[] {
-  const counts = new Map<string, number>()
+export function facetOptions(
+  facet: Facet,
+  cards: GridCard[],
+  selected: string[] = []
+): FacetOption[] {
+  const counts = new Map<string, number>(selected.map((value) => [value, 0]))
   for (const card of cards) {
     for (const value of facet.values(card)) counts.set(value, (counts.get(value) ?? 0) + 1)
   }

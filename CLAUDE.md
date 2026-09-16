@@ -96,7 +96,12 @@ ne pourrait plus élargir sa sélection.
 
 La facette vaut pour la base **et** la collection, qui partagent registre et
 colonnes. Seule « Collection » (`OWNED_FACET`) est masquée dans la collection,
-où elle n'aurait qu'une valeur.
+où chaque onglet n'y aurait qu'une valeur.
+
+Une valeur **cochée** reste proposée même à zéro (`facetOptions`, argument
+`selected`) : sans quoi on ne pourrait plus la décocher. Les onglets de la
+collection partagent leurs filtres, et une valeur cochée dans l'un peut
+n'exister dans l'autre sur aucune tuile.
 
 ### Ajouter un tri à la grille de cartes
 
@@ -245,8 +250,10 @@ imports JSON (mémoire) ──┘        ▲                                  �
 
 useDataset ─► buildPrintings ─► buildGrid ──┬───────────────► useTable ─► CardGrid / toCsv
  (enrichedCards,  (qty)          (owned)    │   (base)            ▲
-  collection)                               └─► ownedGrid ────────┘
-                                                (collection)
+  collection)                               ├─► ownedGrid ────────┤
+                                            │   (Collectées)      │
+                                            └─► missingGrid ──────┘
+                                                (Manquantes)
 ```
 
 `useDataset` est la source de vérité des **données**, `useTable` celle de l'**état
@@ -259,7 +266,7 @@ toute la mécanique et ne diffèrent que par leurs lignes et leurs colonnes :
 |---|---|---|---|---|
 | Cotes Cardmarket | un produit Cardmarket, ou une carte regroupée | `lib/dataset.ts` | `components/columns.tsx` | `DataTable` |
 | Base de cartes | une carte Netdeck, ses impressions en modale | `lib/printings.ts` | `components/grid-columns.ts` | `CardGrid` + `CardDialog` |
-| Collection | une version possédée | `lib/collection.ts` (`ownedGrid`) | `components/grid-columns.ts` | `CardGrid` + `CardDialog` |
+| Collection | une version possédée, ou manquante | `lib/collection.ts` (`ownedGrid`, `missingGrid`) | `components/grid-columns.ts` | `CardGrid` + `CardDialog` |
 
 **La grille est une table sans table.** Ses colonnes ne rendent rien : elles
 portent les facettes, la recherche et l'export CSV, et `CardGrid` dessine les
@@ -320,10 +327,27 @@ interface. Même `NetdeckView` (prop `scope`), même grille, même modale, même
 réglage de quantité : on ne jongle pas entre deux écrans qui se ressemblent mais
 se comportent différemment. Ce qui en découle :
 
-- **Une tuile par version possédée**, pas par carte (`ownedGrid`). Chaque tuile
-  ne porte que ses propres set, rareté et cote : sinon filtrer « Nova Rare »
-  garderait une carte dont on n'a que la Common. `GridCard.id` vaut le nom dans
-  la base, l'uuid dans la collection — c'est la clé de ligne et la `key` React.
+- **Une tuile par version**, pas par carte, en deux onglets `Tabs` :
+  « Collectées » (`ownedGrid`) et « Manquantes » (`missingGrid`), l'une le
+  complément exact de l'autre — un test le vérifie. Chaque tuile ne porte que
+  ses propres set, rareté et cote : sinon filtrer « Nova Rare » garderait une
+  carte dont on n'a que la Common. `GridCard.id` vaut le nom dans la base,
+  l'uuid dans la collection — c'est la clé de ligne et la `key` React.
+- **Le périmètre est un `Scope`** — `all`, `owned`, `missing` —, et
+  `SCOPE_GRID` en tire la grille : un `Record<Scope, …>`, donc un périmètre
+  ajouté sans sa grille ne compile pas. `NetdeckView` reçoit celui d'ouverture ;
+  dans la collection, l'onglet le change ensuite.
+- **Les deux onglets partagent une instance TanStack** : tri, filtres et
+  recherche suivent de l'un à l'autre — « les Epic que j'ai », puis « celles qui
+  me manquent ». C'est l'inverse de deux vues (ci-dessous), et c'est voulu :
+  les onglets sont deux côtés d'une même collection.
+- **Une version manquante n'estompe que son visuel** (`opacity-40`) : nom,
+  badges et caractéristiques gardent leur contraste. La modale, elle, montre
+  l'artwork en pleine opacité.
+- **Statistiques et entrées orphelines restent au-dessus des onglets** : elles
+  valent pour la collection entière. Les statistiques s'affichent même à zéro,
+  pour qu'ajouter la première version depuis « Manquantes » ne fasse pas
+  apparaître un bloc qui repousserait les onglets.
 - **Chaque vue porte son `key` dans `App.tsx`.** Même composant à la même place
   de l'arbre : sans `key`, React garderait l'état TanStack de l'une dans
   l'autre, filtres et recherche compris.
@@ -451,7 +475,8 @@ Vitest lit `vite.config.ts` : l'alias `@/` et le JSX marchent sans configuration
   ils sont tous exprimables en trois lignes avec `makeTable`. Pour la grille de
   cartes, c'est `makeGrid` (même fichier), et `gridNames` pour lire l'ordre.
   `makeGrid(state, data)` accepte une autre grille : `gridOf(COLLECTION)` pour
-  la base avec quantités, `ownedGrid(gridOf(COLLECTION))` pour la collection.
+  la base avec quantités, `ownedGrid(gridOf(COLLECTION))` et
+  `missingGrid(gridOf(COLLECTION))` pour les deux onglets de la collection.
   La fixture `COLLECTION` ne possède Zébu qu'en Common, alors que la carte
   existe en Nova Rare : c'est ce qui rend vérifiable l'exactitude des facettes
   de la collection.
@@ -470,6 +495,10 @@ La consigne du projet : **uniquement Tailwind et les composants shadcn natifs.**
   CLI — donc pas d'édition, pas même un commentaire d'en-tête. Nouveau composant :
   `npx shadcn@latest add <nom>`, jamais écrit à la main. Toute personnalisation
   vit dans `src/components/`.
+- **Onglets de la collection : `Tabs` en variante par défaut**, pas `line` —
+  une bascule entre deux périmètres, pas une navigation. Un seul `TabsContent`,
+  dont la valeur suit l'onglet actif : le contenu est le même pour les deux,
+  seule la grille change, et chaque déclencheur garde un panneau à désigner.
 - **Filtres de la grille : `DropdownMenu` + `DropdownMenuCheckboxItem`.** Son
   indicateur est déjà posé à gauche du libellé par le registry, rien à
   surcharger. Le champ de recherche est un `Input` ordinaire et non `Command` :

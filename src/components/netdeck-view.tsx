@@ -4,8 +4,9 @@
  *
  * La base montre ce que la table des cotes ne peut pas montrer — les cartes
  * qu'aucun vendeur ne propose, et les artworks de chaque variante. La collection
- * est la même vue réduite aux versions possédées, une tuile chacune : mêmes
- * filtres, même modale, même réglage de quantité — rien de nouveau à apprendre.
+ * est la même vue réduite aux versions, une tuile chacune, en deux onglets :
+ * celles qu'on possède, celles qui manquent. Mêmes filtres, même modale, même
+ * réglage de quantité — rien de nouveau à apprendre.
  *
  * Le filtrage et la recherche passent par TanStack, comme les tables : les
  * colonnes de `grid-columns.ts` ne rendent rien, elles portent les facettes.
@@ -16,6 +17,7 @@ import { Download, Library, RotateCcw, Search, TriangleAlert, Upload } from "luc
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CardGrid } from "@/components/card-grid"
 import { CollectionStats } from "@/components/collection-stats"
 import { FacetFilter } from "@/components/facet-filter"
@@ -23,11 +25,13 @@ import { GRID_COLUMNS } from "@/components/grid-columns"
 import { SortMenu } from "@/components/sort-menu"
 import { useTable } from "@/hooks/use-table"
 import {
+  COLLECTION_TABS,
   OWNED_FACET,
+  SCOPE_GRID,
   collectionStats,
   orphans,
-  ownedGrid,
   summarize,
+  type CollectionTab,
   type Scope,
 } from "@/lib/collection"
 import { download, toCsv } from "@/lib/csv"
@@ -38,6 +42,10 @@ import { SORTS } from "@/lib/sorts"
 import type { CodeMap, Collection, EnrichedCard, PrintRow, Row } from "@/types"
 
 type Props = {
+  /**
+   * Périmètre à l'ouverture : « all » pour la base, un onglet pour la
+   * collection, que ses onglets font ensuite changer.
+   */
   scope: Scope
   cards: EnrichedCard[] | null
   rows: Row[]
@@ -66,8 +74,11 @@ export function NetdeckView({
     return buildGrid(cards, printings)
   }, [cards, rows, expansions, codes, collection])
 
-  const owned = scope === "owned"
-  const grid = React.useMemo(() => (owned ? ownedGrid(base) : base), [base, owned])
+  // Un état local, perdu en quittant la vue comme ses filtres : la collection
+  // rouvre sur ce qu'on possède.
+  const [shown, setShown] = React.useState(scope)
+  const inCollection = shown !== "all"
+  const grid = React.useMemo(() => SCOPE_GRID[shown](base), [base, shown])
 
   const table = useTable({
     data: grid,
@@ -80,23 +91,25 @@ export function NetdeckView({
 
   // Comptées sur toutes les tuiles du périmètre : cocher une option ne doit pas
   // faire disparaître les autres, sinon on ne peut plus élargir sa sélection.
-  // La collection masque Possédée / Manquante, qui n'y aurait qu'une valeur.
-  const options = React.useMemo(
-    () =>
-      FACETS.filter((facet) => !owned || facet.id !== OWNED_FACET).map((facet) => ({
-        facet,
-        options: facetOptions(facet, grid),
-      })),
-    [grid, owned]
-  )
+  // La collection masque Possédée / Manquante : chaque onglet n'y aurait qu'une
+  // valeur, et c'est ce que l'onglet dit déjà.
+  const columnFilters = table.getState().columnFilters
+  const options = React.useMemo(() => {
+    const selected = (id: string) =>
+      (columnFilters.find((f) => f.id === id)?.value as string[] | undefined) ?? []
+    return FACETS.filter((facet) => !inCollection || facet.id !== OWNED_FACET).map((facet) => ({
+      facet,
+      options: facetOptions(facet, grid, selected(facet.id)),
+    }))
+  }, [grid, inCollection, columnFilters])
 
   const lost = React.useMemo(
-    () => (owned && base.length ? orphans(collection, base) : []),
-    [owned, base, collection]
+    () => (inCollection && base.length ? orphans(collection, base) : []),
+    [inCollection, base, collection]
   )
 
   if (!base.length) {
-    return <EmptyState onImport={onImport} kept={owned ? summarize(collection) : null} />
+    return <EmptyState onImport={onImport} kept={inCollection ? summarize(collection) : null} />
   }
 
   const search = (table.getState().globalFilter as string) ?? ""
@@ -105,20 +118,17 @@ export function NetdeckView({
   // qui distingue deux versions, une grille filtrée qui garderait le visuel par
   // défaut ne montrerait pas ce qu'on vient de cocher.
   const rarities = (table.getColumn(RARITY_FACET)?.getFilterValue() as string[]) ?? []
-  const filtering = table.getState().columnFilters.length > 0 || search.length > 0
+  const filtering = columnFilters.length > 0 || search.length > 0
 
-  return (
-    // Largeur plafonnée, contrairement à la table des cotes qui gagne à
-    // s'étaler : à 1280 px, quatre colonnes font des tuiles de 308 px, soit
-    // juste sous les 320 px CSS pour lesquels les visuels sont exportés (en
-    // 640 px, pour Retina). Au-delà ils seraient agrandis, et l'original ne
-    // fait que 733 px.
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
-      {owned && grid.length > 0 && <CollectionStats stats={collectionStats(base)} />}
-      {lost.length > 0 && <Orphans entries={lost} />}
-
-      {/* Une collection vide n'a rien à filtrer. La grille, elle, reste montée
-          pour ne pas emporter la modale — voir `CardGrid`. */}
+  // Recherche, filtres, grille : ce que chaque onglet de la collection montre
+  // sur son périmètre. La même instance TanStack sert les deux onglets, donc
+  // tri, filtres et recherche suivent de l'un à l'autre — « les rouges que
+  // j'ai », puis « les rouges qui me manquent », sans rien ressaisir.
+  const content = (
+    <>
+      {/* Une grille vide — collection vide, ou plus rien qui manque — n'a rien
+          à filtrer. La grille, elle, reste montée pour ne pas emporter la
+          modale — voir `CardGrid`. */}
       {grid.length > 0 && (
         <>
           <div className="flex flex-wrap items-center gap-2">
@@ -135,12 +145,7 @@ export function NetdeckView({
             <Button
               variant="outline"
               size="sm"
-              onClick={() =>
-                download(
-                  owned ? "cyberpunk-tcg-collection.csv" : "cyberpunk-tcg-cartes.csv",
-                  toCsv(table, codes)
-                )
-              }
+              onClick={() => download(CSV_NAMES[shown], toCsv(table, codes))}
             >
               <Download />
               <span className="hidden sm:inline">Exporter en CSV</span>
@@ -177,15 +182,18 @@ export function NetdeckView({
 
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="text-muted-foreground text-xs tabular-nums">
-              {owned
-                ? `${visible.length} / ${plural(grid.length, "version")} · ${plural(
-                    visible.reduce((n, c) => n + c.owned, 0),
-                    "exemplaire"
-                  )}`
-                : `${visible.length} / ${grid.length} cartes · ${visible.reduce(
+              {shown === "all"
+                ? `${visible.length} / ${grid.length} cartes · ${visible.reduce(
                     (n, c) => n + c.printings.length,
                     0
-                  )} impressions`}
+                  )} impressions`
+                : `${visible.length} / ${plural(grid.length, "version")}` +
+                  (shown === "owned"
+                    ? ` · ${plural(
+                        visible.reduce((n, c) => n + c.owned, 0),
+                        "exemplaire"
+                      )}`
+                    : "")}
             </span>
 
             <SortMenu
@@ -199,30 +207,92 @@ export function NetdeckView({
       <CardGrid
         cards={visible}
         rarities={rarities}
-        scope={scope}
+        scope={shown}
         collection={collection}
         onQty={onQty}
-        empty={grid.length ? undefined : <EmptyCollection onBrowse={onBrowse} />}
+        empty={
+          grid.length ? undefined : shown === "missing" ? (
+            <Complete />
+          ) : (
+            <EmptyCollection onBrowse={onBrowse} />
+          )
+        }
       />
 
-      <p className="text-muted-foreground text-xs leading-relaxed">
-        {owned ? (
-          <>
-            Une tuile par version possédée ; les quantités se règlent dans la modale, ici comme dans
-            la base de cartes. La collection est conservée dans ce navigateur seulement : l'exporter
-            depuis Paramètres pour la sauvegarder.
-          </>
-        ) : (
-          <>
-            Source : <code>api.netdeck.gg</code> via <code>npm run data:netdeck:images</code>.
-            Cliquer une carte ouvre ses versions. La cote Cardmarket n'est rattachée que lorsqu'un
-            seul produit correspond à cette carte dans cette extension ; sinon la fourchette est
-            affichée en pointillés — rien ne dit lequel est cette impression précise.
-          </>
-        )}
-      </p>
+      <p className="text-muted-foreground text-xs leading-relaxed">{FOOTNOTES[shown]}</p>
+    </>
+  )
+
+  return (
+    // Largeur plafonnée, contrairement à la table des cotes qui gagne à
+    // s'étaler : à 1280 px, quatre colonnes font des tuiles de 308 px, soit
+    // juste sous les 320 px CSS pour lesquels les visuels sont exportés (en
+    // 640 px, pour Retina). Au-delà ils seraient agrandis, et l'original ne
+    // fait que 733 px.
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
+      {/* Montrées même à zéro : ajouter la première carte depuis « Manquantes »
+          ne fait pas apparaître un bloc qui repousserait les onglets. */}
+      {inCollection && <CollectionStats stats={collectionStats(base)} />}
+      {lost.length > 0 && <Orphans entries={lost} />}
+
+      {inCollection ? (
+        // Onglets en variante par défaut, pas `line` : un bloc qui se lit
+        // comme une bascule entre deux périmètres, pas comme une navigation.
+        <Tabs
+          value={shown}
+          onValueChange={(value) => setShown(value as CollectionTab)}
+          className="gap-4"
+        >
+          <TabsList>
+            {Object.entries(COLLECTION_TABS).map(([value, label]) => (
+              <TabsTrigger key={value} value={value}>
+                {label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          {/* Un seul panneau, dont la valeur suit l'onglet : le contenu est le
+              même pour les deux, seule la grille change. */}
+          <TabsContent value={shown} className="flex flex-col gap-4">
+            {content}
+          </TabsContent>
+        </Tabs>
+      ) : (
+        content
+      )}
     </div>
   )
+}
+
+/** Nom du fichier CSV, par périmètre. */
+const CSV_NAMES: Record<Scope, string> = {
+  all: "cyberpunk-tcg-cartes.csv",
+  owned: "cyberpunk-tcg-collection.csv",
+  missing: "cyberpunk-tcg-manquantes.csv",
+}
+
+/** Note en pied de vue, par périmètre : d'où viennent les tuiles, et ce qu'on en fait. */
+const FOOTNOTES: Record<Scope, React.ReactNode> = {
+  all: (
+    <>
+      Source : <code>api.netdeck.gg</code> via <code>npm run data:netdeck:images</code>. Cliquer
+      une carte ouvre ses versions. La cote Cardmarket n'est rattachée que lorsqu'un seul produit
+      correspond à cette carte dans cette extension ; sinon la fourchette est affichée en
+      pointillés — rien ne dit lequel est cette impression précise.
+    </>
+  ),
+  owned: (
+    <>
+      Une tuile par version possédée ; les quantités se règlent dans la modale, ici comme dans la
+      base de cartes. La collection est conservée dans ce navigateur seulement : l'exporter depuis
+      Paramètres pour la sauvegarder.
+    </>
+  ),
+  missing: (
+    <>
+      Une tuile par version absente de la collection, visuel en retrait. L'ajouter depuis sa
+      modale la fait passer dans « Collectées ».
+    </>
+  ),
 }
 
 function EmptyState({
@@ -264,14 +334,23 @@ function EmptyCollection({ onBrowse }: { onBrowse: () => void }) {
       <div>
         <h2 className="text-sm font-medium">La collection est vide</h2>
         <p className="text-muted-foreground mt-1 max-w-prose text-sm leading-relaxed">
-          Ouvrir une carte dans la base de cartes, choisir la version possédée, puis « Ajouter à ma
-          collection ».
+          Ouvrir une version depuis l'onglet « Manquantes » ou la base de cartes, puis « Ajouter à
+          ma collection ».
         </p>
       </div>
       <Button size="sm" onClick={onBrowse}>
         <Library />
         Parcourir la base de cartes
       </Button>
+    </div>
+  )
+}
+
+/** L'onglet « Manquantes » vide : toutes les versions de la base sont possédées. */
+function Complete() {
+  return (
+    <div className="text-muted-foreground border p-8 text-center text-sm">
+      Aucune version ne manque : la collection couvre toute la base de cartes.
     </div>
   )
 }
