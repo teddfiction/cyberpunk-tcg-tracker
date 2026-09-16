@@ -27,17 +27,20 @@ import type { GridCard, PrintRow } from "@/types"
 
 type Props = {
   card: GridCard
+  /** Version à ouvrir : celle que montrait la tuile cliquée. */
+  pick: number
   open: boolean
   onOpenChange: (open: boolean) => void
   /** Tuile à re-focaliser en sortant. Voir `onCloseAutoFocus` plus bas. */
   trigger: React.RefObject<HTMLButtonElement | null>
 }
 
-export function CardDialog({ card, open, onOpenChange, trigger }: Props) {
-  // Index dans `card.printings`, pas un uuid : la première est sélectionnée par
-  // défaut, et changer de carte doit repartir de sa première version.
-  const [picked, setPicked] = React.useState(0)
-  React.useEffect(() => setPicked(0), [card.name])
+export function CardDialog({ card, pick, open, onOpenChange, trigger }: Props) {
+  // Index dans `card.printings`, pas un uuid : changer de carte — ou de tuile
+  // après un filtre de rareté — doit repartir de la version que la tuile
+  // montrait, pas de celle qu'on avait choisie sur la carte précédente.
+  const [picked, setPicked] = React.useState(pick)
+  React.useEffect(() => setPicked(pick), [card.name, pick])
 
   const stats = cardStats(card)
   const n = card.printings.length

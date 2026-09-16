@@ -227,6 +227,18 @@ grille. Radix ne rend pas le focus à la tuile en sortant : `CardDialog` le fait
 lui-même, sinon le clavier repartirait du haut des 151 tuiles à chaque
 fermeture.
 
+**Le visuel d'une tuile suit la rareté filtrée.** Cocher « Iconic Legend » fait
+montrer l'illustration Iconic Legend de chaque carte, et la modale s'ouvre sur
+cette version-là. C'est `printingIndex` (`lib/printings.ts`) qui l'élit, au
+rendu et non dans la donnée : le choix dépend de l'état de la table, que
+`buildGrid` ne connaît pas — d'où l'absence de champ `thumb` sur `GridCard`. La
+raison est celle de la modale : l'artwork est la seule chose qui distingue deux
+impressions, donc une grille filtrée par rareté qui garderait le visuel par
+défaut ne montrerait rien de ce qu'on vient de demander. Les replis — carte qui
+ne porte pas la rareté cochée, impression sans miniature — ramènent au rang 0.
+C'est aussi pourquoi la facette Rareté a un identifiant nommé (`RARITY_FACET`,
+`lib/facets.ts`) : `NetdeckView` la vise en dehors du registre des facettes.
+
 La base de cartes montre ce que la table des cotes ne peut pas montrer : les
 cartes qu'aucun vendeur ne propose. Sa cote Cardmarket n'est rattachée que
 lorsqu'un seul produit correspond à la carte dans l'extension ; sinon elle

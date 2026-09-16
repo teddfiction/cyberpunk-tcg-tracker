@@ -81,12 +81,16 @@ export function buildPrintings({ cards, rows, expansions, codes }: BuildArgs): P
  *
  * L'impression de référence est celle de rang 0 : l'endpoint liste de Netdeck
  * sert la version par défaut de la carte, et le script la pousse en tête. C'est
- * son visuel que porte la tuile.
+ * elle que la tuile montre tant qu'aucune rareté n'est filtrée.
  *
  * Elle se reconnaissait autrefois à son numéro de collecteur, seule à en porter
  * un. Ce n'est plus vrai — les 502 impressions en ont toutes un depuis que
  * l'export lit `collector_number` — et le critère ne discriminait donc plus
  * rien : la tuile retombait sur l'ordre alphabétique des sets.
+ *
+ * La carte ne porte pas de visuel : c'est `printingIndex` qui l'élit au rendu,
+ * puisqu'il dépend des raretés filtrées — donc de l'état de la table, que la
+ * donnée ne connaît pas.
  */
 export function buildGrid(cards: EnrichedCard[] | null, printings: PrintRow[]): GridCard[] {
   if (!cards?.length) return []
@@ -120,11 +124,39 @@ export function buildGrid(cards: EnrichedCard[] | null, printings: PrintRow[]): 
         rarities: [...new Set(ordered.map((p) => p.rarity).filter((r): r is string => !!r))].sort(
           (a, b) => rarityRank(a) - rarityRank(b)
         ),
-        thumb: ordered.find((p) => p.thumb)?.thumb ?? null,
         low: minOf(lows),
       }
     })
     .sort((a, b) => a.name.localeCompare(b.name, "fr"))
+}
+
+/**
+ * Index, dans `card.printings`, de l'impression que la tuile met en avant.
+ *
+ * Sans filtre c'est le rang 0, la version par défaut de la carte. Filtrer sur
+ * une rareté fait passer devant l'impression qui la porte : l'artwork est la
+ * seule chose qui distingue deux versions d'une même carte, donc une grille
+ * filtrée par rareté qui garderait le visuel par défaut ne montrerait rien de
+ * ce qu'on vient de demander.
+ *
+ * Un index plutôt que l'impression elle-même : la modale s'ouvre sur cette
+ * version-là, et son sélecteur raisonne en index.
+ */
+export function printingIndex(card: GridCard, rarities: string[]): number {
+  // Les impressions sans miniature ne sont candidates que si aucune n'en a :
+  // une tuile vide informe moins qu'un visuel, fût-il celui d'une autre
+  // version. C'est le repli qu'appliquait déjà la tuile avant les filtres.
+  const visuals = card.printings.filter((p) => p.thumb)
+  const pool = visuals.length ? visuals : card.printings
+
+  // La première impression cochée dans l'ordre des rangs, pas dans celui des
+  // cases : c'est l'ordre de la carte qui fait foi, comme partout ailleurs.
+  const hit = rarities.length
+    ? pool.find((p) => p.rarity && rarities.includes(p.rarity))
+    : undefined
+
+  const chosen = hit ?? pool[0]
+  return chosen ? card.printings.indexOf(chosen) : 0
 }
 
 /**
