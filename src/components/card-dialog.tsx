@@ -184,9 +184,13 @@ function Artwork({ printing: p }: { printing: PrintRow }) {
  *
  * Chacune porte son numéro de collecteur : c'est le seul texte qui distingue
  * deux versions d'une même rareté (« 005a », « 005b »), et il reste lisible quelle
- * que soit la version choisie. Grille en `auto-fill` plutôt qu'un nombre de
- * colonnes : les miniatures gardent leur largeur, que la carte ait deux versions
- * ou sept, et que la modale soit étroite ou non.
+ * que soit la version choisie. La quantité le suit, sous la miniature plutôt que
+ * posée sur l'artwork dont elle masquait un coin — et collée au numéro, séparée
+ * par « · » : calée à droite, elle se lisait comme celle de la version voisine.
+ *
+ * Grille en `auto-fill` plutôt qu'un nombre de colonnes : les miniatures gardent
+ * leur largeur, que la carte ait deux versions ou sept, et que la modale soit
+ * étroite ou non.
  */
 function Picker({
   printings,
@@ -223,32 +227,33 @@ function Picker({
               !selected && "opacity-60 hover:opacity-100"
             )}
           >
-            <span
-              className={cn(
-                "relative block border",
-                selected ? "border-ring" : "border-border"
-              )}
-            >
+            <span className={cn("block border", selected ? "border-ring" : "border-border")}>
               {p.thumb ? (
                 <img src={p.thumb} alt="" className="block w-full" />
               ) : (
                 <span className="bg-muted block aspect-[5/7] w-full" />
               )}
-              {qty > 0 && (
-                <span className="bg-background text-foreground absolute right-0 bottom-0 px-1 font-mono text-[10px] leading-4 tabular-nums">
-                  ×{qty}
-                </span>
-              )}
             </span>
             {/* Pas de capitales : « 005a » et « 005A » ne désignent pas la même
-                chose, et le « β » des tirages Beta passerait pour un B latin. */}
+                chose, et le « β » des tirages Beta passerait pour un B latin.
+                Le numéro se tronque, jamais la quantité. Le « · » ne risque pas
+                de finir orphelin comme dans `StatLine` : la ligne ne passe
+                jamais à la ligne. */}
             <span
               className={cn(
-                "truncate font-mono text-[10px]",
+                "flex items-baseline gap-1 font-mono text-[10px] tabular-nums",
                 selected ? "text-foreground font-medium" : "text-muted-foreground"
               )}
             >
-              {p.num ? `#${p.num}` : "—"}
+              <span className="truncate">{p.num ? `#${p.num}` : "—"}</span>
+              {qty > 0 && (
+                <>
+                  <span aria-hidden className="text-muted-foreground shrink-0">
+                    ·
+                  </span>
+                  <span className="text-foreground shrink-0">×{qty}</span>
+                </>
+              )}
             </span>
           </button>
         )
