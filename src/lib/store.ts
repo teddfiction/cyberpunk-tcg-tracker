@@ -2,8 +2,8 @@
  * Conservation locale des imports, dans IndexedDB.
  *
  * `localStorage` plafonne vers 5 Mo et ne stocke que du texte ; l'enrichissement
- * avec miniatures en fait trois fois plus. IndexedDB encaisse, et range les
- * objets tels quels — pas de `JSON.stringify` sur 14 Mo à chaque écriture.
+ * avec visuels en fait plus de huit fois plus. IndexedDB encaisse, et range les
+ * objets tels quels — pas de `JSON.stringify` sur 43 Mo à chaque écriture.
  *
  * Rien ne lève ici : navigation privée, quota plein ou stockage bloqué ne
  * doivent pas empêcher l'app de tourner. Mais l'échec est rendu, pas avalé —

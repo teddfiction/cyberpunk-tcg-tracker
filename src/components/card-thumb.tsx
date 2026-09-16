@@ -1,15 +1,15 @@
 /**
  * Vignette d'une carte, avec la carte entière au survol.
  *
- * Il n'y a pas d'image plus grande à aller chercher : les URLs CloudFront de
- * Netdeck exigent une signature qui expire, donc l'aperçu montre la miniature à
- * sa taille native (320 px, voir `npm run data:netdeck:images`).
+ * Vignette et aperçu partagent la même image : les URLs CloudFront de Netdeck
+ * exigent une signature qui expire, donc seul le visuel exporté par
+ * `npm run data:netdeck:images` existe — 640 px, affiché ici à 320 px CSS.
  */
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
 import { cn } from "@/lib/utils"
 
 /**
- * Ratio natif des miniatures, mesuré : 320 × 447. Déclaré plutôt que laissé à
+ * Ratio des visuels, mesuré : 640 × 894, soit 320 × 447. Déclaré plutôt que laissé à
  * l'image pour deux raisons — la place est réservée avant le décodage, donc les
  * 319 lignes ne sautent pas au fil du chargement paresseux ; et le carré vide
  * d'une carte sans visuel occupe exactement la même.

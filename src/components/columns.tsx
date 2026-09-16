@@ -56,10 +56,10 @@ const percent = (
 /**
  * Visuel de la carte : miniature en ligne, carte entière au survol.
  *
- * Les miniatures sont des data URI produites par `npm run data:netdeck:images`
- * et n'existent qu'une fois cet import chargé. Il n'y a pas d'image plus grande
- * à aller chercher : les URLs CloudFront de Netdeck exigent une signature qui
- * expire, donc l'aperçu affiche la miniature à sa taille native (320 px).
+ * Les visuels sont des data URI produites par `npm run data:netdeck:images`
+ * et n'existent qu'une fois cet import chargé. Les URLs CloudFront de Netdeck
+ * exigent une signature qui expire : vignette et aperçu partagent donc le même
+ * fichier de 640 px, que l'aperçu affiche à 320 px CSS.
  */
 const thumbColumn: ColumnDef<TableRow> = {
   id: "thumb",

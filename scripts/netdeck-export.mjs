@@ -4,8 +4,8 @@
  * et produit un cards_enriched.json importable dans l'app.
  *
  *   node netdeck-export.mjs              # métadonnées (rapide)
- *   node netdeck-export.mjs --images     # + miniatures webp base64 (npm i sharp)
- *   node netdeck-export.mjs --images --width=200   # miniatures plus legeres
+ *   node netdeck-export.mjs --images     # + visuels webp base64 en 640 px (npm i sharp)
+ *   node netdeck-export.mjs --images --width=320   # visuels plus legers, flous sur Retina
  *   node netdeck-export.mjs --flat       # saute la passe détail : 1 impression par carte
  *   node netdeck-export.mjs --raw        # dump brut de la liste, sans transformation
  *
@@ -43,13 +43,18 @@ const DELAY = 250
 const args = new Set(process.argv.slice(2))
 const WANT_IMAGES = args.has("--images")
 /**
- * Largeur des miniatures. Il n'existe aucune URL d'image publique — CloudFront
- * exige une signature qui expire — donc la miniature stockee ici est la seule
- * image dont disposera l'app, aussi bien pour l'icone de ligne que pour
- * l'apercu au survol. 320 px la rend lisible en apercu pour ~5 Mo de base64
- * sur 151 cartes ; 200 px suffit si l'on ne veut que l'icone.
+ * Largeur des visuels. Il n'existe aucune URL d'image publique — CloudFront
+ * exige une signature qui expire — donc l'image stockee ici est la seule dont
+ * disposera l'app : icone de ligne, apercu au survol, tuile et modale.
+ *
+ * 640 px, soit deux fois les 320 px CSS auxquels tuile et modale l'affichent :
+ * c'est ce qu'un ecran Retina consomme. En 320 px, l'image y etait agrandie et
+ * floue. L'original fait 733 x 1024 (releve du 16/09/2026) ; ~43 Mo de JSON
+ * pour les 502 impressions, contre ~15 Mo en 320 px.
  */
-const WIDTH = Number([...args].find((a) => a.startsWith("--width="))?.slice(8)) || 320
+const WIDTH = Number([...args].find((a) => a.startsWith("--width="))?.slice(8)) || 640
+/** Qualite webp. Relevee avec la largeur : a 2x, les artefacts se voient. */
+const QUALITY = 80
 const FLAT = args.has("--flat")
 const RAW_ONLY = args.has("--raw")
 
@@ -165,8 +170,9 @@ async function thumbnail(url) {
   const res = await fetch(url, { headers })
   if (!res.ok) return null
   const out = await sharp(Buffer.from(await res.arrayBuffer()))
-    .resize({ width: WIDTH })
-    .webp({ quality: 72 })
+    // Jamais au-dela de l'original : agrandir alourdirait sans rien montrer de plus.
+    .resize({ width: WIDTH, withoutEnlargement: true })
+    .webp({ quality: QUALITY })
     .toBuffer()
   return "data:image/webp;base64," + out.toString("base64")
 }

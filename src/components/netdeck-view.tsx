@@ -110,8 +110,9 @@ export function NetdeckView({
   return (
     // Largeur plafonnée, contrairement à la table des cotes qui gagne à
     // s'étaler : à 1280 px, quatre colonnes font des tuiles de 308 px, soit
-    // juste sous les 320 px natifs des miniatures — au-delà elles seraient
-    // agrandies, et il n'y a pas d'image plus grande à aller chercher.
+    // juste sous les 320 px CSS pour lesquels les visuels sont exportés (en
+    // 640 px, pour Retina). Au-delà ils seraient agrandis, et l'original ne
+    // fait que 733 px.
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
       {owned && grid.length > 0 && <CollectionStats stats={collectionStats(base)} />}
       {lost.length > 0 && <Orphans entries={lost} />}

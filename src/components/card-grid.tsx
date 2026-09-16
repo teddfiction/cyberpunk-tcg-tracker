@@ -71,8 +71,9 @@ export function CardGrid({ cards, rarities, scope, collection, onQty, empty }: P
           </div>
         ))
       ) : (
-        // Quatre colonnes au plus : au-delà, la tuile passe sous les 320 px de
-        // la miniature et le visuel — le fond de cette vue — devient illisible.
+        // Quatre colonnes au plus : au-delà, la tuile passe sous les 320 px CSS
+        // pour lesquels le visuel est exporté, et celui-ci — le fond de cette
+        // vue — devient illisible.
         // Espacement vertical doublé : les tuiles n'ont plus de bordure, c'est
         // le blanc qui les sépare.
         <div className="grid grid-cols-2 items-start gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
