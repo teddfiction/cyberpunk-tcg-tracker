@@ -183,8 +183,6 @@ export type GridCard = {
   sets: string[]
   /** Raretés de ses impressions, de la plus commune à la plus rare. */
   rarities: string[]
-  /** Visuel de référence : la première impression qui en a un. */
-  thumb: string | null
   /** Cote la plus basse, toutes impressions confondues. */
   low: number | null
 }

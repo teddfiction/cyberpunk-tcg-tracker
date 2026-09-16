@@ -19,7 +19,7 @@ import { GRID_COLUMNS } from "@/components/grid-columns"
 import { SortMenu } from "@/components/sort-menu"
 import { useTable } from "@/hooks/use-table"
 import { download, toCsv } from "@/lib/csv"
-import { FACETS, facetOptions } from "@/lib/facets"
+import { FACETS, RARITY_FACET, facetOptions } from "@/lib/facets"
 import { buildGrid, buildPrintings, searchCard } from "@/lib/printings"
 import { SORTS } from "@/lib/sorts"
 import type { CodeMap, EnrichedCard, Row } from "@/types"
@@ -58,6 +58,10 @@ export function NetdeckView({ cards, rows, codes, expansions, onImport }: Props)
 
   const search = (table.getState().globalFilter as string) ?? ""
   const visible = table.getRowModel().rows.map((r) => r.original)
+  // Les tuiles montrent l'illustration de la rareté demandée : c'est l'artwork
+  // qui distingue deux versions, une grille filtrée qui garderait le visuel par
+  // défaut ne montrerait pas ce qu'on vient de cocher.
+  const rarities = (table.getColumn(RARITY_FACET)?.getFilterValue() as string[]) ?? []
   const filtering = table.getState().columnFilters.length > 0 || search.length > 0
 
   return (
@@ -127,7 +131,7 @@ export function NetdeckView({ cards, rows, codes, expansions, onImport }: Props)
         />
       </div>
 
-      <CardGrid cards={visible} />
+      <CardGrid cards={visible} rarities={rarities} />
 
       <p className="text-muted-foreground text-xs leading-relaxed">
         Source : <code>api.netdeck.gg</code> via <code>npm run data:netdeck:images</code>. Cliquer

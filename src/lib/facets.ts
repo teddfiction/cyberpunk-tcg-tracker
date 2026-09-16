@@ -21,6 +21,13 @@ export type Facet = {
   sort: FacetSort
 }
 
+/**
+ * Identifiant de la facette Rareté. Nommé parce que la grille s'y réfère en
+ * dehors du registre : le visuel d'une tuile suit la rareté filtrée
+ * (`printingIndex`), et une chaîne en dur se désaccorderait en silence.
+ */
+export const RARITY_FACET = "rarities"
+
 export const FACETS: Facet[] = [
   { id: "color", label: "Couleur", values: (c) => (c.color ? [c.color] : []), sort: "count" },
   { id: "type", label: "Type", values: (c) => (c.type ? [c.type] : []), sort: "count" },
@@ -30,7 +37,7 @@ export const FACETS: Facet[] = [
   { id: "ram", label: "RAM", values: (c) => num(c.ram), sort: "numeric" },
   { id: "eddiable", label: "Eddies", values: (c) => [c.eddiable ? "Oui" : "Non"], sort: "count" },
   { id: "sets", label: "Set", values: (c) => c.sets, sort: "count" },
-  { id: "rarities", label: "Rareté", values: (c) => c.rarities, sort: "rarity" },
+  { id: RARITY_FACET, label: "Rareté", values: (c) => c.rarities, sort: "rarity" },
 ]
 
 const num = (v: number | null) => (v != null ? [String(v)] : [])

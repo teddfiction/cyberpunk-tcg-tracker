@@ -8,7 +8,14 @@ import { GRID_COLUMNS } from "@/components/grid-columns"
 import { buildRows } from "@/lib/dataset"
 import { FACETS, facetOptions, matchOptions } from "@/lib/facets"
 import { emptyIndex } from "@/lib/enrich"
-import { buildGrid, buildPrintings, cardStats, statText, tileStats } from "@/lib/printings"
+import {
+  buildGrid,
+  buildPrintings,
+  cardStats,
+  printingIndex,
+  statText,
+  tileStats,
+} from "@/lib/printings"
 import { COLOR_RANK, SORT_IDS, SORTS, TYPE_RANK, sortIdOf } from "@/lib/sorts"
 import { gridNames, makeGrid } from "@/test/table"
 import {
@@ -140,6 +147,52 @@ describe("buildGrid", () => {
 
   it("rend une liste vide sans enrichissement", () => {
     expect(buildGrid(null, [])).toEqual([])
+  })
+})
+
+describe("printingIndex", () => {
+  const cards = buildGrid(ENRICHED, build(CATALOG, ENRICHED))
+  const byName = (name: string) => cards.find((c) => c.name === name)!
+  const zebu = byName("Zébu - Calme")
+
+  it("montre la version par défaut de la carte tant qu'aucune rareté n'est cochée", () => {
+    expect(printingIndex(zebu, [])).toBe(0)
+    expect(zebu.printings[0].set).toBe("Alpha Kit")
+  })
+
+  it("met en avant l'impression de la rareté filtrée", () => {
+    // Cocher « Common » doit montrer l'artwork Common et non celui du rang 0 :
+    // l'illustration est la seule chose qui distingue deux versions.
+    expect(printingIndex(zebu, ["Common"])).toBe(1)
+    expect(zebu.printings[1].rarity).toBe("Common")
+  })
+
+  it("suit l'ordre des impressions, pas celui des cases cochées", () => {
+    // Deux raretés cochées : c'est la carte qui décide laquelle passe devant.
+    expect(printingIndex(zebu, ["Common", "Nova Rare"])).toBe(0)
+    expect(zebu.printings[0].rarity).toBe("Nova Rare")
+  })
+
+  it("retombe sur la version par défaut quand la carte ne porte pas la rareté", () => {
+    // Le cas d'une carte retenue par une autre option de la même sélection.
+    expect(printingIndex(zebu, ["Epic"])).toBe(0)
+  })
+
+  it("écarte les impressions sans miniature, plutôt que de vider la tuile", () => {
+    const double = buildGrid(
+      AMBIGUOUS_ENRICHED,
+      build(AMBIGUOUS_CATALOG, AMBIGUOUS_ENRICHED)
+    ).find((c) => c.name === "Double - Face")!
+
+    // d1 est le rang 0 mais n'a pas de visuel : c'est d2 que la tuile montre,
+    // sans filtre comme avec un filtre qui désigne d1.
+    expect(printingIndex(double, [])).toBe(1)
+    expect(printingIndex(double, ["Rare"])).toBe(1)
+  })
+
+  it("garde le rang 0 quand aucune impression n'a de miniature", () => {
+    expect(printingIndex(byName("Éclair - Vif"), [])).toBe(0)
+    expect(printingIndex(byName("Éclair - Vif"), ["Epic"])).toBe(0)
   })
 })
 

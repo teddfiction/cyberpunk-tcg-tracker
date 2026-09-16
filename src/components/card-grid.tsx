@@ -2,6 +2,9 @@
  * Grille de cartes. Une tuile par carte ; cliquer l'ouvre en modale sur ses
  * impressions, dont chacune a son propre visuel — c'est là que se voient les
  * variantes de rareté que Cardmarket ne distingue pas.
+ *
+ * Filtrer par rareté change l'illustration des tuiles : c'est l'impression qui
+ * porte cette rareté qui est montrée, et la modale s'ouvre sur elle.
  */
 import * as React from "react"
 import { Layers } from "lucide-react"
@@ -9,13 +12,15 @@ import { Layers } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { CardDialog } from "@/components/card-dialog"
 import { colorVar } from "@/data/colors"
-import { tileStats } from "@/lib/printings"
+import { printingIndex, tileStats } from "@/lib/printings"
 import { cn } from "@/lib/utils"
 import type { CardStat } from "@/lib/printings"
 import type { GridCard } from "@/types"
 
 type Props = {
   cards: GridCard[]
+  /** Raretés cochées dans les filtres : la tuile montre alors cette version. */
+  rarities: string[]
 }
 
 /**
@@ -29,16 +34,20 @@ const OFFSCREEN = "[content-visibility:auto] [contain-intrinsic-size:auto_520px]
 /** Libellés de badge : même Geist Mono en capitales que la ligne d'infos. */
 const BADGE = "font-mono text-[10px] uppercase tabular-nums"
 
-export function CardGrid({ cards }: Props) {
+export function CardGrid({ cards, rarities }: Props) {
   // La carte n'est pas remise à `null` à la fermeture : la modale la rend
   // encore pendant son animation de sortie. C'est `open` qui pilote, pas elle.
   const [card, setCard] = React.useState<GridCard | null>(null)
   const [open, setOpen] = React.useState(false)
+  // Version sur laquelle ouvrir : celle que la tuile cliquée montrait, sans
+  // quoi le grand visuel ne serait pas celui qu'on vient de cliquer.
+  const [pick, setPick] = React.useState(0)
   const trigger = React.useRef<HTMLButtonElement | null>(null)
 
-  const select = (c: GridCard, el: HTMLButtonElement) => {
+  const select = (c: GridCard, index: number, el: HTMLButtonElement) => {
     trigger.current = el
     setCard(c)
+    setPick(index)
     setOpen(true)
   }
 
@@ -58,12 +67,23 @@ export function CardGrid({ cards }: Props) {
           le blanc qui les sépare. */}
       <div className="grid grid-cols-2 items-start gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
         {cards.map((c) => (
-          <Tile key={c.name} card={c} onSelect={(el) => select(c, el)} />
+          <Tile
+            key={c.name}
+            card={c}
+            rarities={rarities}
+            onSelect={(index, el) => select(c, index, el)}
+          />
         ))}
       </div>
 
       {card && (
-        <CardDialog card={card} open={open} onOpenChange={setOpen} trigger={trigger} />
+        <CardDialog
+          card={card}
+          pick={pick}
+          open={open}
+          onOpenChange={setOpen}
+          trigger={trigger}
+        />
       )}
     </>
   )
@@ -71,26 +91,32 @@ export function CardGrid({ cards }: Props) {
 
 function Tile({
   card,
+  rarities,
   onSelect,
 }: {
   card: GridCard
-  onSelect: (trigger: HTMLButtonElement) => void
+  rarities: string[]
+  onSelect: (index: number, trigger: HTMLButtonElement) => void
 }) {
   const stats = tileStats(card)
   const tint = colorVar(card.color)
+  // L'impression mise en avant : celle de la rareté filtrée, à défaut la
+  // version par défaut de la carte.
+  const pick = printingIndex(card, rarities)
+  const shown = card.printings[pick]
 
   return (
     <div className={cn("flex flex-col gap-2", OFFSCREEN)}>
       <button
-        onClick={(e) => onSelect(e.currentTarget)}
+        onClick={(e) => onSelect(pick, e.currentTarget)}
         aria-haspopup="dialog"
         aria-label={`${card.name} — voir les versions`}
         className="focus-visible:ring-ring/50 block cursor-pointer outline-none focus-visible:ring-[3px]"
       >
         {/* Sans bordure : l'illustration se suffit, et le cadre dessiné sur la
             carte elle-même en tenait déjà lieu. */}
-        {card.thumb ? (
-          <img src={card.thumb} alt={card.name} className="w-full" />
+        {shown?.thumb ? (
+          <img src={shown.thumb} alt={card.name} className="w-full" />
         ) : (
           <div className="bg-muted aspect-[5/7] w-full" />
         )}

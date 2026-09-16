@@ -45,13 +45,18 @@ export const PRICES: Record<string, Price> = {
   "24": { avg: null, low: 9, trend: null, avgF: null, lowF: null, foil: 0 },
 }
 
-/** `number` à null reproduit le cas réel : Netdeck ne numérote qu'une impression par carte. */
+/**
+ * `number` à null reproduit le cas réel : Netdeck ne numérote qu'une impression
+ * par carte. `thumb` reste facultative — le script ne produit les miniatures
+ * qu'avec `--images`, et une impression peut n'en avoir aucune.
+ */
 const printing = (
   uuid: string,
   set: string,
   setCode: string,
   number: string | null,
-  rarity: string
+  rarity: string,
+  thumb?: string
 ) => ({
   uuid,
   set,
@@ -59,9 +64,14 @@ const printing = (
   number,
   rarity,
   artist: null,
+  thumb,
 })
 
-/** « Zébu » a deux impressions, « Éclair » une seule : de quoi éprouver le repli. */
+/**
+ * « Zébu » a deux impressions visuellement distinctes, « Éclair » une seule et
+ * sans miniature : de quoi éprouver le repli, et l'élection du visuel par la
+ * rareté filtrée.
+ */
 export const ENRICHED: EnrichedCard[] = [
   {
     name: "Zébu - Calme",
@@ -69,8 +79,15 @@ export const ENRICHED: EnrichedCard[] = [
     color: "Red",
     type: "Unit",
     printings: [
-      printing("u1", "Alpha Kit", "alphakit", "001", "Nova Rare"),
-      printing("u2", "Welcome to Night City — Retail", "welcometonightcityretail", "β001", "Common"),
+      printing("u1", "Alpha Kit", "alphakit", "001", "Nova Rare", "data:u1"),
+      printing(
+        "u2",
+        "Welcome to Night City — Retail",
+        "welcometonightcityretail",
+        "β001",
+        "Common",
+        "data:u2"
+      ),
     ],
   },
   {
@@ -87,7 +104,8 @@ export const ENRICHED: EnrichedCard[] = [
  * pour ne pas déformer les comptes des autres tests.
  *
  * « Double - Face » : deux impressions Netdeck de raretés différentes — la
- *   rareté est réellement indéterminable.
+ *   rareté est réellement indéterminable. Seule la seconde a une miniature :
+ *   de quoi éprouver le repli du visuel de la tuile.
  * « Jumelle - Seule » : deux produits Cardmarket mais une seule impression
  *   connue — c'est le cas réel des 37 cartes du catalogue. La rareté vaut pour
  *   la carte ; seule la version physique reste inconnue.
@@ -107,7 +125,7 @@ export const AMBIGUOUS_ENRICHED: EnrichedCard[] = [
     slug: "double-face",
     printings: [
       printing("d1", "Alpha Kit", "alphakit", "010", "Rare"),
-      printing("d2", "Alpha Kit", "alphakit", "210", "Nova Rare"),
+      printing("d2", "Alpha Kit", "alphakit", "210", "Nova Rare", "data:d2"),
     ],
   },
   {
