@@ -53,7 +53,7 @@ export const IMPORT_FORMATS: ImportFormat[] = [
 export type Parsed =
   | { kind: "prices"; prices: Record<string, Price>; pricesAt: string; rows: number; ids: number[] }
   | { kind: "catalog"; products: Product[]; catalogAt: string }
-  | { kind: "enrich"; cards: EnrichedCard[]; printings: number; thumbs: number }
+  | { kind: "enrich"; cards: EnrichedCard[]; printings: number; numbered: number; thumbs: number }
   | { kind: "collection"; collection: Collection; rejected: number }
 
 export class IngestError extends Error {}
@@ -137,11 +137,14 @@ export function parse(json: unknown, filename: string): Parsed {
 
   if (Array.isArray(o?.cards) && (o.cards as EnrichedCard[])[0]?.printings) {
     const cards = o.cards as EnrichedCard[]
+    const count = (keep: (p: EnrichedCard["printings"][number]) => unknown) =>
+      cards.reduce((n, c) => n + c.printings.filter(keep).length, 0)
     return {
       kind: "enrich",
       cards,
-      printings: cards.reduce((n, c) => n + c.printings.length, 0),
-      thumbs: cards.reduce((n, c) => n + c.printings.filter((p) => p.thumb).length, 0),
+      printings: count(() => true),
+      numbered: count((p) => p.number),
+      thumbs: count((p) => p.thumb),
     }
   }
 
@@ -223,12 +226,20 @@ export function describe(
       const added = parsed.products.filter((p) => !known.has(p.id)).length
       return `Catalogue mis à jour depuis ${filename} : ${added} produits ajoutés, ${parsed.products.length - added} mis à jour.`
     }
-    case "enrich":
+    case "enrich": {
+      // Un fichier produit avant que le script lise `collector_number` laisse
+      // 351 impressions sur 502 sans numéro, et rien ne le signalait : la modale
+      // montrait un tiret, sans qu'on sache que le fichier était en cause.
+      const unnumbered = parsed.printings - parsed.numbered
       return (
         `${parsed.cards.length} cartes enrichies depuis ${filename} : ${parsed.printings} impressions, ` +
         (parsed.thumbs ? `${parsed.thumbs} miniatures. ` : "aucune miniature. ") +
-        "Colonne N° et rareté activées."
+        "Colonne N° et rareté activées." +
+        (unnumbered
+          ? ` ${plural(unnumbered, "impression")} sans numéro : fichier probablement antérieur au correctif du script, le régénérer par npm run data:netdeck:images.`
+          : "")
       )
+    }
     case "collection": {
       const next = summarize(parsed.collection)
       const previous = summarize(collection)

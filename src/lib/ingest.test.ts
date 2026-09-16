@@ -1,12 +1,13 @@
 /**
  * Lecture des exports Cardmarket : la garde de schéma, et le champ `dateAdded`
- * que le catalogue porte depuis peu. Puis les sauvegardes de collection, et le
- * registre des formats que la modale d'import annonce.
+ * que le catalogue porte depuis peu. Puis le compte rendu de la base Netdeck, les
+ * sauvegardes de collection, et le registre des formats que la modale d'import
+ * annonce.
  */
 import { describe as group, expect, it } from "vitest"
 
 import { IMPORT_FORMATS, IngestError, describe, expectJson, parse, toBackup } from "@/lib/ingest"
-import { COLLECTION } from "@/test/fixtures"
+import { COLLECTION, ENRICHED } from "@/test/fixtures"
 
 const catalogue = (extra: object = {}) => ({
   version: 1,
@@ -59,6 +60,32 @@ group("dateAdded", () => {
   it("se compare en chaîne : le format à largeur fixe rend l'ordre chronologique", () => {
     expect("2026-08-28 17:13:28" < "2026-09-07 12:30:00").toBe(true)
     expect("2026-09-11 09:02:00" < "2026-09-11 18:45:00").toBe(true)
+  })
+})
+
+group("base de cartes Netdeck", () => {
+  const enriched = (cards = ENRICHED) => ({ version: 2, cards })
+
+  it("compte impressions, numéros et miniatures", () => {
+    const parsed = parse(enriched(), "cards_enriched.json")
+    if (parsed.kind !== "enrich") throw new Error("mauvaise forme")
+    expect(parsed).toMatchObject({ printings: 3, numbered: 3, thumbs: 2 })
+    expect(describe(parsed, "cards_enriched.json", [])).not.toMatch(/sans numéro/)
+  })
+
+  // Le symptôme d'un fichier ancien — un tiret dans la modale — ne disait pas
+  // d'où il venait : le compte rendu doit le dire à l'import.
+  it("signale les impressions sans numéro", () => {
+    const stale = ENRICHED.map((c) => ({
+      ...c,
+      printings: c.printings.map((p, i) => (i ? { ...p, number: null } : p)),
+    }))
+    const parsed = parse(enriched(stale), "cards_enriched.json")
+    if (parsed.kind !== "enrich") throw new Error("mauvaise forme")
+    expect(parsed.numbered).toBe(2)
+    expect(describe(parsed, "cards_enriched.json", [])).toMatch(
+      /1 impression sans numéro .*npm run data:netdeck:images/
+    )
   })
 })
 
