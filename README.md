@@ -93,14 +93,21 @@ Cardmarket ne publie ni numéro de collecteur ni rareté. L'API Netdeck les four
 
 ```bash
 npm run data:netdeck           # métadonnées seules
-npm run data:netdeck:images    # + miniatures webp base64 (npm i sharp)
+npm run data:netdeck:images    # + visuels webp 640 px en base64 (npm i sharp)
 ```
 
 Produit `cards_enriched.json` à la racine (non versionné). Le charger via
 « Importer un JSON » — une modale liste les formats reconnus et ce que chacun
 remplace, et accepte le glisser-déposer : la table des cotes gagne les colonnes Visuel, N° et
 Rareté, et la base de cartes se remplit. Toutes les impressions portent un numéro
-de collecteur, et une miniature si le script a tourné avec `--images`.
+de collecteur, et un visuel si le script a tourné avec `--images`.
+
+Les visuels sont exportés en 640 px — deux fois la largeur à laquelle tuiles et
+modale les affichent, pour rester nets sur un écran Retina — soit ~43 Mo de
+JSON. `--width=320` divise le poids par trois, au prix de visuels flous sur
+Retina. Si la modale d'une carte montre un tiret à la place du numéro, le
+fichier importé date d'avant la lecture de `collector_number` par le script : le
+compte rendu d'import le signale, il suffit de le régénérer et de le réimporter.
 
 L'API `api.netdeck.gg` restreint le CORS à `https://cyberpunktcg.com` : l'appel doit
 partir d'un script Node avec l'en-tête `Origin`, jamais du navigateur. Si le schéma
@@ -134,6 +141,10 @@ navigateur. **Paramètres → Exporter la sauvegarde (JSON)** écrit
 « Importer un JSON » : elle **remplace intégralement** la collection en cours.
 « Oublier les données conservées » n'y touche pas.
 
+**Paramètres → Supprimer ma collection** l'efface, après une confirmation qui
+rappelle ce qui sera perdu et propose d'exporter la sauvegarde d'abord. Cotes,
+base de cartes et codes ne sont pas touchés.
+
 Une version possédée que la base importée ne connaît pas reste conservée, et la
 vue Collection la signale par son nom plutôt que de la supprimer.
 
@@ -160,6 +171,7 @@ src/
     ui/                 composants shadcn/ui, registry new-york-v4, non modifiés
     app-sidebar.tsx     navigation, import, actualisation, thème
     card-thumb.tsx      vignette et aperçu au survol
+    card-info.tsx       informations de carte en Geist Mono : badges, caractéristiques, liste
     columns.tsx         colonnes des cotes, une liste par mode
     grid-columns.ts     colonnes-facettes de la grille (ne rendent rien)
     card-grid.tsx       grille de cartes, quatre colonnes au plus
@@ -174,7 +186,7 @@ src/
     filters-bar.tsx     recherche, onglets, combobox, cases à cocher
     extension-combobox.tsx
     code-badge.tsx
-    settings-view.tsx   codes d'impression, sauvegarde de la collection
+    settings-view.tsx   codes d'impression, sauvegarde et suppression de la collection
     stats-strip.tsx
   data/
     dataset.json        jeu de données embarqué (généré, versionné)
@@ -207,7 +219,7 @@ src/
     fixtures.ts         jeu synthétique des tests
     table.ts            instances TanStack headless : table des cotes et grille
   App.tsx
-  index.css             tokens du thème, couleurs de carte, polices
+  index.css             tokens du thème, couleurs de carte, polices, voile des modales
   main.tsx
   types.ts
 ```
@@ -237,7 +249,8 @@ Trois sources, toutes publiques.
    `collection` pour une sauvegarde. Les imports sont conservés dans ce
    navigateur (IndexedDB) et survivent au rechargement. Paramètres → « Oublier
    les données conservées » repart du jeu embarqué, sans toucher à la
-   collection.
+   collection ; « Supprimer ma collection » vide la collection, sans toucher au
+   reste.
 
 ## Limites connues des données
 
@@ -265,20 +278,27 @@ Trois sources, toutes publiques.
 
 ## Thème
 
-Tokens shadcn/ui : base **Slate**, accent **Yellow**, graphiques **Cyan**,
-radius **0**, polices **Geist** et **Geist Mono**. Les valeurs OKLCH sont celles
-du registry officiel, mappées à la main sur le scaffold de tokens dans
-`src/index.css`. Pour appliquer un thème généré par le configurateur shadcn,
-remplacer les blocs `:root` et `.dark`.
+Tokens shadcn/ui : base **Neutral**, accent **Yellow**, graphiques **Cyan**,
+radius **0**, polices **Geist** et **Geist Mono**. La base fait un chrome noir,
+blanc et gris, sans la nuance bleutée de Slate ; l'accent jaune reste porté par
+les boutons principaux, l'anneau de focus et l'entrée active de la barre
+latérale. Les valeurs OKLCH sont celles du registry officiel, mappées à la main
+sur le scaffold de tokens dans `src/index.css`. Pour appliquer un thème généré
+par le configurateur shadcn, remplacer les blocs `:root` et `.dark`.
 
 Les cinq `--chart-*` reprennent l'échelle Cyan de Tailwind — pas 5. 300 → 700 en
-clair, 200 → 600 en sombre, où 700 tomberait à 52 % de clarté sur un fond
-slate-950. Aucun graphique ne les consomme encore : ils sont là pour le jour où.
+clair, 200 → 600 en sombre, où 700 tomberait à 52 % de clarté sur le noir. Aucun
+graphique ne les consomme encore : ils sont là pour le jour où.
 
-Le thème sombre s'écarte de Slate : fond et barre latérale sont en noir pur, pour
-que rien ne dispute l'éclat des visuels de carte. Les couleurs des cartes (rouge,
-jaune, vert, bleu) ont leurs propres tokens, réglés par thème pour rester
+Le thème sombre s'écarte de Neutral : fond et barre latérale sont en noir pur,
+pour que rien ne dispute l'éclat des visuels de carte. Les couleurs des cartes
+(rouge, jaune, vert, bleu) ont leurs propres tokens, réglés par thème pour rester
 lisibles.
+
+Les informations de carte — type, coût, force, RAM, set, rareté, numéro — sont en
+Geist Mono capitales, dans la grille comme dans la modale ; les valeurs
+numériques de la table des cotes, en Geist Mono. Les modales s'ouvrent sur un
+voile flouté, celui de l'AlertDialog des styles récents de shadcn.
 
 ## Note sur le combobox
 
