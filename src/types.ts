@@ -166,6 +166,8 @@ export type PrintRow = {
    * seul moyen de la retrouver après le tri à plat de `buildPrintings`.
    */
   rank: number
+  /** Exemplaires possédés de cette impression. 0 hors collection. */
+  qty: number
 }
 
 /**
@@ -173,6 +175,11 @@ export type PrintRow = {
  * agrégées qui servent aux filtres.
  */
 export type GridCard = {
+  /**
+   * Clé de ligne : le nom dans la base de cartes, l'uuid de l'impression dans
+   * la collection, où une carte possédée en deux versions fait deux tuiles.
+   */
+  id: string
   name: string
   subname: string | null
   slug: string | null
@@ -190,7 +197,33 @@ export type GridCard = {
   rarities: string[]
   /** Cote la plus basse, toutes impressions confondues. */
   low: number | null
+  /** Exemplaires possédés, toutes impressions de la tuile confondues. */
+  owned: number
 }
+
+/**
+ * Une version possédée.
+ *
+ * Nom, set, numéro et rareté sont un instantané pris à l'ajout : ils ne servent
+ * qu'à nommer une entrée que la base importée ne connaît plus — l'uuid seul ne
+ * dirait rien à personne.
+ */
+export type Owned = {
+  qty: number
+  /** Premier ajout, ISO 8601. Gardé quand la quantité change. */
+  addedAt: string
+  name: string
+  set: string
+  num: string | null
+  rarity: string | null
+}
+
+/**
+ * La collection, indexée par uuid d'impression Netdeck (`printing_id`) :
+ * stable côté serveur, et unique sur les 502 impressions. La version, pas la
+ * carte, est l'unité — c'est elle qu'on tient en main.
+ */
+export type Collection = Record<string, Owned>
 
 /** Ce que la table manipule : une ligne produit, ou une ligne carte. */
 export type TableRow = Row | CardRow

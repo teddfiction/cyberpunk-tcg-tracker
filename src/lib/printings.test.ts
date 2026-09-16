@@ -262,7 +262,7 @@ describe("facettes", () => {
     expect(facetOptions(cout, cards)).toEqual([])
   })
 
-  it("couvre les neuf filtres demandés", () => {
+  it("couvre les dix filtres demandés", () => {
     expect(FACETS.map((f) => f.id)).toEqual([
       "color",
       "type",
@@ -273,6 +273,7 @@ describe("facettes", () => {
       "eddiable",
       "sets",
       "rarities",
+      "owned",
     ])
   })
 

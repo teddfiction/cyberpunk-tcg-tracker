@@ -13,7 +13,7 @@
 import { rarityRank } from "@/data/rarities"
 import { matchExpansion } from "@/lib/enrich"
 import { eur, minOf, norm, words } from "@/lib/format"
-import type { CodeMap, EnrichedCard, GridCard, PrintRow, Row } from "@/types"
+import type { CodeMap, Collection, EnrichedCard, GridCard, PrintRow, Row } from "@/types"
 
 import type { FilterFn } from "@tanstack/react-table"
 
@@ -22,9 +22,17 @@ type BuildArgs = {
   rows: Row[]
   expansions: Record<string, string>
   codes: CodeMap
+  /** Quantités possédées. Facultative : la base se construit aussi sans. */
+  collection?: Collection
 }
 
-export function buildPrintings({ cards, rows, expansions, codes }: BuildArgs): PrintRow[] {
+export function buildPrintings({
+  cards,
+  rows,
+  expansions,
+  codes,
+  collection = {},
+}: BuildArgs): PrintRow[] {
   if (!cards?.length) return []
 
   // Produits Cardmarket par carte et par extension, pour rattacher les cotes.
@@ -67,6 +75,7 @@ export function buildPrintings({ cards, rows, expansions, codes }: BuildArgs): P
         lowRange: group.length > 1 && min != null && max != null && min !== max ? [min, max] : null,
         variants: group.length,
         rank: rank++,
+        qty: collection[printing.uuid]?.qty ?? 0,
       })
     }
   }
@@ -108,6 +117,7 @@ export function buildGrid(cards: EnrichedCard[] | null, printings: PrintRow[]): 
       const lows = ordered.map((p) => p.low ?? p.lowRange?.[0] ?? null)
 
       return {
+        id: card.name,
         name: card.name,
         subname: card.subname ?? null,
         slug: card.slug,
@@ -124,6 +134,7 @@ export function buildGrid(cards: EnrichedCard[] | null, printings: PrintRow[]): 
           (a, b) => rarityRank(a) - rarityRank(b)
         ),
         low: minOf(lows),
+        owned: ordered.reduce((n, p) => n + p.qty, 0),
       }
     })
     .sort((a, b) => a.name.localeCompare(b.name, "fr"))

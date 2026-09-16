@@ -7,6 +7,7 @@
  * `components/grid-columns.ts`.
  */
 import { rarityRank } from "@/data/rarities"
+import { MISSING, OWNED, OWNED_FACET } from "@/lib/collection"
 import { words } from "@/lib/format"
 import type { GridCard } from "@/types"
 
@@ -38,6 +39,12 @@ export const FACETS: Facet[] = [
   { id: "eddiable", label: "Eddies", values: (c) => [c.eddiable ? "Oui" : "Non"], sort: "count" },
   { id: "sets", label: "Set", values: (c) => c.sets, sort: "count" },
   { id: RARITY_FACET, label: "Rareté", values: (c) => c.rarities, sort: "rarity" },
+  {
+    id: OWNED_FACET,
+    label: "Collection",
+    values: (c) => [c.owned > 0 ? OWNED : MISSING],
+    sort: "count",
+  },
 ]
 
 const num = (v: number | null) => (v != null ? [String(v)] : [])
