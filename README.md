@@ -28,13 +28,15 @@ ce qu'elle montre, puis comment rafraîchir ses données.
 - **Base de cartes** — la grille des cartes officielles, y compris celles
   qu'aucun vendeur ne propose. Facettes, tris (« Couleur › Type › Coût » par
   défaut, comme sur cyberpunktcg.com), et une modale par carte pour parcourir ses
-  impressions — visuel, rareté, numéro et cote de chacune. Elle se remplit une
-  fois `cards_enriched.json` importé.
+  impressions — visuel, rareté, numéro et cote de chacune, chaque version
+  numérotée sous sa miniature. Elle se remplit une fois `cards_enriched.json`
+  importé.
 - **Collection** — la même grille, réduite aux versions possédées : une tuile
   par version, mêmes filtres, recherche et tris, et la complétion en tête. Les
   quantités se règlent dans la modale d'une carte, depuis la base comme depuis
   la collection ; la base montre ce qu'on possède déjà (quantités sur les
-  tuiles et les versions, filtre Possédée / Manquante).
+  tuiles et les versions, filtre Possédée / Manquante). Elle se sauvegarde, se
+  restaure et se supprime depuis Paramètres.
 
 ## Exploiter l'app
 
@@ -100,7 +102,13 @@ Produit `cards_enriched.json` à la racine (non versionné). Le charger via
 « Importer un JSON » — une modale liste les formats reconnus et ce que chacun
 remplace, et accepte le glisser-déposer : la table des cotes gagne les colonnes Visuel, N° et
 Rareté, et la base de cartes se remplit. Toutes les impressions portent un numéro
-de collecteur, et un visuel si le script a tourné avec `--images`.
+de collecteur, et un visuel si le script a tourné avec `--images`. Un fichier
+produit **sans** `--images` remplace aussi les visuels déjà importés : grille et
+modale n'en montrent alors plus aucun.
+
+À relancer quand Netdeck publie de nouvelles cartes ou versions, puis
+réimporter le fichier. Le script prend quelques minutes : une requête par carte
+pour lister toutes ses impressions, puis un téléchargement par visuel.
 
 Les visuels sont exportés en 640 px — deux fois la largeur à laquelle tuiles et
 modale les affichent, pour rester nets sur un écran Retina — soit ~43 Mo de
@@ -153,9 +161,11 @@ vue Collection la signale par son nom plutôt que de la supprimer.
 | Quand | Quoi |
 |---|---|
 | Suivi régulier des cotes | `npm run data:refresh`, puis committer `src/data/dataset.json` |
-| Nouvelle extension | `npm run data:refresh`, puis `npm run data:netdeck`, compléter `EXPANSIONS` puis `DEFAULT_CODES` |
+| Nouvelle extension | `npm run data:refresh`, puis `npm run data:netdeck:images` et son import, compléter `EXPANSIONS` puis `DEFAULT_CODES` |
+| Nouvelles cartes ou versions Netdeck | `npm run data:netdeck:images`, puis réimporter `cards_enriched.json`, rien à committer |
 | Cotes du jour, sans quitter l'app | bouton « Actualiser les données », rien à committer |
 | Vérification ponctuelle | import à chaud dans l'app, rien à committer |
+| Avant de vider le navigateur ou de changer de machine | Paramètres → « Exporter la sauvegarde (JSON) » de la collection |
 
 ## Structure
 
@@ -165,7 +175,7 @@ public/fonts/           Geist et Geist Mono, variables (woff2, SIL OFL 1.1)
 scripts/
   fetch-cardmarket.ts   téléchargement des exports Cardmarket
   build-dataset.ts      exports Cardmarket  →  src/data/dataset.json
-  netdeck-export.mjs    API cyberpunktcg.com →  cards_enriched.json
+  netdeck-export.mjs    API Netdeck          →  cards_enriched.json (visuels 640 px)
 src/
   components/
     ui/                 composants shadcn/ui, registry new-york-v4, non modifiés
@@ -175,7 +185,7 @@ src/
     columns.tsx         colonnes des cotes, une liste par mode
     grid-columns.ts     colonnes-facettes de la grille (ne rendent rien)
     card-grid.tsx       grille de cartes, quatre colonnes au plus
-    card-dialog.tsx     versions d'une carte, en modale
+    card-dialog.tsx     versions d'une carte, en modale : visuel, versions numérotées, quantité
     collection-control.tsx  quantité possédée d'une version, retrait en deux temps
     collection-stats.tsx    complétion en tête de la collection
     import-dialog.tsx   formats reconnus et zone de dépôt
@@ -239,11 +249,11 @@ laissés intacts pour rester régénérables par la CLI.
 Trois sources, toutes publiques.
 
 1. **Cardmarket** — cotes et catalogue. Trois exports JSON récupérés par
-      `npm run data:fetch`, convertis par `npm run data:cardmarket` — ou appliqués
+   `npm run data:fetch`, convertis par `npm run data:cardmarket` — ou appliqués
    sans quitter l'app par « Actualiser les données ». Price guide mis à jour
    quotidiennement.
 2. **Netdeck** (`api.netdeck.gg`) — numéros de collecteur, raretés, visuels.
-   Extraits par `npm run data:netdeck`, chargés à chaud.
+   Extraits par `npm run data:netdeck:images`, chargés à chaud.
 3. **Import à chaud** — le bouton « Importer un JSON » accepte quatre formats,
    reconnus à leur clé racine : `products`, `priceGuides`, `cards`, et
    `collection` pour une sauvegarde. Les imports sont conservés dans ce
@@ -264,7 +274,7 @@ Trois sources, toutes publiques.
   Sur un marché à trois annonces, c'est du bruit. `trend` est plus honnête.
 - **Les variantes d'une même carte dans une même extension sont indistinguables**
   côté Cardmarket : même nom, même extension, seul l'`idProduct` diffère. Cela
-    concerne 37 cartes, soit 76 produits. Netdeck, lui, sépare ces variantes — une
+  concerne 37 cartes, soit 76 produits. Netdeck, lui, sépare ces variantes — une
   rareté de base et sa version Iconic ou Nova Rare, chacune avec son numéro et
   son visuel — mais rien ne relie une impression Netdeck à un `idProduct`. La
   colonne Rareté affiche donc les raretés possibles en pointillés plutôt que d'en

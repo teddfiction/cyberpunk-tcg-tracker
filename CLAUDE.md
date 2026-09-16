@@ -16,6 +16,7 @@ npm run test             # vitest, ~180 tests, < 1 s  ← le filet
 npm run typecheck        # tsc -b --noEmit
 npm run build            # tsc -b && vite build → dist/
 npm run data:refresh     # rafraîchit les cotes (voir README § « Exploiter l'app »)
+npm run data:netdeck:images  # base Netdeck et visuels 640 px → cards_enriched.json, quelques minutes
 ```
 
 `npm run test && npm run typecheck` avant de considérer un changement terminé.
@@ -106,6 +107,20 @@ chaque tri vise une colonne qui existe dans `grid-columns.ts`.
 Le tri ne se double pas d'un `useState` : `sortIdOf` retrouve l'entrée active
 depuis l'état de la table, qui en reste seule dépositaire.
 
+### Ajouter une information de carte
+
+**Un fichier : `lib/printings.ts`**, une entrée dans `cardStats` — un libellé,
+une valeur, et `dot` si elle porte la pastille de couleur. La tuile et l'en-tête
+de la modale la rendent tous deux par `StatLine` (`components/card-info.tsx`),
+en Geist Mono capitales ; la tuile y ajoute sa cote, par `tileStats`. Un test
+dans `printings.test.ts` : le typecheck ne voit pas une forme qui change (voir
+« Tests »).
+
+Une information propre à **une version** — set, rareté, numéro, illustrateur,
+cote — est une ligne `InfoRow` dans `Details` (`components/card-dialog.tsx`).
+Si la donnée n'existe pas encore sur `GridCard` ou `PrintRow`, voir « Ajouter
+une donnée venue de Netdeck ».
+
 ### Ajouter une vue
 
 **Trois fichiers, et le compilateur indique les deux derniers.**
@@ -127,7 +142,11 @@ avec celles des cotes.
 ### Ajouter une donnée venue de Netdeck
 
 `types.ts` → `Printing` et `Row`, `lib/dataset.ts` → `buildRows`, puis une
-colonne. **Se demander d'abord si la donnée est au niveau carte ou impression** :
+colonne. Pour la grille, `PrintRow` et `GridCard`, remplis par `buildPrintings`
+et `buildGrid` (`lib/printings.ts`). Si le champ n'est pas encore exporté,
+`printingOf` ou `cardOf` dans `scripts/netdeck-export.mjs` — puis régénérer et
+réimporter `cards_enriched.json`. **Se demander d'abord si la donnée est au
+niveau carte ou impression** :
 `slug` identifie la carte et se propage sans risque ; `rarity`, `number` et
 `uuid` identifient une impression et ne peuvent être attribués que lorsque
 l'appariement est certain (voir « Limites des données »).
@@ -251,12 +270,16 @@ Elle est la seule vue à **plafonner sa largeur** (`max-w-7xl`, quatre colonnes
 au plus) là où la table des cotes s'étale : à 1280 px les tuiles font 308 px,
 soit juste sous les 320 px CSS pour lesquels les visuels sont exportés — en
 640 px, pour Retina ; l'original n'en fait que 733 (voir « Limites des
-données »). Les versions
-s'ouvrent en modale plutôt qu'en dépliant la tuile — sous une tuile, les
-artworks tenaient dans 40 px de haut, illisibles, et déplier repoussait toute la
-grille. Radix ne rend pas le focus à la tuile en sortant : `CardDialog` le fait
-lui-même, sinon le clavier repartirait du haut des 151 tuiles à chaque
-fermeture.
+données »). Les versions s'ouvrent en modale plutôt qu'en dépliant la tuile —
+sous une tuile, les artworks tenaient dans 40 px de haut, illisibles, et déplier
+repoussait toute la grille. Radix ne rend pas le focus à la tuile en sortant :
+`CardDialog` le fait lui-même, sinon le clavier repartirait du haut des 151
+tuiles à chaque fermeture.
+
+Dans la modale, visuel et versions ne sont côte à côte qu'à partir de `md`. Les
+miniatures des versions sont une grille `auto-fill` : elles gardent ~90 px que
+la carte ait deux versions ou sept, et chacune porte son numéro de collecteur,
+seul texte qui sépare deux versions d'une même rareté.
 
 **Le visuel d'une tuile suit la rareté filtrée.** Cocher « Iconic Legend » fait
 montrer l'illustration Iconic Legend de chaque carte, et la modale s'ouvre sur
@@ -565,6 +588,8 @@ Ces contraintes viennent des sources, pas du code. Ne pas « réparer » :
   Les neuf raretés de `data/rarities.ts` sont toutes présentes, sur les 502
   impressions : Common (186), Uncommon (113), Rare (82), Epic (49), Nova Rare
   (29), Iconic Legend (21), Iconic Other (10), Secret (8), Iconic Secret (4).
+  Comptes retrouvés à l'identique sur l'export du 16/09/2026, 43 cartes à
+  raretés multiples comprises.
 - **Pas d'URL d'image publique.** `image_url` est signée et expire ;
   `source_image_url`, sa variante nue, est refusée par CloudFront (« Missing
   Key-Pair-Id »). Le visuel produit par `npm run data:netdeck:images` est donc
@@ -658,8 +683,9 @@ le push.
 | `src/data/expansions.ts` | **oui** | libellés et codes d'impression saisis à la main, seule mémoire de ce travail |
 | `public/fonts/` | **oui** | Geist et Geist Mono variables, SIL OFL 1.1 — redistribuables |
 | `data/cardmarket/` | non | exports bruts republiés quotidiennement, retéléchargeables — diffs illisibles |
-| `cards_enriched.json`, `netdeck-raw.json` | non | sorties de scripts, régénérables |
+| `cards_enriched.json`, `netdeck-raw.json` | non | sorties de scripts, régénérables — ~43 Mo avec les visuels |
 | visuels de cartes | non | licence CD PROJEKT RED, usage local, pas de redistribution |
 
 Sur un clone frais, l'app démarre telle quelle ; `npm run data:refresh` reconstitue
-`data/cardmarket/` puis régénère le dérivé.
+`data/cardmarket/` puis régénère le dérivé. La base de cartes et la collection
+attendent `npm run data:netdeck:images` et l'import de `cards_enriched.json`.

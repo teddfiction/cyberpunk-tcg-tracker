@@ -44,7 +44,11 @@ export type Printing = {
   number: string | null
   rarity: string | null
   artist: string | null
-  /** Miniature webp en base64, présente seulement si le script a tourné avec --images. */
+  /**
+   * Visuel webp en base64, 640 px par défaut : la seule image de l'app, de la
+   * vignette de ligne à la modale. Présent seulement si le script a tourné avec
+   * --images.
+   */
   thumb?: string
 }
 
