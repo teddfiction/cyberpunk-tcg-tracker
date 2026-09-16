@@ -32,8 +32,10 @@ export function toCsv<T>(table: Table<T>, codes: CodeMap): string {
 }
 
 export function download(filename: string, content: string, mime = "text/csv;charset=utf-8") {
-  // BOM : sans lui, Excel casse les accents.
-  const blob = new Blob(["﻿" + content], { type: mime })
+  // BOM : sans lui, Excel casse les accents. Réservé au CSV — un JSON n'en a
+  // pas besoin, et d'autres lecteurs que le nôtre le refuseraient.
+  const bom = mime.startsWith("text/csv") ? "\uFEFF" : ""
+  const blob = new Blob([bom + content], { type: mime })
   const url = URL.createObjectURL(blob)
   const a = Object.assign(document.createElement("a"), { href: url, download: filename })
   a.click()

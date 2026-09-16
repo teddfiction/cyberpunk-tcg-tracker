@@ -1,9 +1,9 @@
 /**
- * Vue Paramètres : saisie des codes d'impression, et gestion de ce que le
- * navigateur conserve d'une session à l'autre.
+ * Vue Paramètres : saisie des codes d'impression, sauvegarde de la collection,
+ * et gestion de ce que le navigateur conserve d'une session à l'autre.
  */
 import * as React from "react"
-import { Copy, Trash2 } from "lucide-react"
+import { Copy, Download, Trash2, Upload } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
-import { dateFr } from "@/lib/format"
+import { dateFr, plural } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import type { CodeMap } from "@/types"
 
@@ -28,6 +28,10 @@ type Props = {
   /** Date du dernier import conservé, `null` si le navigateur n'en garde aucun. */
   storedAt: string | null
   onForget: () => void
+  /** Résumé de la collection conservée. */
+  collection: { versions: number; copies: number }
+  onExportCollection: () => void
+  onImport: () => void
 }
 
 /**
@@ -44,6 +48,9 @@ export function SettingsView({
   onMessage,
   storedAt,
   onForget,
+  collection,
+  onExportCollection,
+  onImport,
 }: Props) {
   const list = Object.keys(counts).sort((a, b) => counts[b] - counts[a])
   const confirmed = list.filter((e) => codes[e]?.sure).length
@@ -116,8 +123,55 @@ export function SettingsView({
       </CardContent>
       </Card>
 
+      <CollectionCard
+        collection={collection}
+        onExport={onExportCollection}
+        onImport={onImport}
+      />
+
       <StoredDataCard storedAt={storedAt} onForget={onForget} />
     </div>
+  )
+}
+
+/**
+ * La collection est la seule donnée saisie à la main : aucun import ne la
+ * reconstitue, et elle ne vit que dans ce navigateur. D'où la sauvegarde.
+ */
+function CollectionCard({
+  collection,
+  onExport,
+  onImport,
+}: {
+  collection: { versions: number; copies: number }
+  onExport: () => void
+  onImport: () => void
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Collection</CardTitle>
+        <CardDescription>
+          {collection.versions
+            ? `${plural(collection.versions, "version")} et ${plural(collection.copies, "exemplaire")} conservés dans ce navigateur.`
+            : "La collection est vide."}{" "}
+          Elle ne suit ni une autre machine, ni un autre navigateur : l'exporter pour la sauvegarder.
+          Importer une sauvegarde remplace intégralement la collection en cours. « Oublier les
+          données conservées » n'y touche pas.
+        </CardDescription>
+      </CardHeader>
+
+      <CardContent className="flex flex-wrap gap-2">
+        <Button variant="outline" size="sm" disabled={!collection.versions} onClick={onExport}>
+          <Download />
+          Exporter la sauvegarde (JSON)
+        </Button>
+        <Button variant="ghost" size="sm" onClick={onImport}>
+          <Upload />
+          Importer une sauvegarde
+        </Button>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -134,7 +188,7 @@ function StoredDataCard({ storedAt, onForget }: { storedAt: string | null; onFor
         <CardTitle>Données conservées</CardTitle>
         <CardDescription>
           {storedAt
-            ? `Le catalogue, les cotes, l'enrichissement Netdeck et les codes saisis sont conservés dans ce navigateur depuis le ${dateFr(storedAt)}. Recharger la page les retrouve.`
+            ? `Le catalogue, les cotes, l'enrichissement Netdeck et les codes saisis sont conservés dans ce navigateur depuis le ${dateFr(storedAt)}. Recharger la page les retrouve. Les oublier ne touche pas à la collection.`
             : "Aucun import n'est conservé : l'app tourne sur le jeu de données embarqué."}{" "}
           Ce stockage est local à ce navigateur — il ne suit ni le dépôt, ni une autre machine.
         </CardDescription>

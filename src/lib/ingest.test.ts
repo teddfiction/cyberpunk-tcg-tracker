@@ -1,10 +1,12 @@
 /**
  * Lecture des exports Cardmarket : la garde de schéma, et le champ `dateAdded`
- * que le catalogue porte depuis peu.
+ * que le catalogue porte depuis peu. Puis les sauvegardes de collection, et le
+ * registre des formats que la modale d'import annonce.
  */
-import { describe, expect, it } from "vitest"
+import { describe as group, expect, it } from "vitest"
 
-import { IngestError, expectJson, parse } from "@/lib/ingest"
+import { IMPORT_FORMATS, IngestError, describe, expectJson, parse, toBackup } from "@/lib/ingest"
+import { COLLECTION } from "@/test/fixtures"
 
 const catalogue = (extra: object = {}) => ({
   version: 1,
@@ -22,7 +24,7 @@ const catalogue = (extra: object = {}) => ({
   ...extra,
 })
 
-describe("garde de schéma", () => {
+group("garde de schéma", () => {
   it("accepte la version annoncée par les exports du jour", () => {
     expect(parse(catalogue(), "products.json").kind).toBe("catalog")
   })
@@ -39,7 +41,7 @@ describe("garde de schéma", () => {
   })
 })
 
-describe("dateAdded", () => {
+group("dateAdded", () => {
   it("est repris tel quel, en chaîne", () => {
     const parsed = parse(catalogue(), "products.json")
     if (parsed.kind !== "catalog") throw new Error("mauvaise forme")
@@ -60,7 +62,7 @@ describe("dateAdded", () => {
   })
 })
 
-describe("expectJson", () => {
+group("expectJson", () => {
   it("rend l'objet quand c'est du JSON", () => {
     expect(expectJson('{"a":1}', "x.json")).toEqual({ a: 1 })
   })
@@ -68,5 +70,81 @@ describe("expectJson", () => {
   it("lève sur du HTML rendu avec un 200 — le piège du relais absent", () => {
     expect(() => expectJson("<!doctype html>", "x.json")).toThrow(IngestError)
     expect(() => expectJson("<!doctype html>", "x.json")).toThrow(/non-JSON/)
+  })
+})
+
+group("sauvegarde de collection", () => {
+  const backup = toBackup(COLLECTION, "2026-09-16T12:00:00.000Z")
+
+  it("relit exactement ce que l'export écrit", () => {
+    const parsed = parse(JSON.parse(JSON.stringify(backup)), "c.json")
+    expect(parsed).toEqual({ kind: "collection", collection: COLLECTION, rejected: 0 })
+  })
+
+  it("refuse une autre version, ou une sauvegarde qui n'en porte pas", () => {
+    expect(() => parse({ ...backup, version: 2 }, "c.json")).toThrow(/version 2, attendu 1/)
+    const { version: _v, ...sans } = backup
+    expect(() => parse(sans, "c.json")).toThrow(IngestError)
+  })
+
+  it("écarte les entrées sans quantité entière positive, et les compte", () => {
+    const parsed = parse(
+      {
+        version: 1,
+        collection: {
+          ok: { qty: 2, name: "Zébu - Calme" },
+          zero: { qty: 0 },
+          texte: { qty: "3" },
+          demi: { qty: 1.5 },
+          vide: null,
+        },
+      },
+      "c.json"
+    )
+    if (parsed.kind !== "collection") throw new Error("mauvaise forme")
+    expect(Object.keys(parsed.collection)).toEqual(["ok"])
+    expect(parsed.collection.ok).toEqual({
+      qty: 2,
+      addedAt: "",
+      name: "Zébu - Calme",
+      set: "",
+      num: null,
+      rarity: null,
+    })
+    expect(parsed.rejected).toBe(4)
+  })
+
+  it("annonce le remplacement de la collection en place", () => {
+    const parsed = parse(backup, "c.json")
+    const u3 = { u3: COLLECTION.u3 }
+    expect(describe(parsed, "c.json", [], u3)).toBe(
+      "Collection restaurée depuis c.json : 2 versions, 4 exemplaires. Elle remplace la précédente (1 version)."
+    )
+    expect(describe(parsed, "c.json", [])).toBe(
+      "Collection restaurée depuis c.json : 2 versions, 4 exemplaires."
+    )
+  })
+})
+
+group("registre des formats", () => {
+  /** Le plus petit fichier valide de chaque format. */
+  const SAMPLES: Record<string, unknown> = {
+    products: { version: 1, products: [] },
+    priceGuides: { version: 1, priceGuides: [] },
+    cards: { cards: [{ name: "Zébu - Calme", printings: [] }] },
+    collection: { version: 1, collection: {} },
+  }
+
+  it("chaque format annoncé est reconnu par parse", () => {
+    for (const format of IMPORT_FORMATS) {
+      expect(SAMPLES, format.key).toHaveProperty(format.key)
+      expect(() => parse(SAMPLES[format.key], "x.json")).not.toThrow()
+    }
+  })
+
+  it("nomme les clés attendues quand la structure est inconnue", () => {
+    expect(() => parse({ autre: [] }, "x.json")).toThrow(
+      "x.json : structure inconnue — attendu une clé products, priceGuides, cards ou collection."
+    )
   })
 })

@@ -1,27 +1,35 @@
 /**
  * Source de vérité des données : jeu embarqué, imports à chaud, enrichissement
- * Netdeck, et les lignes de table qui en découlent.
+ * Netdeck, collection, et les lignes de table qui en découlent.
  *
  * Les imports sont conservés dans IndexedDB, donc survivent au rechargement.
  * L'écriture n'a lieu **qu'après un import réussi**, jamais sur un simple
  * changement d'état : au premier rendu l'app est encore sur le jeu embarqué, et
- * une sauvegarde automatique écraserait ce qu'on est en train de relire.
+ * une sauvegarde automatique écraserait ce qu'on est en train de relire. Codes
+ * et collection, saisis à la main, s'écrivent eux à chaque changement — mais
+ * jamais avant relecture.
  */
 import * as React from "react"
 
 import dataset from "@/data/dataset.json"
 import { DEFAULT_CODES, EXPANSIONS } from "@/data/expansions"
 import { buildCards, buildRows, countByExpansion } from "@/lib/dataset"
+import { withQty } from "@/lib/collection"
 import { buildEnrichIndex } from "@/lib/enrich"
 import { describe, mergeCatalog, parse, readJsonFile, IngestError } from "@/lib/ingest"
 import { fetchCardmarket } from "@/lib/remote"
-import { idbDelete, idbGet, idbSet } from "@/lib/store"
-import type { CodeMap, Dataset, EnrichedCard, Price, Product } from "@/types"
+import { FORGETTABLE, KEYS, idbDelete, idbGet, idbSet } from "@/lib/store"
+import type {
+  CodeMap,
+  Collection,
+  Dataset,
+  EnrichedCard,
+  Price,
+  PrintRow,
+  Product,
+} from "@/types"
 
 const seed = dataset as unknown as Dataset
-
-const KEY_DATA = "dataset"
-const KEY_CODES = "codes"
 
 /** Ce qui est conservé entre deux sessions. */
 type Stored = {
@@ -42,6 +50,7 @@ export function useDataset() {
   const [catalogAt, setCatalogAt] = React.useState(seed.catalogAt)
   const [codes, setCodes] = React.useState<CodeMap>(DEFAULT_CODES)
   const [enriched, setEnriched] = React.useState<EnrichedCard[] | null>(null)
+  const [collection, setCollection] = React.useState<Collection>({})
   const [notice, setNotice] = React.useState<Notice | null>(null)
   /** Date du dernier import conservé, `null` si rien n'est stocké. */
   const [storedAt, setStoredAt] = React.useState<string | null>(null)
@@ -49,13 +58,16 @@ export function useDataset() {
   const [fetching, setFetching] = React.useState(false)
 
   const hydrated = React.useRef(false)
+  /** L'échec d'écriture de la collection a déjà été signalé : un avis, pas un par clic. */
+  const collectionWarned = React.useRef(false)
 
   React.useEffect(() => {
     let cancelled = false
     void (async () => {
-      const [stored, storedCodes] = await Promise.all([
-        idbGet<Stored>(KEY_DATA),
-        idbGet<CodeMap>(KEY_CODES),
+      const [stored, storedCodes, storedCollection] = await Promise.all([
+        idbGet<Stored>(KEYS.data),
+        idbGet<CodeMap>(KEYS.codes),
+        idbGet<Collection>(KEYS.collection),
       ])
       if (!cancelled) {
         if (stored) {
@@ -67,6 +79,7 @@ export function useDataset() {
           setStoredAt(stored.savedAt)
         }
         if (storedCodes) setCodes(storedCodes)
+        if (storedCollection) setCollection(storedCollection)
       }
       hydrated.current = true
     })()
@@ -78,8 +91,31 @@ export function useDataset() {
   // Les codes se modifient à la frappe : on les suit, mais jamais avant relecture.
   React.useEffect(() => {
     if (!hydrated.current) return
-    void idbSet(KEY_CODES, codes)
+    void idbSet(KEYS.codes, codes)
   }, [codes])
+
+  // La collection est la seule donnée qu'aucun import ne rend : un échec
+  // d'écriture se signale, une fois, au lieu de se taire.
+  React.useEffect(() => {
+    if (!hydrated.current) return
+    void idbSet(KEYS.collection, collection).then((kept) => {
+      if (kept) {
+        collectionWarned.current = false
+      } else if (!collectionWarned.current) {
+        collectionWarned.current = true
+        setNotice({
+          tone: "error",
+          message:
+            "Ce navigateur refuse le stockage local : la collection sera perdue au rechargement. Exporter une sauvegarde depuis Paramètres.",
+        })
+      }
+    })
+  }, [collection])
+
+  const setQty = React.useCallback(
+    (printing: PrintRow, qty: number) => setCollection((c) => withQty(c, printing, qty)),
+    []
+  )
 
   const enrichIndex = React.useMemo(() => buildEnrichIndex(enriched, EXPANSIONS), [enriched])
 
@@ -98,6 +134,9 @@ export function useDataset() {
       const messages: string[] = []
       let failed = false
       let changed = false
+      // Une sauvegarde de collection ne touche pas aux données importées : elle
+      // ne doit pas déclencher leur réécriture.
+      let nextCollection: Collection | null = null
 
       // On accumule localement : les setters de React ne seraient pas lus à
       // temps pour construire ce qu'on doit écrire dans IndexedDB.
@@ -106,7 +145,11 @@ export function useDataset() {
       for (const file of list) {
         try {
           const parsed = parse(await readJsonFile(file), file.name)
-          messages.push(describe(parsed, file.name, next.catalog))
+          messages.push(describe(parsed, file.name, next.catalog, nextCollection ?? collection))
+          if (parsed.kind === "collection") {
+            nextCollection = parsed.collection
+            continue
+          }
           if (parsed.kind === "prices") {
             next = { ...next, prices: parsed.prices, pricesAt: parsed.pricesAt }
           } else if (parsed.kind === "catalog") {
@@ -133,7 +176,7 @@ export function useDataset() {
         setEnriched(next.enriched)
 
         const savedAt = new Date().toISOString()
-        const kept = await idbSet(KEY_DATA, { ...next, savedAt } satisfies Stored)
+        const kept = await idbSet(KEYS.data, { ...next, savedAt } satisfies Stored)
         setStoredAt(kept ? savedAt : null)
         if (!kept) {
           messages.push(
@@ -142,9 +185,13 @@ export function useDataset() {
         }
       }
 
+      // Remplacée, pas fusionnée : restaurer une sauvegarde doit rendre
+      // exactement ce qu'elle contient. L'effet de conservation l'écrit.
+      if (nextCollection) setCollection(nextCollection)
+
       setNotice({ tone: failed ? "error" : "ok", message: messages.join(" ") })
     },
-    [catalog, prices, pricesAt, catalogAt, enriched]
+    [catalog, prices, pricesAt, catalogAt, enriched, collection]
   )
 
   /**
@@ -168,9 +215,9 @@ export function useDataset() {
     }
   }, [importFiles])
 
-  /** Efface ce qui est conservé et repart du jeu embarqué. */
+  /** Efface les imports et les codes, et repart du jeu embarqué. La collection reste. */
   const forget = React.useCallback(async () => {
-    await Promise.all([idbDelete(KEY_DATA), idbDelete(KEY_CODES)])
+    await Promise.all(FORGETTABLE.map(idbDelete))
     setCatalog(seed.catalog)
     setPrices(seed.prices)
     setPricesAt(seed.pricesAt)
@@ -178,7 +225,10 @@ export function useDataset() {
     setEnriched(null)
     setCodes(DEFAULT_CODES)
     setStoredAt(null)
-    setNotice({ tone: "ok", message: "Données importées oubliées. Retour au jeu embarqué." })
+    setNotice({
+      tone: "ok",
+      message: "Données importées oubliées. Retour au jeu embarqué. La collection est conservée.",
+    })
   }, [])
 
   return {
@@ -192,6 +242,8 @@ export function useDataset() {
     enriched: enrichIndex.on,
     /** Cartes Netdeck telles qu'importées — la base de cartes s'y adosse. */
     enrichedCards: enriched,
+    collection,
+    setQty,
     pricesAt,
     catalogAt,
     storedAt,

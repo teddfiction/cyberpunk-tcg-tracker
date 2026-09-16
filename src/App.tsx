@@ -18,8 +18,10 @@ import { StatsStrip } from "@/components/stats-strip"
 import { useDataset } from "@/hooks/use-dataset"
 import { useTable } from "@/hooks/use-table"
 import { useTheme } from "@/hooks/use-theme"
+import { backupName, summarize } from "@/lib/collection"
 import { download, toCsv } from "@/lib/csv"
 import { dateAbbr, sentences } from "@/lib/format"
+import { toBackup } from "@/lib/ingest"
 import { MODES, type Mode } from "@/lib/modes"
 import { HIDDEN_COLUMNS, INITIAL_FILTERS, rowId, searchRow } from "@/lib/table"
 import { VIEWS, type View } from "@/lib/views"
@@ -124,6 +126,15 @@ export default function App() {
         onMessage={(message) => data.setNotice({ tone: "ok", message })}
         storedAt={data.storedAt}
         onForget={() => void data.forget()}
+        collection={summarize(data.collection)}
+        onExportCollection={() =>
+          download(
+            backupName(),
+            JSON.stringify(toBackup(data.collection), null, 2),
+            "application/json"
+          )
+        }
+        onImport={openImport}
       />
     ),
   }
