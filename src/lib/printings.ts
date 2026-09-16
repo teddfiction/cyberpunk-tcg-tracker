@@ -170,6 +170,30 @@ export function printingIndex(card: GridCard, rarities: string[]): number {
 }
 
 /**
+ * Carte dont la tuile reprend le focus quand la modale se ferme, dans la
+ * séquence qu'elle parcourait : celle qu'on quitte, à défaut la plus proche qui
+ * la suit — qui a pris sa place dans la grille —, puis la plus proche qui la
+ * précède.
+ *
+ * La carte quittée n'a pas toujours encore sa tuile : l'ajouter depuis un filtre
+ * « Manquante », ou retirer une version de la collection, la fait sortir de la
+ * grille. Sans repli, le focus retomberait sur `body` et le clavier repartirait
+ * du haut des 151 tuiles.
+ */
+export function focusTarget(
+  cards: { id: string }[],
+  at: number,
+  hasTile: (id: string) => boolean
+): string | undefined {
+  const after = cards.slice(at).find((c) => hasTile(c.id))
+  const before = cards
+    .slice(0, at)
+    .reverse()
+    .find((c) => hasTile(c.id))
+  return (after ?? before)?.id
+}
+
+/**
  * Une information de carte : un libellé terne, une valeur contrastée.
  * `dot` marque celle qui porte la pastille de couleur.
  */

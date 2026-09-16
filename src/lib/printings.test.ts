@@ -12,6 +12,7 @@ import {
   buildGrid,
   buildPrintings,
   cardStats,
+  focusTarget,
   printingIndex,
   statText,
   tileStats,
@@ -193,6 +194,31 @@ describe("printingIndex", () => {
   it("garde le rang 0 quand aucune impression n'a de miniature", () => {
     expect(printingIndex(byName("Éclair - Vif"), [])).toBe(0)
     expect(printingIndex(byName("Éclair - Vif"), ["Epic"])).toBe(0)
+  })
+})
+
+describe("focusTarget", () => {
+  const seq = ["a", "b", "c", "d"].map((id) => ({ id }))
+  const mounted = (...ids: string[]) => (id: string) => ids.includes(id)
+
+  it("rend le focus à la tuile de la carte quittée", () => {
+    expect(focusTarget(seq, 1, mounted("a", "b", "c", "d"))).toBe("b")
+  })
+
+  it("passe à la suivante quand la carte quittée est sortie de la grille", () => {
+    // Ajoutée depuis « Manquante » : la tuile suivante a pris sa place. Et pas
+    // seulement la voisine immédiate, si elle aussi est sortie entre-temps.
+    expect(focusTarget(seq, 1, mounted("a", "c", "d"))).toBe("c")
+    expect(focusTarget(seq, 1, mounted("a", "d"))).toBe("d")
+  })
+
+  it("remonte à la plus proche des précédentes en bout de séquence", () => {
+    expect(focusTarget(seq, 3, mounted("a", "b"))).toBe("b")
+  })
+
+  it("ne rend rien quand plus aucune tuile ne reste", () => {
+    // La collection vidée sous la modale ouverte.
+    expect(focusTarget(seq, 2, mounted())).toBeUndefined()
   })
 })
 

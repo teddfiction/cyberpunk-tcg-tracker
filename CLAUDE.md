@@ -275,8 +275,28 @@ soit juste sous les 320 px CSS pour lesquels les visuels sont exportés — en
 données »). Les versions s'ouvrent en modale plutôt qu'en dépliant la tuile —
 sous une tuile, les artworks tenaient dans 40 px de haut, illisibles, et déplier
 repoussait toute la grille. Radix ne rend pas le focus à la tuile en sortant :
-`CardDialog` le fait lui-même, sinon le clavier repartirait du haut des 151
+`CardGrid` le fait lui-même, sinon le clavier repartirait du haut des 151
 tuiles à chaque fermeture.
+
+**La modale passe d'une carte à l'autre** — chevrons de l'en-tête, flèches du
+clavier —, pour constituer sa collection sans la refermer. Ce qui la fait tenir :
+
+- **Elle parcourt un instantané de la grille**, pris au clic sur la tuile : tri
+  et filtres de ce moment-là, pas la grille vivante. Celle-ci bouge sous la
+  modale ouverte — ajouter une carte depuis « Manquante » la retire, trier par
+  exemplaires la déplace — et « suivante » sauterait une carte, « précédente »
+  ne ramènerait plus à celle qu'on quitte. La séquence ne boucle pas.
+- **Le corps de la modale est remonté à chaque carte** (`Versions`,
+  `key={card.id}`) : il repart de la version que montre la tuile, sans rendu
+  intermédiaire sur la version choisie dans la carte précédente. L'en-tête, lui,
+  ne l'est pas — les chevrons y perdraient le focus à chaque clic.
+- **Chevrons grisés par `aria-disabled`, pas `disabled`** : un bouton désactivé
+  perd le focus, qui tombe sur `body`, hors de la modale où les flèches sont
+  écoutées.
+- **En sortant, le focus va à la tuile de la carte montrée**, pas de celle
+  cliquée — sinon la grille remonterait à la carte de départ. Si cette tuile
+  est sortie de la grille, à la plus proche qui la suit, puis qui la précède
+  (`focusTarget`, `lib/printings.ts`).
 
 Dans la modale, visuel et versions ne sont côte à côte qu'à partir de `md`. Les
 miniatures des versions sont une grille `auto-fill` : elles gardent ~90 px que
