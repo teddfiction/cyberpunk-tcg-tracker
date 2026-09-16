@@ -5,7 +5,7 @@
  * L'ajout enregistre un exemplaire tout de suite, sans étape « Valider » : une
  * quantité en attente se perdrait en fermant la modale. Le retrait reprend le
  * geste de « Oublier les données conservées » — pas de boîte de dialogue
- * empilée sur la modale.
+ * empilée sur la modale, contrairement à « Supprimer ma collection ».
  */
 import * as React from "react"
 import { Minus, Plus, Trash2 } from "lucide-react"

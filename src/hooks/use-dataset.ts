@@ -14,8 +14,9 @@ import * as React from "react"
 import dataset from "@/data/dataset.json"
 import { DEFAULT_CODES, EXPANSIONS } from "@/data/expansions"
 import { buildCards, buildRows, countByExpansion } from "@/lib/dataset"
-import { withQty } from "@/lib/collection"
+import { summarize, withQty } from "@/lib/collection"
 import { buildEnrichIndex } from "@/lib/enrich"
+import { plural } from "@/lib/format"
 import { describe, mergeCatalog, parse, readJsonFile, IngestError } from "@/lib/ingest"
 import { fetchCardmarket } from "@/lib/remote"
 import { FORGETTABLE, KEYS, idbDelete, idbGet, idbSet } from "@/lib/store"
@@ -231,6 +232,20 @@ export function useDataset() {
     })
   }, [])
 
+  /**
+   * Vide la collection. Pas d'`idbDelete` : l'effet de conservation écrit la
+   * collection vide comme toute autre, avis d'échec d'écriture compris. Les
+   * imports et les codes ne bougent pas — c'est l'exact pendant de `forget`.
+   */
+  const clearCollection = React.useCallback(() => {
+    const { versions, copies } = summarize(collection)
+    setCollection({})
+    setNotice({
+      tone: "ok",
+      message: `Collection supprimée : ${plural(versions, "version")}, ${plural(copies, "exemplaire")}.`,
+    })
+  }, [collection])
+
   return {
     catalog,
     rows,
@@ -253,6 +268,7 @@ export function useDataset() {
     refreshData,
     fetching,
     forget,
+    clearCollection,
   }
 }
 

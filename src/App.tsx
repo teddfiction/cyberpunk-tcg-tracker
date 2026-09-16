@@ -159,6 +159,7 @@ export default function App() {
             "application/json"
           )
         }
+        onClearCollection={data.clearCollection}
         onImport={openImport}
       />
     ),
