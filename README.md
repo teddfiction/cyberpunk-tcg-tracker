@@ -1,7 +1,7 @@
 # Cyberpunk Tracker — Trading Card Game
 
-Suivi des cotes Cardmarket du Cyberpunk TCG (WeirdCo), et base des cartes
-officielles.
+Suivi des cotes Cardmarket du Cyberpunk TCG (WeirdCo), base des cartes
+officielles, et collection.
 
 React 19 · TypeScript · Vite · Tailwind CSS v4 · shadcn/ui (primitives Radix UI)
 · TanStack Table v8 · Vitest.
@@ -20,7 +20,7 @@ Le dépôt embarque un jeu de données (`src/data/dataset.json`) : l'app tourne
 immédiatement, sans téléchargement préalable. Les sections suivantes décrivent
 ce qu'elle montre, puis comment rafraîchir ses données.
 
-## Les deux vues
+## Les trois vues
 
 - **Cotes Cardmarket** — la table des produits Cardmarket : recherche, filtres,
   tri, trois modes (normal, foil, par carte), export CSV. Visuel, numéro de
@@ -30,6 +30,11 @@ ce qu'elle montre, puis comment rafraîchir ses données.
   défaut, comme sur cyberpunktcg.com), et une modale par carte pour parcourir ses
   impressions — visuel, rareté, numéro et cote de chacune. Elle se remplit une
   fois `cards_enriched.json` importé.
+- **Collection** — la même grille, réduite aux versions possédées : une tuile
+  par version, mêmes filtres, recherche et tris, et la complétion en tête. Les
+  quantités se règlent dans la modale d'une carte, depuis la base comme depuis
+  la collection ; la base montre ce qu'on possède déjà (quantités sur les
+  tuiles et les versions, filtre Possédée / Manquante).
 
 ## Exploiter l'app
 
@@ -92,7 +97,8 @@ npm run data:netdeck:images    # + miniatures webp base64 (npm i sharp)
 ```
 
 Produit `cards_enriched.json` à la racine (non versionné). Le charger via
-« Importer un JSON » : la table des cotes gagne les colonnes Visuel, N° et
+« Importer un JSON » — une modale liste les formats reconnus et ce que chacun
+remplace, et accepte le glisser-déposer : la table des cotes gagne les colonnes Visuel, N° et
 Rareté, et la base de cartes se remplit. Toutes les impressions portent un numéro
 de collecteur, et une miniature si le script a tourné avec `--images`.
 
@@ -114,10 +120,22 @@ permanente et partagée.
 
 ### 4. Exporter
 
-Bouton **Exporter en CSV**, dans les deux vues : colonnes du mode courant pour la
-table des cotes, une ligne par carte pour la base de cartes. Lignes filtrées et
+Bouton **Exporter en CSV**, dans les trois vues : colonnes du mode courant pour
+la table des cotes, une ligne par carte pour la base de cartes, une ligne par
+version possédée — avec le nombre d'exemplaires — pour la collection. Lignes filtrées et
 triées telles qu'affichées. Séparateur `;`, virgule décimale, BOM UTF-8 — Excel
 FR ouvre le fichier sans assistant d'import.
+
+### 5. Sauvegarder la collection
+
+La collection est la seule donnée saisie à la main, et elle ne vit que dans ce
+navigateur. **Paramètres → Exporter la sauvegarde (JSON)** écrit
+`cyberpunk-tcg-collection-AAAA-MM-JJ.json`. Pour la restaurer, l'importer par
+« Importer un JSON » : elle **remplace intégralement** la collection en cours.
+« Oublier les données conservées » n'y touche pas.
+
+Une version possédée que la base importée ne connaît pas reste conservée, et la
+vue Collection la signale par son nom plutôt que de la supprimer.
 
 ### Cycle type
 
@@ -146,14 +164,17 @@ src/
     grid-columns.ts     colonnes-facettes de la grille (ne rendent rien)
     card-grid.tsx       grille de cartes, quatre colonnes au plus
     card-dialog.tsx     versions d'une carte, en modale
+    collection-control.tsx  quantité possédée d'une version, retrait en deux temps
+    collection-stats.tsx    complétion en tête de la collection
+    import-dialog.tsx   formats reconnus et zone de dépôt
     facet-filter.tsx    filtre à facette générique (menu à cases à cocher)
     sort-menu.tsx       menu de tri de la grille
-    netdeck-view.tsx    vue base de cartes
+    netdeck-view.tsx    vue base de cartes et collection
     data-table.tsx      rendu de la table depuis l'instance TanStack
     filters-bar.tsx     recherche, onglets, combobox, cases à cocher
     extension-combobox.tsx
     code-badge.tsx
-    settings-view.tsx   édition des codes d'impression
+    settings-view.tsx   codes d'impression, sauvegarde de la collection
     stats-strip.tsx
   data/
     dataset.json        jeu de données embarqué (généré, versionné)
@@ -168,7 +189,7 @@ src/
     use-mobile.ts       requis par sidebar.tsx
   lib/
     csv.ts              export CSV depuis l'instance de table
-    store.ts            conservation des imports dans IndexedDB
+    store.ts            conservation dans IndexedDB : imports, codes, collection
     views.ts            registre des vues
     dataset.ts          construction des lignes et regroupement par carte
     enrich.ts           jointure Netdeck ↔ Cardmarket
@@ -176,9 +197,10 @@ src/
     facets.ts           registre des facettes de la grille
     sorts.ts            registre des tris de la grille, et rangs couleur/type
     printings.ts        impressions Netdeck et regroupement par carte
+    collection.ts       quantités, grille par version, orphelines, complétion
     table.ts            tri, filtres et recherche passés à TanStack
     format.ts           formatage et normalisation
-    ingest.ts           lecture des trois formats JSON, garde de schéma
+    ingest.ts           lecture des formats JSON, registre des formats, sauvegarde
     remote.ts           téléchargement à chaud des exports, et ses gardes
     utils.ts            cn()
   test/
@@ -210,10 +232,12 @@ Trois sources, toutes publiques.
    quotidiennement.
 2. **Netdeck** (`api.netdeck.gg`) — numéros de collecteur, raretés, visuels.
    Extraits par `npm run data:netdeck`, chargés à chaud.
-3. **Import à chaud** — le bouton « Importer un JSON » accepte les trois formats,
-   reconnus à leur clé racine : `priceGuides`, `products`, `cards`. Les imports
-   sont conservés dans ce navigateur (IndexedDB) et survivent au rechargement.
-   Paramètres → « Oublier les données conservées » repart du jeu embarqué.
+3. **Import à chaud** — le bouton « Importer un JSON » accepte quatre formats,
+   reconnus à leur clé racine : `products`, `priceGuides`, `cards`, et
+   `collection` pour une sauvegarde. Les imports sont conservés dans ce
+   navigateur (IndexedDB) et survivent au rechargement. Paramètres → « Oublier
+   les données conservées » repart du jeu embarqué, sans toucher à la
+   collection.
 
 ## Limites connues des données
 

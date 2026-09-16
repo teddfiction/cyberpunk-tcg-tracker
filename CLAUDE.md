@@ -1,8 +1,8 @@
 # CLAUDE.md
 
-**Cyberpunk Tracker** : cotes Cardmarket du **Cyberpunk TCG (WeirdCo)** et base
-des cartes officielles Netdeck. Deux vues — une table des cotes, une grille de
-cartes — sur la même mécanique TanStack.
+**Cyberpunk Tracker** : cotes Cardmarket du **Cyberpunk TCG (WeirdCo)**, base
+des cartes officielles Netdeck, et collection. Une table des cotes et une grille
+de cartes — base ou collection — sur la même mécanique TanStack.
 React 19 · TypeScript · Vite 7 · Tailwind v4 · shadcn/ui (Radix) · TanStack Table v8 · Vitest.
 
 Le `README.md` documente le produit et les sources de données. Ce fichier-ci sert à
@@ -12,7 +12,7 @@ Le `README.md` documente le produit et les sources de données. Ce fichier-ci se
 
 ```bash
 npm run dev              # vite, port 5173
-npm run test             # vitest, ~150 tests, < 1 s  ← le filet
+npm run test             # vitest, ~180 tests, < 1 s  ← le filet
 npm run typecheck        # tsc -b --noEmit
 npm run build            # tsc -b && vite build → dist/
 npm run data:refresh     # rafraîchit les cotes (voir README § « Exploiter l'app »)
@@ -93,6 +93,10 @@ Les effectifs affichés sont comptés sur **toutes** les cartes, jamais sur les
 seules visibles : sinon cocher une option ferait disparaître les autres et l'on
 ne pourrait plus élargir sa sélection.
 
+La facette vaut pour la base **et** la collection, qui partagent registre et
+colonnes. Seule « Collection » (`OWNED_FACET`) est masquée dans la collection,
+où elle n'aurait qu'une valeur.
+
 ### Ajouter un tri à la grille de cartes
 
 **Un fichier : `lib/sorts.ts`**, une entrée dans `SORTS` — un libellé et l'état
@@ -133,7 +137,11 @@ l'appariement est certain (voir « Limites des données »).
 - **Un nouveau format d'import** : `lib/ingest.ts`, fonction `parse()` — la
   reconnaissance se fait sur la clé racine du JSON. Ajouter la variante au type
   `Parsed`, et `describe()` devra la traiter (le `switch` est exhaustif, le
-  compilateur le signale). Puis brancher dans `hooks/use-dataset.ts`.
+  compilateur le signale). Puis une entrée dans `IMPORT_FORMATS` — libellé,
+  noms de fichiers habituels, effet sur les données en place : la modale
+  d'import l'annonce et le message d'erreur de `parse` la nomme, et un test
+  exige que `parse` reconnaisse chaque clé du registre. Puis brancher dans
+  `hooks/use-dataset.ts`.
 - **Une nouvelle extension Cardmarket** : `data/expansions.ts`, `EXPANSIONS` et
   `DEFAULT_CODES`.
 - **Un téléchargement à chaud** : `lib/remote.ts`, plus une entrée dans le
@@ -148,8 +156,8 @@ l'appariement est certain (voir « Limites des données »).
 ### Persister quelque chose
 
 Deux stockages, choisis selon la taille : `localStorage` pour le thème
-(`use-theme.ts`), **IndexedDB pour les imports et les codes** (`lib/store.ts`,
-orchestré par `hooks/use-dataset.ts`). Au-delà de quelques kilo-octets c'est
+(`use-theme.ts`), **IndexedDB pour les imports, les codes et la collection**
+(`lib/store.ts`, clés dans `KEYS`, orchestré par `hooks/use-dataset.ts`). Au-delà de quelques kilo-octets c'est
 IndexedDB — `localStorage` plafonne vers 5 Mo et ne stocke que du texte, là où
 IndexedDB range les objets tels quels, sans `JSON.stringify` sur 14 Mo.
 
@@ -157,6 +165,11 @@ IndexedDB range les objets tels quels, sans `JSON.stringify` sur 14 Mo.
 rendent `false` et l'app continue. Mais l'échec est **rendu, pas avalé** —
 `importFiles` prévient alors l'utilisateur que rien ne sera conservé. Garder cette
 propriété : un stockage qui échoue en silence est pire que pas de stockage.
+
+**La collection est la seule donnée qu'aucun import ne reconstitue.** D'où trois
+choses à préserver : l'export d'une sauvegarde (Paramètres), un avis d'échec
+d'écriture — une fois, pas à chaque clic —, et son absence de `FORGETTABLE` :
+« Oublier les données conservées » ne la touche pas, et un test le verrouille.
 
 ## Architecture
 
@@ -204,18 +217,24 @@ imports JSON (mémoire) ──┘        ▲                                  �
                         (jointure Netdeck)          useTable ─► DataTable / toCsv
                                                        ▲
                                               columnsFor(mode, enriched)
+
+useDataset ─► buildPrintings ─► buildGrid ──┬───────────────► useTable ─► CardGrid / toCsv
+ (enrichedCards,  (qty)          (owned)    │   (base)            ▲
+  collection)                               └─► ownedGrid ────────┘
+                                                (collection)
 ```
 
 `useDataset` est la source de vérité des **données**, `useTable` celle de l'**état
 de la table**. Ne pas dupliquer l'un dans l'autre.
 
-L'app a **deux tables**, qui partagent toute la mécanique et ne diffèrent que par
-leurs lignes et leurs colonnes :
+L'app a **deux tables** — dont la grille, sur deux périmètres —, qui partagent
+toute la mécanique et ne diffèrent que par leurs lignes et leurs colonnes :
 
 | Vue | Ligne | Construite par | Colonnes | Rendu |
 |---|---|---|---|---|
 | Cotes Cardmarket | un produit Cardmarket, ou une carte regroupée | `lib/dataset.ts` | `components/columns.tsx` | `DataTable` |
 | Base de cartes | une carte Netdeck, ses impressions en modale | `lib/printings.ts` | `components/grid-columns.ts` | `CardGrid` + `CardDialog` |
+| Collection | une version possédée | `lib/collection.ts` (`ownedGrid`) | `components/grid-columns.ts` | `CardGrid` + `CardDialog` |
 
 **La grille est une table sans table.** Ses colonnes ne rendent rien : elles
 portent les facettes, la recherche et l'export CSV, et `CardGrid` dessine les
@@ -246,6 +265,31 @@ ne porte pas la rareté cochée, impression sans miniature — ramènent au rang
 C'est aussi pourquoi la facette Rareté a un identifiant nommé (`RARITY_FACET`,
 `lib/facets.ts`) : `NetdeckView` la vise en dehors du registre des facettes.
 
+**La collection est la base de cartes sur un autre périmètre**, pas une seconde
+interface. Même `NetdeckView` (prop `scope`), même grille, même modale, même
+réglage de quantité : on ne jongle pas entre deux écrans qui se ressemblent mais
+se comportent différemment. Ce qui en découle :
+
+- **Une tuile par version possédée**, pas par carte (`ownedGrid`). Chaque tuile
+  ne porte que ses propres set, rareté et cote : sinon filtrer « Nova Rare »
+  garderait une carte dont on n'a que la Common. `GridCard.id` vaut le nom dans
+  la base, l'uuid dans la collection — c'est la clé de ligne et la `key` React.
+- **Chaque vue porte son `key` dans `App.tsx`.** Même composant à la même place
+  de l'arbre : sans `key`, React garderait l'état TanStack de l'une dans
+  l'autre, filtres et recherche compris.
+- **La possession se voit depuis la base** — quantités sur les tuiles et sur les
+  miniatures de versions, facette Possédée / Manquante. C'est ce qui évite
+  d'aller vérifier dans la collection.
+- **`CardDialog` lit les quantités dans `collection`, jamais dans `card`.** La
+  carte que tient `CardGrid` est un instantané pris au clic, que la
+  reconstruction de la grille ne met pas à jour : lire `card.owned` figerait le
+  compteur.
+- **`CardGrid` ne démonte pas la modale quand la grille se vide.** Ajouter la
+  dernière carte d'un filtre « Manquante », ou retirer la dernière version de la
+  collection, fait disparaître la tuile sous la modale ouverte : elle reste, et
+  repasse sur « Ajouter ». C'est aussi pourquoi l'état vide de la collection
+  passe par la prop `empty` de `CardGrid` plutôt que par un retour anticipé.
+
 La base de cartes montre ce que la table des cotes ne peut pas montrer : les
 cartes qu'aucun vendeur ne propose. Sa cote Cardmarket n'est rattachée que
 lorsqu'un seul produit correspond à la carte dans l'extension ; sinon elle
@@ -264,6 +308,10 @@ Sur la conservation des imports :
   embarqué.
 - `codes` est conservé lui aussi, mais le reporter dans `src/data/expansions.ts`
   reste ce qui le rend permanent et partagé.
+- `codes` et `collection`, saisis à la main, s'écrivent **à chaque changement**
+  — mais jamais avant relecture (`hydrated`). Importer une sauvegarde de
+  collection la **remplace** intégralement, sans réécrire les données
+  Cardmarket ; la modale d'import le dit avant qu'on choisisse le fichier.
 
 ## Invariants à ne pas casser
 
@@ -311,7 +359,16 @@ Tous couverts par des tests : si l'un saute, `npm run test` le dit.
   c'est la recherche. Ne pas remplacer l'une par l'autre.
 - **Export CSV** : séparateur `;`, virgule décimale, BOM UTF-8. C'est ce qui permet
   à Excel FR d'ouvrir le fichier sans assistant d'import. Ne pas « normaliser »
-  en RFC 4180.
+  en RFC 4180. `download` ne pose le BOM que sur le CSV : la sauvegarde JSON
+  n'en porte pas.
+- **Collection** (`lib/collection.ts`). Indexée par **uuid d'impression**
+  Netdeck, pas par nom : la version est l'unité. Chaque entrée garde un
+  instantané nom/set/numéro/rareté, qui ne sert qu'à nommer une entrée
+  orpheline — un uuid absent de la base importée. Les orphelines sont **montrées,
+  jamais purgées** : une base plus ancienne ne doit pas coûter une saisie.
+  `withQty` rend la même référence quand rien ne change, ce qui évite un rendu
+  et une écriture pour rien. Netdeck ne distingue pas le foil : on compte par
+  version, sans axe foil.
 
 ## Tests
 
@@ -332,6 +389,11 @@ Vitest lit `vite.config.ts` : l'alias `@/` et le JSX marchent sans configuration
 - Une nouvelle colonne, un nouveau filtre ou un nouveau mode méritent un test :
   ils sont tous exprimables en trois lignes avec `makeTable`. Pour la grille de
   cartes, c'est `makeGrid` (même fichier), et `gridNames` pour lire l'ordre.
+  `makeGrid(state, data)` accepte une autre grille : `gridOf(COLLECTION)` pour
+  la base avec quantités, `ownedGrid(gridOf(COLLECTION))` pour la collection.
+  La fixture `COLLECTION` ne possède Zébu qu'en Common, alors que la carte
+  existe en Nova Rare : c'est ce qui rend vérifiable l'exactitude des facettes
+  de la collection.
 - **Le typecheck ne voit pas un changement de forme qui garde les mêmes
   méthodes.** Un tableau d'objets accepte `join()` comme un tableau de chaînes,
   et rend `[object Object]` à l'écran sans erreur de compilation. Quand une
@@ -370,7 +432,14 @@ La consigne du projet : **uniquement Tailwind et les composants shadcn natifs.**
 - **Élément brut ou composant shadcn ?** Le composant quand il raccourcit le code
   (`Button variant="ghost"` pour les en-têtes triables). L'élément brut quand le
   composant imposerait une cascade d'overrides pour le neutraliser (les tuiles de
-  `StatsStrip`, qui partagent une bordure de grille qu'une `Card` casserait).
+  `StatsStrip` et `CollectionStats`, qui partagent une bordure de grille qu'une
+  `Card` casserait), ou quand le registry n'a rien : la zone de dépôt de
+  `ImportDialog` est un `div` en `border-dashed`, avec un compteur d'entrées
+  pour que `dragleave` sur un enfant ne fasse pas clignoter la bordure.
+- **Confirmer une action destructive : en deux temps, dans le bouton.** Le
+  bouton passe en `destructive` et change de libellé, perdre le focus annule
+  (`StoredDataCard`, `CollectionControl`). Pas d'`AlertDialog` : dans la modale
+  de carte, il s'empilerait sur une autre modale.
 - **Aucune couleur en dur.** Toujours les tokens : `bg-card`,
   `text-muted-foreground`, `text-destructive`. Ils vivent dans les blocs `:root` /
   `.dark` de `src/index.css`. Thème : base **Slate**, accent **Yellow**,
