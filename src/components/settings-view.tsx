@@ -1,10 +1,22 @@
 /**
- * Vue Paramètres : saisie des codes d'impression, sauvegarde de la collection,
- * et gestion de ce que le navigateur conserve d'une session à l'autre.
+ * Vue Paramètres : saisie des codes d'impression, sauvegarde et suppression de
+ * la collection, et gestion de ce que le navigateur conserve d'une session à
+ * l'autre.
  */
 import * as React from "react"
 import { Copy, Download, Trash2, Upload } from "lucide-react"
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -31,6 +43,8 @@ type Props = {
   /** Résumé de la collection conservée. */
   collection: { versions: number; copies: number }
   onExportCollection: () => void
+  /** Vide la collection. Confirmé par une boîte de dialogue avant d'arriver ici. */
+  onClearCollection: () => void
   onImport: () => void
 }
 
@@ -50,6 +64,7 @@ export function SettingsView({
   onForget,
   collection,
   onExportCollection,
+  onClearCollection,
   onImport,
 }: Props) {
   const list = Object.keys(counts).sort((a, b) => counts[b] - counts[a])
@@ -126,6 +141,7 @@ export function SettingsView({
       <CollectionCard
         collection={collection}
         onExport={onExportCollection}
+        onClear={onClearCollection}
         onImport={onImport}
       />
 
@@ -141,10 +157,12 @@ export function SettingsView({
 function CollectionCard({
   collection,
   onExport,
+  onClear,
   onImport,
 }: {
   collection: { versions: number; copies: number }
   onExport: () => void
+  onClear: () => void
   onImport: () => void
 }) {
   return (
@@ -157,7 +175,7 @@ function CollectionCard({
             : "La collection est vide."}{" "}
           Elle ne suit ni une autre machine, ni un autre navigateur : l'exporter pour la sauvegarder.
           Importer une sauvegarde remplace intégralement la collection en cours. « Oublier les
-          données conservées » n'y touche pas.
+          données conservées » n'y touche pas : seul « Supprimer ma collection » l'efface.
         </CardDescription>
       </CardHeader>
 
@@ -170,8 +188,64 @@ function CollectionCard({
           <Upload />
           Importer une sauvegarde
         </Button>
+        <ClearCollection collection={collection} onExport={onExport} onClear={onClear} />
       </CardContent>
     </Card>
+  )
+}
+
+/**
+ * Suppression de la collection, confirmée par une boîte de dialogue — et non en
+ * deux temps dans le bouton, comme « Oublier les données conservées ». Oublier
+ * se répare par un import ; ici rien ne rend la saisie, sauf une sauvegarde
+ * exportée avant. Le geste doit donc s'arrêter sur ce qui sera perdu, et offrir
+ * l'export sur place. Pas d'empilement à craindre : Paramètres n'est pas une
+ * modale.
+ */
+function ClearCollection({
+  collection,
+  onExport,
+  onClear,
+}: {
+  collection: { versions: number; copies: number }
+  onExport: () => void
+  onClear: () => void
+}) {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button variant="outline" size="sm" disabled={!collection.versions} className="sm:ml-auto">
+          <Trash2 />
+          Supprimer ma collection
+        </Button>
+      </AlertDialogTrigger>
+
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Supprimer ma collection ?</AlertDialogTitle>
+          <AlertDialogDescription>
+            {plural(collection.versions, "version")} et {plural(collection.copies, "exemplaire")}{" "}
+            seront effacés de ce navigateur. Aucun import ne les reconstitue : seule une sauvegarde
+            exportée avant la suppression permettra de les retrouver. Les cotes, la base de cartes
+            et les codes ne sont pas touchés.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+
+        <AlertDialogFooter>
+          {/* Hors de `AlertDialogAction` : exporter ne ferme pas la boîte, on
+              peut encore supprimer ensuite — ou renoncer. */}
+          <Button variant="ghost" onClick={onExport} className="sm:mr-auto">
+            <Download />
+            Exporter d'abord
+          </Button>
+          <AlertDialogCancel>Annuler</AlertDialogCancel>
+          <AlertDialogAction variant="destructive" onClick={onClear}>
+            <Trash2 />
+            Supprimer
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   )
 }
 
@@ -188,7 +262,7 @@ function StoredDataCard({ storedAt, onForget }: { storedAt: string | null; onFor
         <CardTitle>Données conservées</CardTitle>
         <CardDescription>
           {storedAt
-            ? `Le catalogue, les cotes, l'enrichissement Netdeck et les codes saisis sont conservés dans ce navigateur depuis le ${dateFr(storedAt)}. Recharger la page les retrouve. Les oublier ne touche pas à la collection.`
+            ? `Les données des vues Cotes Cardmarket et Base de cartes — catalogue, cotes, enrichissement Netdeck — et les codes saisis sont conservés dans ce navigateur depuis le ${dateFr(storedAt)}. Recharger la page les retrouve. Les oublier ne touche pas à la collection.`
             : "Aucun import n'est conservé : l'app tourne sur le jeu de données embarqué."}{" "}
           Ce stockage est local à ce navigateur — il ne suit ni le dépôt, ni une autre machine.
         </CardDescription>

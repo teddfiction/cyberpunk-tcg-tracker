@@ -18,6 +18,7 @@ export const KEYS = { data: "dataset", codes: "codes", collection: "collection" 
 /**
  * Ce que « Oublier les données conservées » efface. Pas la collection : les
  * imports se retéléchargent, une saisie à la main ne se retrouve nulle part.
+ * Seul « Supprimer ma collection » l'efface, derrière une confirmation.
  */
 export const FORGETTABLE = [KEYS.data, KEYS.codes]
 
