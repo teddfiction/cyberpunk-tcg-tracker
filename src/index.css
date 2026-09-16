@@ -1,4 +1,4 @@
-/* Tokens du thème shadcn (base Slate, accent Yellow, charts Cyan, radius 0),
+/* Tokens du thème shadcn (base Neutral, accent Yellow, charts Cyan, radius 0),
    couleurs de carte du jeu, et polices Geist / Geist Mono. */
 @import "tailwindcss";
 @source "./**/*.{ts,tsx}";
@@ -21,25 +21,30 @@
 }
 
 
+/* Base Neutral : le chrome est noir, blanc et gris, sans la nuance bleutée de
+   Slate. L'accent Yellow est un axe à part — `primary`, `ring`,
+   `sidebar-primary`, `sidebar-active` — que changer de base ne touche pas. */
 :root {
   --radius: 0rem;
-  --background: oklch(98.4% 0.003 247.858);
-  --foreground: oklch(12.9% 0.042 264.695);
+  --background: oklch(98.5% 0 0);
+  --foreground: oklch(14.5% 0 0);
   --card: oklch(100% 0 0);
-  --card-foreground: oklch(12.9% 0.042 264.695);
+  --card-foreground: oklch(14.5% 0 0);
   --popover: oklch(100% 0 0);
-  --popover-foreground: oklch(12.9% 0.042 264.695);
+  --popover-foreground: oklch(14.5% 0 0);
   --primary: oklch(79.5% 0.184 86.047);
   --primary-foreground: oklch(28.6% 0.066 53.813);
-  --secondary: oklch(96.8% 0.007 247.896);
-  --secondary-foreground: oklch(20.8% 0.042 265.755);
-  --muted: oklch(96.8% 0.007 247.896);
-  --muted-foreground: oklch(44.6% 0.043 257.281);
-  --accent: oklch(96.8% 0.007 247.896);
-  --accent-foreground: oklch(20.8% 0.042 265.755);
+  --secondary: oklch(97% 0 0);
+  --secondary-foreground: oklch(20.5% 0 0);
+  --muted: oklch(97% 0 0);
+  /* neutral-600 et non le 500 du registry : sur le fond neutral-50, le 500
+     tombe à la limite des 4,5:1 — le texte terne est partout ici. */
+  --muted-foreground: oklch(43.9% 0 0);
+  --accent: oklch(97% 0 0);
+  --accent-foreground: oklch(20.5% 0 0);
   --destructive: oklch(57.7% 0.245 27.325);
-  --border: oklch(92.9% 0.013 255.508);
-  --input: oklch(92.9% 0.013 255.508);
+  --border: oklch(92.2% 0 0);
+  --input: oklch(92.2% 0 0);
   --ring: oklch(79.5% 0.184 86.047);
   /* Rampe des graphiques : cyan-300 → cyan-700 de Tailwind. Monochrome comme
      l'était la rampe jaune, pour que l'accent reste au primary. Aucun graphique
@@ -49,23 +54,24 @@
   --chart-3: oklch(71.5% 0.143 215.221);
   --chart-4: oklch(60.9% 0.126 221.723);
   --chart-5: oklch(52% 0.105 223.128);
-  --sidebar: oklch(96.8% 0.007 247.896);
-  --sidebar-foreground: oklch(12.9% 0.042 264.695);
+  --sidebar: oklch(97% 0 0);
+  --sidebar-foreground: oklch(14.5% 0 0);
   --sidebar-primary: oklch(79.5% 0.184 86.047);
   --sidebar-primary-foreground: oklch(28.6% 0.066 53.813);
-  --sidebar-accent: oklch(92.9% 0.013 255.508);
-  --sidebar-accent-foreground: oklch(20.8% 0.042 265.755);
-  --sidebar-border: oklch(92.9% 0.013 255.508);
+  --sidebar-accent: oklch(92.2% 0 0);
+  --sidebar-accent-foreground: oklch(20.5% 0 0);
+  --sidebar-border: oklch(92.2% 0 0);
   --sidebar-ring: oklch(79.5% 0.184 86.047);
   /* Texte de l'entrée de menu active. Pas `--sidebar-primary` : ce jaune-là est
-     pensé pour un aplat, et en texte sur la barre slate-100 il ne fait que
-     1,74:1 — illisible. yellow-700 tombe pile sur 4,5:1, sans marge ;
-     yellow-800 donne 6,24:1. Mesuré sur le rendu. */
+     pensé pour un aplat, et en texte sur la barre neutral-100 il ne fait que
+     1,75:1 — illisible. yellow-700 tombe pile sur 4,5:1, sans marge ;
+     yellow-800 donne 6,3:1. Les mêmes valeurs qu'avec la barre slate-100 :
+     passer en Neutral n'a rien changé au contraste. */
   --sidebar-active: oklch(47.6% 0.114 61.907);
   /* Couleurs de carte du jeu. Ce ne sont pas des tons de thème : elles viennent
      des données, et rien ne doit les remplacer. Elles vivent tout de même ici,
-     pour être réglées par thème — une teinte lisible sur slate-50 ne l'est pas
-     sur slate-950. Nuances Tailwind 600 en clair, 400 en sombre. */
+     pour être réglées par thème — une teinte lisible sur un fond clair ne l'est
+     pas sur le noir. Nuances Tailwind 600 en clair, 400 en sombre. */
   --card-red: oklch(57.7% 0.245 27.325);
   --card-yellow: oklch(68.1% 0.162 75.834);
   --card-green: oklch(62.7% 0.194 149.214);
@@ -77,41 +83,41 @@
      visuels de carte, qui sont ce que la base de cartes montre. Le chrome et le
      contenu ne se distinguent plus que par une bordure. */
   --background: oklch(0% 0 0);
-  --foreground: oklch(96.8% 0.007 247.896);
-  --card: oklch(20.8% 0.042 265.755);
-  --card-foreground: oklch(96.8% 0.007 247.896);
-  --popover: oklch(20.8% 0.042 265.755);
-  --popover-foreground: oklch(96.8% 0.007 247.896);
+  --foreground: oklch(98.5% 0 0);
+  --card: oklch(20.5% 0 0);
+  --card-foreground: oklch(98.5% 0 0);
+  --popover: oklch(20.5% 0 0);
+  --popover-foreground: oklch(98.5% 0 0);
   --primary: oklch(85.2% 0.199 91.936);
   --primary-foreground: oklch(28.6% 0.066 53.813);
-  --secondary: oklch(27.9% 0.041 260.031);
-  --secondary-foreground: oklch(96.8% 0.007 247.896);
-  --muted: oklch(27.9% 0.041 260.031);
-  --muted-foreground: oklch(70.4% 0.04 256.788);
-  --accent: oklch(27.9% 0.041 260.031);
-  --accent-foreground: oklch(96.8% 0.007 247.896);
+  --secondary: oklch(26.9% 0 0);
+  --secondary-foreground: oklch(98.5% 0 0);
+  --muted: oklch(26.9% 0 0);
+  --muted-foreground: oklch(70.8% 0 0);
+  --accent: oklch(26.9% 0 0);
+  --accent-foreground: oklch(98.5% 0 0);
   --destructive: oklch(70.4% 0.191 22.216);
-  /* Bordures adoucies : entre slate-900 et slate-800. Assez sombres pour
+  /* Bordures adoucies : entre neutral-900 et neutral-800. Assez sombres pour
      s'effacer sur le noir de la page, assez claires pour rester visibles sur le
-     slate-900 des cartes et des popovers — une bordure calée sur le fond des
+     neutral-900 des cartes et des popovers — une bordure calée sur le fond des
      cartes y disparaîtrait. */
-  --border: oklch(24.4% 0.041 262.9);
-  --input: oklch(24.4% 0.041 262.9);
+  --border: oklch(23.7% 0 0);
+  --input: oklch(23.7% 0 0);
   --ring: oklch(79.5% 0.184 86.047);
   /* Même rampe décalée de deux pas vers le clair (cyan-200 → cyan-600) :
-     cyan-700 tombe à 52 % de clarté, illisible sur un fond slate-950. */
+     cyan-700 tombe à 52 % de clarté, illisible sur le noir. */
   --chart-1: oklch(91.7% 0.08 205.041);
   --chart-2: oklch(86.5% 0.127 207.078);
   --chart-3: oklch(78.9% 0.154 211.53);
   --chart-4: oklch(71.5% 0.143 215.221);
   --chart-5: oklch(60.9% 0.126 221.723);
   --sidebar: oklch(0% 0 0);
-  --sidebar-foreground: oklch(96.8% 0.007 247.896);
+  --sidebar-foreground: oklch(98.5% 0 0);
   --sidebar-primary: oklch(85.2% 0.199 91.936);
   --sidebar-primary-foreground: oklch(28.6% 0.066 53.813);
-  --sidebar-accent: oklch(27.9% 0.041 260.031);
-  --sidebar-accent-foreground: oklch(96.8% 0.007 247.896);
-  --sidebar-border: oklch(24.4% 0.041 262.9);
+  --sidebar-accent: oklch(26.9% 0 0);
+  --sidebar-accent-foreground: oklch(98.5% 0 0);
+  --sidebar-border: oklch(23.7% 0 0);
   --sidebar-ring: oklch(79.5% 0.184 86.047);
   /* Sur le noir, le jaune de l'accent passe tel quel : 13,35:1. */
   --sidebar-active: oklch(85.2% 0.199 91.936);

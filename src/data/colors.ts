@@ -1,7 +1,7 @@
 /**
  * Couleurs de carte du jeu (Red, Yellow, Green, Blue) et le token CSS qui porte
  * chacune. Les valeurs vivent dans `src/index.css`, réglées par thème : une
- * teinte lisible sur slate-50 ne l'est pas sur slate-950.
+ * teinte lisible sur un fond clair ne l'est pas sur le noir.
  *
  * Ce ne sont pas des tons d'interface — elles viennent des données et rien ne
  * doit les remplacer — mais elles suivent la même règle : aucune couleur écrite
