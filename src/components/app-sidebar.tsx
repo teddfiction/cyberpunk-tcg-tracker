@@ -24,6 +24,7 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
 } from "@/components/ui/sidebar"
+import { cn } from "@/lib/utils"
 import { VIEWS, VIEW_IDS, type View } from "@/lib/views"
 
 /** L'icône de chaque vue. `Record<View, …>` : en ajouter une sans icône ne compile pas. */
@@ -32,6 +33,28 @@ const ICONS: Record<View, LucideIcon> = {
   netdeck: Library,
   settings: Settings2,
 }
+
+/**
+ * États des entrées de menu. Le registry colore le fond au survol et à
+ * l'activation ; ici c'est le texte qui parle, jamais le fond — sur la barre
+ * noire, un aplat gris était la seule chose qui ressortait.
+ *
+ *   repos   un cran sous le blanc
+ *   survol  blanc plein
+ *   actif   jaune, et le reste au survol — `--sidebar-active`, pas l'accent :
+ *           en texte sur la barre claire, celui-ci serait illisible
+ *
+ * Passé en `className` : `SidebarMenuButton` le fusionne par `cn` après ses
+ * propres variantes, donc ces classes l'emportent à préfixe égal sans qu'on
+ * touche au fichier du registry.
+ */
+const ITEM = cn(
+  "text-sidebar-foreground/70",
+  "hover:bg-transparent hover:text-sidebar-foreground",
+  "active:bg-transparent active:text-sidebar-foreground",
+  "data-[active=true]:bg-transparent data-[active=true]:text-sidebar-active",
+  "data-[active=true]:hover:text-sidebar-active"
+)
 
 type Props = {
   view: View
@@ -59,7 +82,12 @@ export function AppSidebar({
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" onClick={() => onView("table")} tooltip="Cyberpunk Tracker">
+            <SidebarMenuButton
+              size="lg"
+              onClick={() => onView("table")}
+              tooltip="Cyberpunk Tracker"
+              className="hover:bg-transparent active:bg-transparent"
+            >
               <div className="bg-primary text-primary-foreground flex aspect-square size-8 items-center justify-center">
                 <Microchip className="size-4" />
               </div>
@@ -85,6 +113,7 @@ export function AppSidebar({
                       isActive={view === id}
                       onClick={() => onView(id)}
                       tooltip={VIEWS[id].label}
+                      className={ITEM}
                     >
                       <Icon />
                       <span>{VIEWS[id].label}</span>
@@ -101,7 +130,7 @@ export function AppSidebar({
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton onClick={onImport} tooltip="Importer un JSON">
+                <SidebarMenuButton onClick={onImport} tooltip="Importer un JSON" className={ITEM}>
                   <Upload />
                   <span>Importer un JSON</span>
                 </SidebarMenuButton>
@@ -111,6 +140,7 @@ export function AppSidebar({
                   onClick={onRefresh}
                   disabled={fetching}
                   tooltip="Actualiser les données"
+                  className={ITEM}
                 >
                   <RefreshCw className={fetching ? "animate-spin" : undefined} />
                   <span>{fetching ? "Téléchargement…" : "Actualiser les données"}</span>
@@ -125,7 +155,11 @@ export function AppSidebar({
         <SidebarSeparator />
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={onToggleTheme} tooltip={dark ? "Thème clair" : "Thème sombre"}>
+            <SidebarMenuButton
+              onClick={onToggleTheme}
+              tooltip={dark ? "Thème clair" : "Thème sombre"}
+              className={ITEM}
+            >
               {dark ? <Sun /> : <Moon />}
               <span>{dark ? "Thème clair" : "Thème sombre"}</span>
             </SidebarMenuButton>

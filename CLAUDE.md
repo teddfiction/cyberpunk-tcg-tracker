@@ -377,6 +377,17 @@ La consigne du projet : **uniquement Tailwind et les composants shadcn natifs.**
   assez sombre pour s'effacer sur le noir, assez claire pour rester visible sur
   le slate-900 des cartes. Le thème clair n'y touche pas — un fond noir n'y
   aurait aucun sens.
+- **Entrées de la barre latérale : le texte signale l'état, jamais le fond.**
+  Repos un cran sous le blanc, survol en blanc plein, actif en jaune — y compris
+  survolé. Le registry pose des aplats `bg-sidebar-accent` au survol et à
+  l'activation ; `app-sidebar.tsx` les neutralise par `className` (constante
+  `ITEM`), que `SidebarMenuButton` fusionne par `cn` **après** ses variantes :
+  à préfixe égal, la classe passée l'emporte, sans toucher au fichier du
+  registry. Le jaune actif a son propre token, `--sidebar-active`, et **pas**
+  `--sidebar-primary` : ce dernier est calibré pour un aplat, et en texte sur la
+  barre claire il ne fait que 1,74:1. Mesuré sur le rendu : yellow-700 tombe
+  pile sur 4,5:1 sans marge, d'où yellow-800 (6,24:1) en clair ; en sombre le
+  jaune de l'accent passe tel quel (13,35:1).
 - **Les couleurs de carte du jeu sont des données, pas du thème**, mais elles
   suivent la même règle : `--card-red/-yellow/-green/-blue` dans `index.css`,
   réglées par thème (Tailwind 600 en clair, 400 en sombre — une teinte lisible

@@ -57,6 +57,11 @@
   --sidebar-accent-foreground: oklch(20.8% 0.042 265.755);
   --sidebar-border: oklch(92.9% 0.013 255.508);
   --sidebar-ring: oklch(79.5% 0.184 86.047);
+  /* Texte de l'entrée de menu active. Pas `--sidebar-primary` : ce jaune-là est
+     pensé pour un aplat, et en texte sur la barre slate-100 il ne fait que
+     1,74:1 — illisible. yellow-700 tombe pile sur 4,5:1, sans marge ;
+     yellow-800 donne 6,24:1. Mesuré sur le rendu. */
+  --sidebar-active: oklch(47.6% 0.114 61.907);
   /* Couleurs de carte du jeu. Ce ne sont pas des tons de thème : elles viennent
      des données, et rien ne doit les remplacer. Elles vivent tout de même ici,
      pour être réglées par thème — une teinte lisible sur slate-50 ne l'est pas
@@ -108,6 +113,8 @@
   --sidebar-accent-foreground: oklch(96.8% 0.007 247.896);
   --sidebar-border: oklch(24.4% 0.041 262.9);
   --sidebar-ring: oklch(79.5% 0.184 86.047);
+  /* Sur le noir, le jaune de l'accent passe tel quel : 13,35:1. */
+  --sidebar-active: oklch(85.2% 0.199 91.936);
   --card-red: oklch(70.4% 0.191 22.216);
   --card-yellow: oklch(85.2% 0.199 91.936);
   --card-green: oklch(79.2% 0.209 151.711);
@@ -149,6 +156,7 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-active: var(--sidebar-active);
 }
 
 @layer base {
