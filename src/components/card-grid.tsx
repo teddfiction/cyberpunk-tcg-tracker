@@ -6,6 +6,9 @@
  *
  * Filtrer par rareté change l'illustration des tuiles : c'est l'impression qui
  * porte cette rareté qui est montrée, et la modale s'ouvre sur elle.
+ *
+ * La modale passe d'une carte à l'autre dans l'ordre de la grille, tri et
+ * filtres compris : on constitue sa collection sans la refermer à chaque carte.
  */
 import * as React from "react"
 import { Check, Layers } from "lucide-react"
@@ -13,7 +16,7 @@ import { Check, Layers } from "lucide-react"
 import { CardDialog } from "@/components/card-dialog"
 import { InfoBadge, StatLine, TypeBadge } from "@/components/card-info"
 import { rarityLabel } from "@/data/rarities"
-import { printingIndex, tileStats } from "@/lib/printings"
+import { focusTarget, printingIndex, tileStats } from "@/lib/printings"
 import { cn } from "@/lib/utils"
 import type { Scope } from "@/lib/collection"
 import type { Collection, GridCard, PrintRow } from "@/types"
@@ -38,20 +41,36 @@ type Props = {
 const OFFSCREEN = "[content-visibility:auto] [contain-intrinsic-size:auto_520px]"
 
 export function CardGrid({ cards, rarities, scope, collection, onQty, empty }: Props) {
-  // La carte n'est pas remise à `null` à la fermeture : la modale la rend
-  // encore pendant son animation de sortie. C'est `open` qui pilote, pas elle.
-  const [card, setCard] = React.useState<GridCard | null>(null)
+  // Séquence que parcourt la modale : la grille telle qu'elle était au clic, et
+  // le rang de la carte montrée. Un instantané plutôt que `cards`, qui bouge
+  // sous la modale ouverte — une carte ajoutée depuis « Manquante » en sort, un
+  // tri par exemplaires la déplace : « suivante » sauterait une carte, et
+  // « précédente » ne ramènerait plus à celle qu'on vient de quitter.
+  // Pas remise à `null` à la fermeture : la modale la rend encore pendant son
+  // animation de sortie. C'est `open` qui pilote, pas elle.
+  const [browse, setBrowse] = React.useState<{ cards: GridCard[]; at: number } | null>(null)
   const [open, setOpen] = React.useState(false)
-  // Version sur laquelle ouvrir : celle que la tuile cliquée montrait, sans
-  // quoi le grand visuel ne serait pas celui qu'on vient de cliquer.
-  const [pick, setPick] = React.useState(0)
-  const trigger = React.useRef<HTMLButtonElement | null>(null)
+  // Boutons des tuiles montées, par carte : le focus y revient en sortant.
+  const tiles = React.useRef(new Map<string, HTMLButtonElement>())
 
-  const select = (c: GridCard, index: number, el: HTMLButtonElement) => {
-    trigger.current = el
-    setCard(c)
-    setPick(index)
+  const card = browse?.cards[browse.at]
+
+  const select = (at: number) => {
+    setBrowse({ cards, at })
     setOpen(true)
+  }
+
+  // Sans effet en bout de séquence : on ne boucle pas, arriver au bout dit
+  // qu'on a tout vu.
+  const step = (delta: -1 | 1) =>
+    setBrowse((b) => (b?.cards[b.at + delta] ? { ...b, at: b.at + delta } : b))
+
+  // La tuile de la carte montrée, et non celle qu'on avait cliquée : après
+  // vingt cartes parcourues, c'est là qu'on en est dans la grille.
+  const returnFocus = () => {
+    if (!browse) return
+    const id = focusTarget(browse.cards, browse.at, (id) => tiles.current.has(id))
+    if (id) tiles.current.get(id)?.focus()
   }
 
   return (
@@ -72,25 +91,36 @@ export function CardGrid({ cards, rarities, scope, collection, onQty, empty }: P
         // Espacement vertical doublé : les tuiles n'ont plus de bordure, c'est
         // le blanc qui les sépare.
         <div className="grid grid-cols-2 items-start gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
-          {cards.map((c) => (
+          {cards.map((c, i) => (
             <Tile
               key={c.id}
               card={c}
               rarities={rarities}
               scope={scope}
-              onSelect={(index, el) => select(c, index, el)}
+              onSelect={() => select(i)}
+              tileRef={(el) => {
+                if (!el) return
+                tiles.current.set(c.id, el)
+                return () => {
+                  tiles.current.delete(c.id)
+                }
+              }}
             />
           ))}
         </div>
       )}
 
-      {card && (
+      {browse && card && (
         <CardDialog
           card={card}
-          pick={pick}
+          // La version que montre la tuile de cette carte, comme au clic.
+          pick={printingIndex(card, rarities)}
           open={open}
           onOpenChange={setOpen}
-          trigger={trigger}
+          at={browse.at}
+          count={browse.cards.length}
+          onStep={step}
+          returnFocus={returnFocus}
           scope={scope}
           collection={collection}
           onQty={onQty}
@@ -105,11 +135,13 @@ function Tile({
   rarities,
   scope,
   onSelect,
+  tileRef,
 }: {
   card: GridCard
   rarities: string[]
   scope: Scope
-  onSelect: (index: number, trigger: HTMLButtonElement) => void
+  onSelect: () => void
+  tileRef: React.RefCallback<HTMLButtonElement>
 }) {
   const stats = tileStats(card)
   // L'impression mise en avant : celle de la rareté filtrée, à défaut la
@@ -120,7 +152,8 @@ function Tile({
   return (
     <div className={cn("flex flex-col gap-2", OFFSCREEN)}>
       <button
-        onClick={(e) => onSelect(pick, e.currentTarget)}
+        ref={tileRef}
+        onClick={onSelect}
         aria-haspopup="dialog"
         aria-label={`${card.name} — ${scope === "owned" ? "voir la version" : "voir les versions"}`}
         className="focus-visible:ring-ring/50 block cursor-pointer outline-none focus-visible:ring-[3px]"

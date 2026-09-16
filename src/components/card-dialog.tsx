@@ -7,9 +7,12 @@
  * distingue deux impressions que Cardmarket confond. Le grand visuel est affiché
  * à 320 px CSS pour un fichier de 640 px : net sur Retina (voir « Limites des
  * données »). Les informations parlent la voix de la grille, `card-info.tsx`.
+ *
+ * On y passe d'une carte à l'autre, dans l'ordre de la grille, par l'en-tête ou
+ * les flèches du clavier : constituer sa collection ne demande pas de refermer.
  */
 import * as React from "react"
-import { ExternalLink, Layers } from "lucide-react"
+import { ChevronLeft, ChevronRight, ExternalLink, Layers } from "lucide-react"
 
 import {
   Dialog,
@@ -18,6 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
 import {
   InfoBadge,
   InfoList,
@@ -38,12 +42,18 @@ import type { Collection, GridCard, PrintRow } from "@/types"
 
 type Props = {
   card: GridCard
-  /** Version à ouvrir : celle que montrait la tuile cliquée. */
+  /** Version à ouvrir : celle que montre la tuile de la carte. */
   pick: number
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** Tuile à re-focaliser en sortant. Voir `onCloseAutoFocus` plus bas. */
-  trigger: React.RefObject<HTMLButtonElement | null>
+  /** Rang de la carte dans la séquence parcourue, à partir de 0. */
+  at: number
+  /** Longueur de la séquence parcourue. */
+  count: number
+  /** Passe à la carte voisine ; sans effet en bout de séquence. */
+  onStep: (delta: -1 | 1) => void
+  /** Rend le focus à la grille en sortant. Voir `onCloseAutoFocus` plus bas. */
+  returnFocus: () => void
   /** Dans la collection, la carte n'apporte que la version possédée. */
   scope: Scope
   /**
@@ -54,25 +64,27 @@ type Props = {
   onQty: (printing: PrintRow, qty: number) => void
 }
 
+/**
+ * Flèches gauche et droite : carte précédente, suivante — la convention des
+ * visionneuses. Les versions, elles, se choisissent au clic ou à la tabulation.
+ */
+const STEP_KEYS: Record<string, -1 | 1> = { ArrowLeft: -1, ArrowRight: 1 }
+
 export function CardDialog({
   card,
   pick,
   open,
   onOpenChange,
-  trigger,
+  at,
+  count,
+  onStep,
+  returnFocus,
   scope,
   collection,
   onQty,
 }: Props) {
-  // Index dans `card.printings`, pas un uuid : changer de carte — ou de tuile
-  // après un filtre de rareté — doit repartir de la version que la tuile
-  // montrait, pas de celle qu'on avait choisie sur la carte précédente.
-  const [picked, setPicked] = React.useState(pick)
-  React.useEffect(() => setPicked(pick), [card.id, pick])
-
   const stats = cardStats(card)
   const n = card.printings.length
-  const shown = card.printings[Math.min(picked, n - 1)]
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -86,13 +98,31 @@ export function CardDialog({
         // vise la tuile explicitement.
         onCloseAutoFocus={(e) => {
           e.preventDefault()
-          trigger.current?.focus()
+          returnFocus()
+        }}
+        // Écouté sur la modale entière, pas sur les boutons de navigation : les
+        // flèches doivent marcher juste après avoir choisi une version ou ajouté
+        // un exemplaire. Avec un modificateur, elles restent au navigateur.
+        onKeyDown={(e) => {
+          const delta = STEP_KEYS[e.key]
+          if (!delta || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return
+          e.preventDefault()
+          onStep(delta)
         }}
       >
         {/* `text-left` : le registry centre l'en-tête sur mobile, ce qui
             décalerait le titre des badges alignés à gauche en dessous. */}
         <DialogHeader className="text-left">
-          <DialogTitle className="pr-6">{card.name}</DialogTitle>
+          {/* Navigation calée à droite, contre la croix : elle ne bouge pas d'une
+              carte à l'autre, quelle que soit la longueur du nom, et l'on
+              enchaîne les clics sans déplacer la souris. Absente quand la
+              grille n'a qu'une carte : deux boutons grisés n'y diraient rien.
+              Sous `sm`, elle passe au-dessus du titre, sur la ligne de la
+              croix : à côté, elle le repliait sur quatre lignes. */}
+          <div className="flex flex-col-reverse gap-2 pr-6 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+            <DialogTitle className="leading-tight">{card.name}</DialogTitle>
+            {count > 1 && <Stepper name={card.name} at={at} count={count} onStep={onStep} />}
+          </div>
           {/* Mêmes badges et même ligne de caractéristiques que la tuile. La
               quantité possédée n'y figure pas : elle se lit par version, dans
               `collection`, jamais dans cet instantané de la carte. */}
@@ -114,45 +144,140 @@ export function CardDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {!shown ? (
-          <div className="flex flex-col gap-4">
-            <p className="text-muted-foreground text-sm">Aucune impression connue pour cette carte.</p>
-            <Links card={card} printing={null} />
-          </div>
-        ) : (
-          // Côte à côte à partir de `md` seulement : en deçà, la colonne laissée
-          // à droite du visuel serrerait les miniatures des versions.
-          <div className="flex flex-col gap-6 md:flex-row">
-            <Artwork printing={shown} />
-
-            <div className="flex min-w-0 flex-1 flex-col gap-4">
-              {n > 1 && (
-                <Picker
-                  printings={card.printings}
-                  picked={picked}
-                  onPick={setPicked}
-                  collection={collection}
-                />
-              )}
-              <Details printing={shown} />
-              {/* Sous les informations : on ajoute une version après l'avoir
-                  identifiée — set, rareté, numéro.
-                  `key` : changer de version abandonne une confirmation de
-                  retrait en cours, plutôt que de la reporter sur l'autre. */}
-              <CollectionControl
-                key={shown.uuid}
-                qty={qtyOf(collection, shown.uuid)}
-                onChange={(qty) => onQty(shown, qty)}
-              />
-              {/* `mt-auto` : la colonne s'étire à la hauteur du visuel, les liens
-                  se calent donc sur son bord bas. Sur mobile, empilés, ils
-                  suivent simplement le reste. */}
-              <Links card={card} printing={shown} className="mt-auto" />
-            </div>
-          </div>
-        )}
+        {/* `key` : changer de carte repart d'un état neuf, sur la version que
+            montre sa tuile — sans passer par un rendu qui porterait encore la
+            version choisie sur la carte précédente. La navigation reste hors
+            de ce sous-arbre : remontée, elle perdrait le focus à chaque clic. */}
+        <Versions key={card.id} card={card} pick={pick} collection={collection} onQty={onQty} />
       </DialogContent>
     </Dialog>
+  )
+}
+
+/**
+ * Ce qui dépend de la version choisie : visuel, miniatures des versions,
+ * informations, quantité possédée et liens.
+ */
+function Versions({
+  card,
+  pick,
+  collection,
+  onQty,
+}: {
+  card: GridCard
+  pick: number
+  collection: Collection
+  onQty: (printing: PrintRow, qty: number) => void
+}) {
+  // Index dans `card.printings`, pas un uuid : c'est ce que rend
+  // `printingIndex`, et le sélecteur raisonne en index.
+  const [picked, setPicked] = React.useState(pick)
+  const n = card.printings.length
+  const shown = card.printings[Math.min(picked, n - 1)]
+
+  if (!shown) {
+    return (
+      <div className="flex flex-col gap-4">
+        <p className="text-muted-foreground text-sm">Aucune impression connue pour cette carte.</p>
+        <Links card={card} printing={null} />
+      </div>
+    )
+  }
+
+  return (
+    // Côte à côte à partir de `md` seulement : en deçà, la colonne laissée
+    // à droite du visuel serrerait les miniatures des versions.
+    <div className="flex flex-col gap-6 md:flex-row">
+      <Artwork printing={shown} />
+
+      <div className="flex min-w-0 flex-1 flex-col gap-4">
+        {n > 1 && (
+          <Picker
+            printings={card.printings}
+            picked={picked}
+            onPick={setPicked}
+            collection={collection}
+          />
+        )}
+        <Details printing={shown} />
+        {/* Sous les informations : on ajoute une version après l'avoir
+            identifiée — set, rareté, numéro.
+            `key` : changer de version abandonne une confirmation de
+            retrait en cours, plutôt que de la reporter sur l'autre. */}
+        <CollectionControl
+          key={shown.uuid}
+          qty={qtyOf(collection, shown.uuid)}
+          onChange={(qty) => onQty(shown, qty)}
+        />
+        {/* `mt-auto` : la colonne s'étire à la hauteur du visuel, les liens
+            se calent donc sur son bord bas. Sur mobile, empilés, ils
+            suivent simplement le reste. */}
+        <Links card={card} printing={shown} className="mt-auto" />
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Carte précédente, rang, carte suivante.
+ *
+ * Grisés en bout de séquence par `aria-disabled` et non `disabled` : un bouton
+ * désactivé perd le focus, qui retomberait sur `body` — hors de la modale, où
+ * les flèches du clavier ne sont plus écoutées. Les deux classes reprennent le
+ * rendu `disabled:` du registry.
+ */
+const ENDED = "aria-disabled:pointer-events-none aria-disabled:opacity-50"
+
+function Stepper({
+  name,
+  at,
+  count,
+  onStep,
+}: {
+  name: string
+  at: number
+  count: number
+  onStep: (delta: -1 | 1) => void
+}) {
+  return (
+    // `-mt-4` : remonte les chevrons sur l'axe de la croix du registry, posée à
+    // `top-4` — 24 px de marge, moins 16, plus la moitié des 32 px du bouton.
+    // Alignés sur le titre, ils tombaient 10 px sous la croix voisine. À côté
+    // du titre, `-mb-4` leur retire aussi toute hauteur dans la ligne.
+    <div className="-mt-4 flex shrink-0 items-center self-end sm:-mb-4 sm:self-start">
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        className={ENDED}
+        aria-label="Carte précédente"
+        aria-keyshortcuts="ArrowLeft"
+        title="Carte précédente (←)"
+        aria-disabled={at <= 0}
+        onClick={() => onStep(-1)}
+      >
+        <ChevronLeft />
+      </Button>
+      <span aria-hidden className="text-muted-foreground px-1 font-mono text-xs tabular-nums">
+        {at + 1} / {count}
+      </span>
+      {/* Le titre de la modale change sans être relu : c'est ici qu'on annonce
+          la carte où l'on arrive. */}
+      <span aria-live="polite" className="sr-only">
+        {name}, carte {at + 1} sur {count}
+      </span>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        className={ENDED}
+        aria-label="Carte suivante"
+        aria-keyshortcuts="ArrowRight"
+        title="Carte suivante (→)"
+        aria-disabled={at >= count - 1}
+        onClick={() => onStep(1)}
+      >
+        <ChevronRight />
+      </Button>
+    </div>
   )
 }
 

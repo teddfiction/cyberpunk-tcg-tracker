@@ -31,7 +31,9 @@ ce qu'elle montre, puis comment rafraîchir ses données.
   modale par carte pour parcourir ses
   impressions — visuel, rareté, numéro et cote de chacune, chaque version
   numérotée sous sa miniature, et des liens vers la fiche officielle et la
-  recherche Cardmarket. Elle se remplit une fois `cards_enriched.json` importé.
+  recherche Cardmarket. La modale passe d'une carte à l'autre sans se refermer
+  — chevrons de l'en-tête ou flèches du clavier —, dans l'ordre de la grille
+  triée et filtrée. La base se remplit une fois `cards_enriched.json` importé.
 - **Collection** — la même grille, réduite aux versions possédées : une tuile
   par version, mêmes filtres, recherche et tris, et la complétion en tête. Les
   quantités se règlent dans la modale d'une carte, depuis la base comme depuis
@@ -186,7 +188,7 @@ src/
     columns.tsx         colonnes des cotes, une liste par mode
     grid-columns.ts     colonnes-facettes de la grille (ne rendent rien)
     card-grid.tsx       grille de cartes, quatre colonnes au plus
-    card-dialog.tsx     versions d'une carte, en modale : visuel, versions numérotées, quantité
+    card-dialog.tsx     versions d'une carte, en modale : visuel, versions numérotées, quantité, carte voisine
     collection-control.tsx  quantité possédée d'une version, retrait en deux temps
     collection-stats.tsx    complétion en tête de la collection
     import-dialog.tsx   formats reconnus et zone de dépôt
