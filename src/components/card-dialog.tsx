@@ -143,14 +143,16 @@ export function CardDialog({
                   collection={collection}
                 />
               )}
-              {/* `key` : changer de version abandonne une confirmation de
+              <Details printing={shown} />
+              {/* Sous les informations : on ajoute une version après l'avoir
+                  identifiée — set, rareté, numéro.
+                  `key` : changer de version abandonne une confirmation de
                   retrait en cours, plutôt que de la reporter sur l'autre. */}
               <CollectionControl
                 key={shown.uuid}
                 qty={qtyOf(collection, shown.uuid)}
                 onChange={(qty) => onQty(shown, qty)}
               />
-              <Details printing={shown} />
             </div>
           </div>
         )}
