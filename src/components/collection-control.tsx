@@ -11,6 +11,8 @@ import * as React from "react"
 import { Minus, Plus, Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { INFO } from "@/components/card-info"
+import { cn } from "@/lib/utils"
 
 type Props = {
   qty: number
@@ -49,7 +51,8 @@ export function CollectionControl({ qty, onChange }: Props) {
   // que « Retirer », passait sinon à la ligne et faisait sauter la modale.
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="text-muted-foreground text-sm">Dans ma collection</span>
+      {/* Même voix que les informations de la version, juste en dessous. */}
+      <span className={cn(INFO, "text-muted-foreground text-xs")}>Dans ma collection</span>
 
       <div className="flex items-center gap-3">
         <div className="flex items-center">
