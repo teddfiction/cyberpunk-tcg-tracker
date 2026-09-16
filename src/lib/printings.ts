@@ -177,7 +177,8 @@ export type CardStat = { label: string; value?: string; dot?: boolean }
 
 /**
  * Caractéristiques d'une carte. La tuile et la modale des versions les montrent
- * toutes deux — d'où leur place ici plutôt que dans l'un des deux composants.
+ * toutes deux, par `StatLine` (`components/card-info.tsx`) — d'où leur place ici
+ * plutôt que dans l'un des deux composants.
  *
  * La pastille de couleur s'accroche à la RAM, comme sur le site officiel. Une
  * carte sur 151 n'a pas de RAM : sa pastille passe alors en tête, faute de quoi
