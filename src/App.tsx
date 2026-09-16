@@ -12,6 +12,7 @@ import { AppSidebar } from "@/components/app-sidebar"
 import { columnsFor } from "@/components/columns"
 import { DataTable } from "@/components/data-table"
 import { FiltersBar } from "@/components/filters-bar"
+import { ImportDialog } from "@/components/import-dialog"
 import { NetdeckView } from "@/components/netdeck-view"
 import { SettingsView } from "@/components/settings-view"
 import { StatsStrip } from "@/components/stats-strip"
@@ -32,8 +33,10 @@ export default function App() {
 
   const [view, setView] = React.useState<View>("table")
   const [mode, setMode] = React.useState<Mode>("normal")
-  const fileRef = React.useRef<HTMLInputElement>(null)
-  const openImport = () => fileRef.current?.click()
+  // Tous les boutons « Importer » passent par la modale : elle dit ce que chaque
+  // fichier remplace avant qu'on le choisisse.
+  const [importing, setImporting] = React.useState(false)
+  const openImport = () => setImporting(true)
 
   // useDataset rend un avis, App choisit comment le montrer — le hook n'importe
   // rien de sonner. setNotice pose un objet neuf à chaque fois, donc deux
@@ -169,16 +172,11 @@ export default function App() {
           </div>
         </header>
 
-        <input
-          ref={fileRef}
-          type="file"
-          accept="application/json,.json"
-          multiple
-          className="hidden"
-          onChange={(e) => {
-            void data.importFiles(e.target.files)
-            e.target.value = ""
-          }}
+        <ImportDialog
+          open={importing}
+          onOpenChange={setImporting}
+          onFiles={(files) => void data.importFiles(files)}
+          collection={summarize(data.collection)}
         />
 
         <div className="flex flex-col gap-4 p-4">{render[view]()}</div>
