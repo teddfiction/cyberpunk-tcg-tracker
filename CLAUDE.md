@@ -355,6 +355,14 @@ La consigne du projet : **uniquement Tailwind et les composants shadcn natifs.**
   graphiques **Cyan**, `--radius: 0`, polices **Geist** et **Geist Mono**
   (locales, SIL OFL 1.1). Base et accent sont deux axes : changer de base ne
   touche pas aux tons `primary` / `ring` / `sidebar-primary`, qui restent jaunes.
+- **Le thème sombre s'écarte de Slate, exprès.** `--background` et `--sidebar`
+  sont un noir pur et non slate-950/900 : rien ne doit disputer l'éclat des
+  visuels de carte, qui sont ce que la base de cartes montre. Le chrome et le
+  contenu ne se distinguent donc plus que par une bordure. Celle-ci est adoucie
+  (`--border`, `--input`, `--sidebar-border` entre slate-900 et slate-800) :
+  assez sombre pour s'effacer sur le noir, assez claire pour rester visible sur
+  le slate-900 des cartes. Le thème clair n'y touche pas — un fond noir n'y
+  aurait aucun sens.
 - **Les couleurs de carte du jeu sont des données, pas du thème**, mais elles
   suivent la même règle : `--card-red/-yellow/-green/-blue` dans `index.css`,
   réglées par thème (Tailwind 600 en clair, 400 en sombre — une teinte lisible

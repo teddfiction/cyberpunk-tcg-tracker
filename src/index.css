@@ -68,7 +68,10 @@
 }
 
 .dark {
-  --background: oklch(12.9% 0.042 264.695);
+  /* Noir pur, barre latérale comprise : rien ne doit disputer l'éclat des
+     visuels de carte, qui sont ce que la base de cartes montre. Le chrome et le
+     contenu ne se distinguent plus que par une bordure. */
+  --background: oklch(0% 0 0);
   --foreground: oklch(96.8% 0.007 247.896);
   --card: oklch(20.8% 0.042 265.755);
   --card-foreground: oklch(96.8% 0.007 247.896);
@@ -83,8 +86,12 @@
   --accent: oklch(27.9% 0.041 260.031);
   --accent-foreground: oklch(96.8% 0.007 247.896);
   --destructive: oklch(70.4% 0.191 22.216);
-  --border: oklch(27.9% 0.041 260.031);
-  --input: oklch(27.9% 0.041 260.031);
+  /* Bordures adoucies : entre slate-900 et slate-800. Assez sombres pour
+     s'effacer sur le noir de la page, assez claires pour rester visibles sur le
+     slate-900 des cartes et des popovers — une bordure calée sur le fond des
+     cartes y disparaîtrait. */
+  --border: oklch(24.4% 0.041 262.9);
+  --input: oklch(24.4% 0.041 262.9);
   --ring: oklch(79.5% 0.184 86.047);
   /* Même rampe décalée de deux pas vers le clair (cyan-200 → cyan-600) :
      cyan-700 tombe à 52 % de clarté, illisible sur un fond slate-950. */
@@ -93,13 +100,13 @@
   --chart-3: oklch(78.9% 0.154 211.53);
   --chart-4: oklch(71.5% 0.143 215.221);
   --chart-5: oklch(60.9% 0.126 221.723);
-  --sidebar: oklch(20.8% 0.042 265.755);
+  --sidebar: oklch(0% 0 0);
   --sidebar-foreground: oklch(96.8% 0.007 247.896);
   --sidebar-primary: oklch(85.2% 0.199 91.936);
   --sidebar-primary-foreground: oklch(28.6% 0.066 53.813);
   --sidebar-accent: oklch(27.9% 0.041 260.031);
   --sidebar-accent-foreground: oklch(96.8% 0.007 247.896);
-  --sidebar-border: oklch(27.9% 0.041 260.031);
+  --sidebar-border: oklch(24.4% 0.041 262.9);
   --sidebar-ring: oklch(79.5% 0.184 86.047);
   --card-red: oklch(70.4% 0.191 22.216);
   --card-yellow: oklch(85.2% 0.199 91.936);
