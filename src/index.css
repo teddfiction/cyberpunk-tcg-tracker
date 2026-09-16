@@ -1,5 +1,5 @@
 /* Tokens du thème shadcn (base Neutral, accent Yellow, charts Cyan, radius 0),
-   couleurs de carte du jeu, et polices Geist / Geist Mono. */
+   couleurs de carte du jeu, polices Geist / Geist Mono, et voile des modales. */
 @import "tailwindcss";
 @source "./**/*.{ts,tsx}";
 @custom-variant dark (&:where(.dark, .dark *));
@@ -168,4 +168,15 @@
 @layer base {
   * { @apply border-border outline-ring/50; }
   body { @apply bg-background text-foreground; }
+}
+
+/* Voile des modales : un flou léger plutôt qu'un aplat sombre, celui de
+   l'AlertDialog des styles récents de shadcn (nova, vega). Les fichiers du
+   registry new-york ne le portent pas et ne se modifient pas : la règle vise
+   leurs `data-slot`. Hors de toute couche, exprès — c'est ce qui la fait passer
+   devant le `bg-black/50` des utilitaires qu'ils posent. */
+[data-slot="dialog-overlay"],
+[data-slot="alert-dialog-overlay"],
+[data-slot="sheet-overlay"] {
+  @apply bg-black/10 supports-backdrop-filter:backdrop-blur-xs;
 }
