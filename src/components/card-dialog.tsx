@@ -77,7 +77,9 @@ export function CardDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-h-[85vh] overflow-y-auto sm:max-w-3xl"
+        // Plus large qu'une modale ordinaire : les versions y gagnent des
+        // miniatures lisibles à côté du grand visuel.
+        className="max-h-[90vh] overflow-y-auto sm:max-w-4xl"
         // Radix rend le focus à ce qui l'avait avant l'ouverture, mais ici il
         // retombe sur `body` — mesuré. Le clavier repartirait alors du haut du
         // document à chaque carte refermée, sur une grille de 151 tuiles : on
@@ -127,7 +129,9 @@ export function CardDialog({
         {!shown ? (
           <p className="text-muted-foreground text-sm">Aucune impression connue pour cette carte.</p>
         ) : (
-          <div className="flex flex-col gap-4 sm:flex-row">
+          // Côte à côte à partir de `md` seulement : en deçà, la colonne laissée
+          // à droite du visuel serrerait les miniatures des versions.
+          <div className="flex flex-col gap-6 md:flex-row">
             <Artwork printing={shown} />
 
             <div className="flex min-w-0 flex-1 flex-col gap-4">
@@ -175,6 +179,12 @@ function Artwork({ printing: p }: { printing: PrintRow }) {
  * Les versions, en miniatures. Cliquer remplace le grand visuel. Les versions
  * possédées portent leur quantité : c'est ce qui évite d'aller vérifier dans la
  * collection laquelle on a déjà.
+ *
+ * Chacune porte son numéro de collecteur : c'est le seul texte qui distingue
+ * deux versions d'une même rareté (« 005a », « 005b »), et il reste lisible quelle
+ * que soit la version choisie. Grille en `auto-fill` plutôt qu'un nombre de
+ * colonnes : les miniatures gardent leur largeur, que la carte ait deux versions
+ * ou sept, et que la modale soit étroite ou non.
  */
 function Picker({
   printings,
@@ -188,34 +198,56 @@ function Picker({
   collection: Collection
 }) {
   return (
-    <div role="listbox" aria-label="Versions de la carte" className="flex flex-wrap gap-2">
+    <div
+      role="listbox"
+      aria-label="Versions de la carte"
+      className="grid grid-cols-[repeat(auto-fill,minmax(5.5rem,1fr))] gap-2"
+    >
       {printings.map((p, i) => {
         const qty = qtyOf(collection, p.uuid)
+        const selected = i === picked
         return (
           <button
             key={p.uuid}
             role="option"
-            aria-selected={i === picked}
+            aria-selected={selected}
             onClick={() => onPick(i)}
             title={
               `${p.rarity ? rarityLabel(p.rarity) : "Rareté inconnue"} — ${p.set}` +
               (qty ? ` — ${qty} dans ma collection` : "")
             }
             className={cn(
-              "focus-visible:ring-ring/50 relative w-14 shrink-0 cursor-pointer border outline-none focus-visible:ring-[3px]",
-              i === picked ? "border-ring" : "border-border opacity-60 hover:opacity-100"
+              "focus-visible:ring-ring/50 flex cursor-pointer flex-col gap-1 text-left outline-none focus-visible:ring-[3px]",
+              !selected && "opacity-60 hover:opacity-100"
             )}
           >
-            {p.thumb ? (
-              <img src={p.thumb} alt="" className="block w-full" />
-            ) : (
-              <div className="bg-muted aspect-[5/7] w-full" />
-            )}
-            {qty > 0 && (
-              <span className="bg-background text-foreground absolute right-0 bottom-0 px-1 font-mono text-[10px] leading-4 tabular-nums">
-                ×{qty}
-              </span>
-            )}
+            <span
+              className={cn(
+                "relative block border",
+                selected ? "border-ring" : "border-border"
+              )}
+            >
+              {p.thumb ? (
+                <img src={p.thumb} alt="" className="block w-full" />
+              ) : (
+                <span className="bg-muted block aspect-[5/7] w-full" />
+              )}
+              {qty > 0 && (
+                <span className="bg-background text-foreground absolute right-0 bottom-0 px-1 font-mono text-[10px] leading-4 tabular-nums">
+                  ×{qty}
+                </span>
+              )}
+            </span>
+            {/* Pas de capitales : « 005a » et « 005A » ne désignent pas la même
+                chose, et le « β » des tirages Beta passerait pour un B latin. */}
+            <span
+              className={cn(
+                "truncate font-mono text-[10px]",
+                selected ? "text-foreground font-medium" : "text-muted-foreground"
+              )}
+            >
+              {p.num ? `#${p.num}` : "—"}
+            </span>
           </button>
         )
       })}
@@ -230,8 +262,7 @@ function Details({ printing: p }: { printing: PrintRow }) {
       <InfoRow label="Set">{p.set}</InfoRow>
       <InfoRow label="Rareté">{p.rarity ? rarityLabel(p.rarity) : <Unknown />}</InfoRow>
       <InfoRow label="Numéro">
-        {/* Hors capitales : « 005a » n'est pas « 005A », et le « β » des
-            tirages Beta passerait pour un B latin. */}
+        {/* Hors capitales, comme sous les miniatures : c'est un identifiant. */}
         {p.num ? <span className="normal-case">#{p.num}</span> : <Unknown />}
       </InfoRow>
       <InfoRow label="Illustration">{p.artist ?? <Unknown />}</InfoRow>
