@@ -8,8 +8,10 @@ import {
   MISSING,
   OWNED,
   OWNED_FACET,
+  SCOPE_GRID,
   backupName,
   collectionStats,
+  missingGrid,
   orphans,
   ownedGrid,
   qtyOf,
@@ -125,6 +127,44 @@ describe("ownedGrid", () => {
 
   it("rend une grille vide sans collection", () => {
     expect(ownedGrid(gridOf())).toEqual([])
+  })
+})
+
+describe("missingGrid", () => {
+  const base = gridOf(COLLECTION)
+  const missing = missingGrid(base)
+
+  it("rend une tuile par version absente de la collection", () => {
+    // Zébu est possédée en Common (u2) mais pas en Nova Rare (u1) : sa Nova
+    // Rare manque, même si la carte, elle, figure dans la collection.
+    expect(missing.map((c) => c.id)).toEqual(["u1"])
+    expect(missing[0].owned).toBe(0)
+    expect(missing[0].rarities).toEqual(["Nova Rare"])
+  })
+
+  it("complète exactement la collection, sans doublon ni perte", () => {
+    const all = base.flatMap((c) => c.printings.map((p) => p.uuid)).sort()
+    const split = [...ownedGrid(base), ...missing].map((c) => c.id).sort()
+    expect(split).toEqual(all)
+  })
+
+  it("remonte la rareté qui manque, pas celle qu'on possède", () => {
+    // Le miroir du test de `ownedGrid` : la Nova Rare de Zébu est ici, la
+    // Common non.
+    const on = (rarity: string) =>
+      gridNames(makeGrid({ columnFilters: [{ id: "rarities", value: [rarity] }] }, missing))
+    expect(on("Nova Rare")).toEqual(["Zébu - Calme"])
+    expect(on("Common")).toEqual([])
+  })
+
+  it("rend toute la base, version par version, sans collection", () => {
+    expect(missingGrid(gridOf()).map((c) => c.id)).toEqual(["u3", "u1", "u2"])
+  })
+
+  it("sert chaque périmètre depuis la même base", () => {
+    expect(SCOPE_GRID.all(base)).toBe(base)
+    expect(SCOPE_GRID.owned(base)).toEqual(ownedGrid(base))
+    expect(SCOPE_GRID.missing(base)).toEqual(missing)
   })
 })
 

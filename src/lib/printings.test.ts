@@ -277,6 +277,19 @@ describe("facettes", () => {
     ])
   })
 
+  it("garde une valeur cochée absente des cartes, pour pouvoir la décocher", () => {
+    // Un filtre posé dans « Collectées » et que « Manquantes » ne porte pas.
+    const rarete = FACETS.find((f) => f.id === "rarities")!
+    expect(facetOptions(rarete, cards, ["Secret", "Epic"])).toEqual([
+      { value: "Common", count: 1 },
+      { value: "Epic", count: 1 },
+      { value: "Nova Rare", count: 1 },
+      { value: "Secret", count: 0 },
+    ])
+    const couleur = FACETS.find((f) => f.id === "color")!
+    expect(facetOptions(couleur, [], ["Red"])).toEqual([{ value: "Red", count: 0 }])
+  })
+
   it("range les raretés par rang et les nombres numériquement", () => {
     const rarete = FACETS.find((f) => f.id === "rarities")!
     expect(facetOptions(rarete, cards).map((o) => o.value)).toEqual([

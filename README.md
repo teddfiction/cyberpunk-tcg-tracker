@@ -34,12 +34,13 @@ ce qu'elle montre, puis comment rafraîchir ses données.
   recherche Cardmarket. La modale passe d'une carte à l'autre sans se refermer
   — chevrons de l'en-tête ou flèches du clavier —, dans l'ordre de la grille
   triée et filtrée. La base se remplit une fois `cards_enriched.json` importé.
-- **Collection** — la même grille, réduite aux versions possédées : une tuile
-  par version, mêmes filtres, recherche et tris, et la complétion en tête. Les
-  quantités se règlent dans la modale d'une carte, depuis la base comme depuis
-  la collection ; la base montre ce qu'on possède déjà (quantités sur les
-  tuiles et les versions, filtre Possédée / Manquante). Elle se sauvegarde, se
-  restaure et se supprime depuis Paramètres.
+- **Collection** — la même grille, une tuile par version, en deux onglets :
+  « Collectées » et « Manquantes », celles-ci le visuel en retrait. Mêmes
+  filtres, recherche et tris, qui suivent d'un onglet à l'autre, et la
+  complétion en tête. Les quantités se règlent dans la modale d'une carte,
+  depuis la base comme depuis la collection ; la base montre ce qu'on possède
+  déjà (quantités sur les tuiles et les versions, filtre Possédée / Manquante).
+  La collection se sauvegarde, se restaure et se supprime depuis Paramètres.
 
 ## Exploiter l'app
 
@@ -222,7 +223,7 @@ src/
     facets.ts           registre des facettes de la grille
     sorts.ts            registre des tris de la grille, et rangs couleur/type
     printings.ts        impressions Netdeck et regroupement par carte
-    collection.ts       quantités, grille par version, orphelines, complétion
+    collection.ts       quantités, grilles possédées et manquantes, orphelines, complétion
     table.ts            tri, filtres et recherche passés à TanStack
     format.ts           formatage et normalisation
     ingest.ts           lecture des formats JSON, registre des formats, sauvegarde

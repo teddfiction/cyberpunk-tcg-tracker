@@ -1,5 +1,6 @@
 /**
- * Collection : les versions possédées, et la grille qu'elles forment.
+ * Collection : les versions possédées, et les grilles qu'elles forment — ce
+ * qu'on a, ce qui manque.
  *
  * Une tuile par version et non par carte : sinon les facettes porteraient sur
  * toutes les impressions de la carte, et filtrer « Iconic Legend » garderait une
@@ -16,10 +17,19 @@ export const OWNED = "Possédée"
 export const MISSING = "Manquante"
 
 /**
- * Périmètre de la grille de cartes : la base entière, une tuile par carte, ou la
- * collection, une tuile par version possédée. Même vue, mêmes composants.
+ * Périmètre de la grille de cartes : la base entière, une tuile par carte ; ou
+ * la collection, une tuile par version — possédée, ou manquante. Même vue,
+ * mêmes composants.
  */
-export type Scope = "all" | "owned"
+export type Scope = "all" | "owned" | "missing"
+
+/** Onglets de la collection, dans l'ordre : le libellé de chaque périmètre. */
+export const COLLECTION_TABS = {
+  owned: "Collectées",
+  missing: "Manquantes",
+} as const satisfies Partial<Record<Scope, string>>
+
+export type CollectionTab = keyof typeof COLLECTION_TABS
 
 export const qtyOf = (collection: Collection, uuid: string) => collection[uuid]?.qty ?? 0
 
@@ -60,17 +70,17 @@ export function withQty(
 }
 
 /**
- * Une tuile par impression possédée, dans l'ordre de la grille : nom en
+ * Une tuile par impression retenue, dans l'ordre de la grille : nom en
  * collation française, puis rang dans la carte. Les ex æquo des tris retombent
  * donc sur cet ordre-là, sans comparateur à écrire.
  *
  * Chaque tuile ne porte que sa version : set, rareté et cote sont les siens, ce
  * qui rend les facettes exactes.
  */
-export function ownedGrid(grid: GridCard[]): GridCard[] {
+function versionGrid(grid: GridCard[], keep: (p: PrintRow) => boolean): GridCard[] {
   return grid.flatMap((card) =>
     card.printings
-      .filter((p) => p.qty > 0)
+      .filter(keep)
       .map((p) => ({
         ...card,
         id: p.uuid,
@@ -81,6 +91,26 @@ export function ownedGrid(grid: GridCard[]): GridCard[] {
         owned: p.qty,
       }))
   )
+}
+
+/** Ce qu'on a : une tuile par version possédée. */
+export const ownedGrid = (grid: GridCard[]) => versionGrid(grid, (p) => p.qty > 0)
+
+/**
+ * Ce qui manque : une tuile par version que la collection n'a pas. Le
+ * complément exact de `ownedGrid` — les deux onglets se partagent les versions
+ * de la base, sans en perdre ni en compter deux fois.
+ */
+export const missingGrid = (grid: GridCard[]) => versionGrid(grid, (p) => p.qty <= 0)
+
+/**
+ * La grille d'un périmètre, tirée de la base de cartes. `Record<Scope, …>` :
+ * un périmètre ajouté sans sa grille ne compile pas.
+ */
+export const SCOPE_GRID: Record<Scope, (grid: GridCard[]) => GridCard[]> = {
+  all: (grid) => grid,
+  owned: ownedGrid,
+  missing: missingGrid,
 }
 
 /**

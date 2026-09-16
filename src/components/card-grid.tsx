@@ -2,7 +2,7 @@
  * Grille de cartes. Une tuile par carte ; cliquer l'ouvre en modale sur ses
  * impressions, dont chacune a son propre visuel — c'est là que se voient les
  * variantes de rareté que Cardmarket ne distingue pas. Dans la collection, une
- * tuile par version possédée.
+ * tuile par version, possédée ou manquante — celles-ci le visuel en retrait.
  *
  * Filtrer par rareté change l'illustration des tuiles : c'est l'impression qui
  * porte cette rareté qui est montrée, et la modale s'ouvre sur elle.
@@ -39,6 +39,9 @@ type Props = {
  * réserve la hauteur pour que la barre de défilement ne saute pas.
  */
 const OFFSCREEN = "[content-visibility:auto] [contain-intrinsic-size:auto_520px]"
+
+/** Visuel d'une version manquante : présent, mais en retrait de ceux qu'on possède. */
+const MISSING = "opacity-40"
 
 export function CardGrid({ cards, rarities, scope, collection, onQty, empty }: Props) {
   // Séquence que parcourt la modale : la grille telle qu'elle était au clic, et
@@ -148,6 +151,7 @@ function Tile({
   // version par défaut de la carte.
   const pick = printingIndex(card, rarities)
   const shown = card.printings[pick]
+  const missing = scope === "missing"
 
   return (
     <div className={cn("flex flex-col gap-2", OFFSCREEN)}>
@@ -155,15 +159,17 @@ function Tile({
         ref={tileRef}
         onClick={onSelect}
         aria-haspopup="dialog"
-        aria-label={`${card.name} — ${scope === "owned" ? "voir la version" : "voir les versions"}`}
+        aria-label={`${card.name} — ${scope === "all" ? "voir les versions" : "voir la version"}`}
         className="focus-visible:ring-ring/50 block cursor-pointer outline-none focus-visible:ring-[3px]"
       >
         {/* Sans bordure : l'illustration se suffit, et le cadre dessiné sur la
-            carte elle-même en tenait déjà lieu. */}
+            carte elle-même en tenait déjà lieu.
+            Une version manquante n'estompe que son visuel : nom, badges et
+            caractéristiques gardent leur contraste, et restent lisibles. */}
         {shown?.thumb ? (
-          <img src={shown.thumb} alt={card.name} className="w-full" />
+          <img src={shown.thumb} alt={card.name} className={cn("w-full", missing && MISSING)} />
         ) : (
-          <div className="bg-muted aspect-[5/7] w-full" />
+          <div className={cn("bg-muted aspect-[5/7] w-full", missing && MISSING)} />
         )}
       </button>
 
@@ -179,7 +185,7 @@ function Tile({
           {/* Dans la collection la tuile est une version : sa rareté la
               distingue d'une autre version de la même carte, que seul
               l'artwork séparerait sinon. */}
-          {scope === "owned" && shown?.rarity && (
+          {scope !== "all" && shown?.rarity && (
             <InfoBadge className="text-muted-foreground">{rarityLabel(shown.rarity)}</InfoBadge>
           )}
           {scope === "all" && card.printings.length > 1 && (
