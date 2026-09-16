@@ -1,10 +1,10 @@
-# Cyberpunk TCG — cotes Cardmarket
+# Cyberpunk Tracker — Trading Card Game
 
-Consultation des cotes Cardmarket du Cyberpunk TCG (WeirdCo) : recherche, filtres,
-tri, regroupement par carte, export CSV.
+Suivi des cotes Cardmarket du Cyberpunk TCG (WeirdCo), et base des cartes
+officielles.
 
 React 19 · TypeScript · Vite · Tailwind CSS v4 · shadcn/ui (primitives Radix UI)
-· TanStack Table v8.
+· TanStack Table v8 · Vitest.
 
 ## Démarrer
 
@@ -17,8 +17,19 @@ npm run build      # dist/
 ```
 
 Le dépôt embarque un jeu de données (`src/data/dataset.json`) : l'app tourne
-immédiatement, sans téléchargement préalable. La section suivante décrit comment
-le rafraîchir.
+immédiatement, sans téléchargement préalable. Les sections suivantes décrivent
+ce qu'elle montre, puis comment rafraîchir ses données.
+
+## Les deux vues
+
+- **Cotes Cardmarket** — la table des produits Cardmarket : recherche, filtres,
+  tri, trois modes (normal, foil, par carte), export CSV. Visuel, numéro de
+  collecteur et rareté s'y ajoutent une fois l'enrichissement Netdeck importé.
+- **Base de cartes** — la grille des cartes officielles, y compris celles
+  qu'aucun vendeur ne propose. Facettes, tris (« Couleur › Type › Coût » par
+  défaut, comme sur cyberpunktcg.com), et une modale par carte pour parcourir ses
+  impressions — visuel, rareté, numéro et cote de chacune. Elle se remplit une
+  fois `cards_enriched.json` importé.
 
 ## Exploiter l'app
 
@@ -55,15 +66,16 @@ sans cote. Relancer `npm run dev` pour voir le nouveau jeu, puis committer
 `src/data/dataset.json`.
 
 Pour un simple coup d'œil sans toucher à l'amorce, `price_guide_23.json` seul
-suffit : bouton « Importer un JSON » dans l'app. L'import ne vit qu'en mémoire.
+suffit : bouton « Importer un JSON » dans l'app. L'import est conservé dans ce
+navigateur, sans toucher à l'amorce du dépôt.
 
-**Bouton « Actualiser les données »** (en-tête de la page, à droite) : télécharge
-les **trois** exports du jour et les applique sans passer par un fichier — les
-catalogues d'abord, le price guide ensuite. Tout ou rien : un import partiel
-laisserait catalogue et cotes à des dates différentes. Le résultat est conservé
-dans le navigateur comme n'importe quel import — il ne touche pas à
-`src/data/dataset.json`, qui reste l'amorce du dépôt. Pour figer les cotes dans
-le dépôt, c'est toujours `npm run data:refresh` puis un commit.
+**Bouton « Actualiser les données »** (barre latérale, groupe « Données ») :
+télécharge les **trois** exports du jour et les applique sans passer par un
+fichier — les catalogues d'abord, le price guide ensuite. Tout ou rien : un
+import partiel laisserait catalogue et cotes à des dates différentes. Le
+résultat est conservé dans le navigateur comme n'importe quel import — il ne
+touche pas à `src/data/dataset.json`, qui reste l'amorce du dépôt. Pour figer
+les cotes dans le dépôt, c'est toujours `npm run data:refresh` puis un commit.
 
 Ce bouton n'existe qu'avec `npm run dev` ou `npm run preview` : les exports
 Cardmarket n'envoient aucun en-tête CORS, et c'est le serveur Vite qui relaie
@@ -80,8 +92,9 @@ npm run data:netdeck:images    # + miniatures webp base64 (npm i sharp)
 ```
 
 Produit `cards_enriched.json` à la racine (non versionné). Le charger via
-« Importer un JSON » : la colonne « N° » apparaît, les raretés s'affichent sous le
-nom du produit, les miniatures dans la colonne Produit.
+« Importer un JSON » : la table des cotes gagne les colonnes Visuel, N° et
+Rareté, et la base de cartes se remplit. Toutes les impressions portent un numéro
+de collecteur, et une miniature si le script a tourné avec `--images`.
 
 L'API `api.netdeck.gg` restreint le CORS à `https://cyberpunktcg.com` : l'appel doit
 partir d'un script Node avec l'en-tête `Origin`, jamais du navigateur. Si le schéma
@@ -101,9 +114,10 @@ permanente et partagée.
 
 ### 4. Exporter
 
-Bouton **Exporter en CSV** : colonnes du mode courant, lignes filtrées et triées
-telles qu'affichées. Séparateur `;`, virgule décimale, BOM UTF-8 — Excel FR ouvre
-le fichier sans assistant d'import.
+Bouton **Exporter en CSV**, dans les deux vues : colonnes du mode courant pour la
+table des cotes, une ligne par carte pour la base de cartes. Lignes filtrées et
+triées telles qu'affichées. Séparateur `;`, virgule décimale, BOM UTF-8 — Excel
+FR ouvre le fichier sans assistant d'import.
 
 ### Cycle type
 
@@ -111,6 +125,7 @@ le fichier sans assistant d'import.
 |---|---|
 | Suivi régulier des cotes | `npm run data:refresh`, puis committer `src/data/dataset.json` |
 | Nouvelle extension | `npm run data:refresh`, puis `npm run data:netdeck`, compléter `EXPANSIONS` puis `DEFAULT_CODES` |
+| Cotes du jour, sans quitter l'app | bouton « Actualiser les données », rien à committer |
 | Vérification ponctuelle | import à chaud dans l'app, rien à committer |
 
 ## Structure
@@ -125,7 +140,7 @@ scripts/
 src/
   components/
     ui/                 composants shadcn/ui, registry new-york-v4, non modifiés
-    app-sidebar.tsx     navigation, import, bascule de thème
+    app-sidebar.tsx     navigation, import, actualisation, thème
     card-thumb.tsx      vignette et aperçu au survol
     columns.tsx         colonnes des cotes, une liste par mode
     grid-columns.ts     colonnes-facettes de la grille (ne rendent rien)
@@ -168,16 +183,17 @@ src/
     utils.ts            cn()
   test/
     fixtures.ts         jeu synthétique des tests
-    table.ts            instance TanStack headless pour les tests
+    table.ts            instances TanStack headless : table des cotes et grille
   App.tsx
-  index.css             tokens du thème
+  index.css             tokens du thème, couleurs de carte, polices
   main.tsx
   types.ts
 ```
 
-Les scripts sont en TypeScript et lancés par `tsx` : ils importent `src/` par
-l'alias `@/`, et ne redéfinissent donc plus la lecture des exports Cardmarket
-qu'ils partageaient auparavant, à l'identique, avec `lib/ingest.ts`.
+Les scripts de données sont en TypeScript, lancés par `tsx` : ils importent
+`src/` par l'alias `@/`, si bien que la lecture des exports Cardmarket n'existe
+qu'une fois, dans `lib/ingest.ts`. `netdeck-export.mjs` reste en JavaScript : il
+ne partage rien avec `src/`.
 
 Découpage : `lib/` ne contient que des fonctions pures, testables sans DOM ;
 `hooks/` porte l'état ; `components/` ne fait que du rendu. Chaque fichier
@@ -189,8 +205,9 @@ laissés intacts pour rester régénérables par la CLI.
 Trois sources, toutes publiques.
 
 1. **Cardmarket** — cotes et catalogue. Trois exports JSON récupérés par
-   `npm run data:fetch`, convertis par `npm run data:cardmarket`.
-   Price guide mis à jour quotidiennement.
+      `npm run data:fetch`, convertis par `npm run data:cardmarket` — ou appliqués
+   sans quitter l'app par « Actualiser les données ». Price guide mis à jour
+   quotidiennement.
 2. **Netdeck** (`api.netdeck.gg`) — numéros de collecteur, raretés, visuels.
    Extraits par `npm run data:netdeck`, chargés à chaud.
 3. **Import à chaud** — le bouton « Importer un JSON » accepte les trois formats,
@@ -204,30 +221,40 @@ Trois sources, toutes publiques.
   d'une même carte dans une même extension sont indiscernables sans
   l'enrichissement Netdeck.
 - Les colonnes `avg1`, `avg7`, `avg30` et leurs équivalents foil sont **vides à
-  100 %** dans l'export, `trend-foil` vaut 0 partout : elles ne sont pas affichées.
+  100 %** dans l'export, et `trend-foil` ne vaut jamais autre chose que 0 : elles
+  ne sont pas affichées.
 - `low` est le prix de la plus petite annonce, pas une cote ni un prix de vente.
   Sur un marché à trois annonces, c'est du bruit. `trend` est plus honnête.
 - **Les variantes d'une même carte dans une même extension sont indistinguables**
   côté Cardmarket : même nom, même extension, seul l'`idProduct` diffère. Cela
-  concerne 37 cartes, soit 76 produits. La colonne Rareté affiche alors les
-  raretés possibles en pointillés plutôt que d'en choisir une.
+    concerne 37 cartes, soit 76 produits. Netdeck, lui, sépare ces variantes — une
+  rareté de base et sa version Iconic ou Nova Rare, chacune avec son numéro et
+  son visuel — mais rien ne relie une impression Netdeck à un `idProduct`. La
+  colonne Rareté affiche donc les raretés possibles en pointillés plutôt que d'en
+  choisir une.
 - Les **codes d'impression** (MS01B, SD02B…) n'existent dans aucune source :
   seuls MS01B et SD02B sont confirmés, les autres sont déduits. Ils s'éditent
   dans Paramètres et se figent dans `src/data/expansions.ts`.
-- Les extensions **6717** et **6719** n'ont aucun produit scellé associé : leur
-  nom reste inconnu. L'export Netdeck devrait les identifier.
+- Les extensions **6717** (« Box Toppers — Beta ») et **6719** (« Set 1 Promos »)
+  n'ont aucun produit scellé : leur nom vient des sets Netdeck, mais leur code
+  d'impression reste inconnu.
 
 ## Thème
 
 Tokens shadcn/ui : base **Slate**, accent **Yellow**, graphiques **Cyan**,
-radius **0**, polices **Geist** et **Geist Mono**. Les valeurs OKLCH sont celles du registry
-officiel, mappées à la main sur le scaffold de tokens dans `src/index.css`. Pour
-appliquer un thème généré par le configurateur shadcn, remplacer les blocs
-`:root` et `.dark`.
+radius **0**, polices **Geist** et **Geist Mono**. Les valeurs OKLCH sont celles
+du registry officiel, mappées à la main sur le scaffold de tokens dans
+`src/index.css`. Pour appliquer un thème généré par le configurateur shadcn,
+remplacer les blocs `:root` et `.dark`.
 
 Les cinq `--chart-*` reprennent l'échelle Cyan de Tailwind — pas 5. 300 → 700 en
 clair, 200 → 600 en sombre, où 700 tomberait à 52 % de clarté sur un fond
 slate-950. Aucun graphique ne les consomme encore : ils sont là pour le jour où.
+
+Le thème sombre s'écarte de Slate : fond et barre latérale sont en noir pur, pour
+que rien ne dispute l'éclat des visuels de carte. Les couleurs des cartes (rouge,
+jaune, vert, bleu) ont leurs propres tokens, réglés par thème pour rester
+lisibles.
 
 ## Note sur le combobox
 
@@ -241,5 +268,6 @@ Pour passer au composant officiel : `npm i @base-ui/react`, récupérer
 
 ## Licences
 
-Geist est distribuée par Vercel sous SIL Open Font License. Les visuels de
-cartes sont sous licence CD PROJEKT RED — usage local, pas de redistribution.
+Geist et Geist Mono sont distribuées par Vercel sous SIL Open Font License 1.1.
+Les visuels de cartes sont sous licence CD PROJEKT RED — usage local, pas de
+redistribution.

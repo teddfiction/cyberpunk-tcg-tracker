@@ -1,4 +1,4 @@
-/** Navigation latérale : vues, import de fichiers, bascule de thème. */
+/** Navigation latérale : vues, import et actualisation des données, bascule de thème. */
 import {
   Library,
   Microchip,

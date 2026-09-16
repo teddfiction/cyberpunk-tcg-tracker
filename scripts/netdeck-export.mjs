@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * netdeck-export.mjs — extrait la base Cyberpunk TCG depuis api.netdeck.gg
- * et produit un cards_enriched.json importable dans la data table.
+ * et produit un cards_enriched.json importable dans l'app.
  *
  *   node netdeck-export.mjs              # métadonnées (rapide)
  *   node netdeck-export.mjs --images     # + miniatures webp base64 (npm i sharp)
@@ -22,6 +22,10 @@
  * Point important : dans la liste, `printings` est VIDE et chaque item ne porte
  * qu'une seule impression. Les autres impressions d'une même carte ne se
  * récupèrent que par la fiche détaillée — d'où la seconde passe.
+ *
+ * Second piège : le numéro de collecteur s'appelle `print_number` dans la liste,
+ * mais `collector_number` dans les impressions du détail. `printingOf` lit les
+ * deux ; n'en lire qu'un laisse 351 des 502 impressions sans numéro.
  *
  * L'API n'est pas publique (netdeck.gg/for-developers : « Coming Soon ») et ses
  * routes bougent : /api/cyberpunk renvoyait encore la liste la veille, il faut

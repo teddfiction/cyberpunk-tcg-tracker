@@ -1,3 +1,7 @@
+/**
+ * Configuration Vite : alias `@/`, port, et relais vers les exports Cardmarket,
+ * qui n'envoient aucun en-tête CORS (voir `PROXY`).
+ */
 import { defineConfig } from "vite"
 import react from "@vitejs/plugin-react"
 import tailwindcss from "@tailwindcss/vite"

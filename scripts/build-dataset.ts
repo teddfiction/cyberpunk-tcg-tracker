@@ -7,11 +7,10 @@
  * Attend dans data/cardmarket/ les trois fichiers listés par `CARDMARKET_FILES`,
  * téléchargés par `npm run data:fetch`.
  *
- * Ce script ne sait plus lire Cardmarket : il délègue à `parse()`, celui-là même
- * qui sert aux imports à chaud. Avant, le mapping des prix, celui du catalogue
- * et `shortCategory` existaient ici **et** dans `lib/ingest.ts`, identiques mot
- * pour mot — une seule des deux copies aurait été corrigée le jour où un champ
- * change, et le jeu embarqué aurait divergé des imports sans qu'un test bronche.
+ * Ce script ne lit pas Cardmarket lui-même : il délègue à `parse()`, celui des
+ * imports à chaud. Il n'existe ainsi qu'une lecture des exports, et elle est
+ * testée. N'en réintroduire aucune ici : une copie divergerait de
+ * `lib/ingest.ts` le jour où un champ change, sans qu'aucun test bronche.
  */
 import { readFile, writeFile } from "node:fs/promises"
 import { dirname, join } from "node:path"

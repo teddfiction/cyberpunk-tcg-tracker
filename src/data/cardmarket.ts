@@ -1,10 +1,7 @@
 /**
- * Les trois exports publics Cardmarket : une seule source d'URL pour le script
- * de téléchargement, le relais du serveur de dev et le bouton d'actualisation.
- *
- * Avant, l'adresse vivait dans `scripts/fetch-cardmarket.mjs`, dans un
- * commentaire de `build-dataset.mjs` et dans `vite.config.ts` — trois endroits
- * à corriger le jour où Cardmarket déplace un fichier.
+ * Les trois exports publics Cardmarket. Le script de téléchargement, le relais
+ * du serveur de dev et le bouton d'actualisation y puisent tous : une seule
+ * adresse à corriger le jour où Cardmarket déplace un fichier.
  */
 
 export const CARDMARKET_BASE = "https://downloads.s3.cardmarket.com/productCatalog"
