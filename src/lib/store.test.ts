@@ -2,7 +2,7 @@
 import "fake-indexeddb/auto"
 import { beforeEach, describe, expect, it } from "vitest"
 
-import { idbDelete, idbGet, idbSet } from "@/lib/store"
+import { FORGETTABLE, KEYS, idbDelete, idbGet, idbSet } from "@/lib/store"
 
 describe("store", () => {
   beforeEach(async () => {
@@ -38,5 +38,10 @@ describe("store", () => {
     expect(await idbGet("k")).toBeNull()
     expect(await idbSet("k", { n: 1 })).toBe(false)
     globalThis.indexedDB = real
+  })
+
+  it("oublier les imports épargne la collection, qui ne se retélécharge pas", () => {
+    expect(FORGETTABLE).toContain(KEYS.data)
+    expect(FORGETTABLE).not.toContain(KEYS.collection)
   })
 })

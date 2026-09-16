@@ -1,21 +1,60 @@
 /**
- * Lecture et validation des trois formats JSON. Import manuel, bouton
- * d'actualisation et scripts de données passent tous par `parse()`.
+ * Lecture et validation des formats JSON. Import manuel, bouton d'actualisation
+ * et scripts de données passent tous par `parse()`.
  */
-import { dateFr } from "@/lib/format"
+import { CARDMARKET_FILES } from "@/data/cardmarket"
 import { shortCategory } from "@/data/expansions"
-import type { EnrichedCard, Price, Product } from "@/types"
+import { summarize } from "@/lib/collection"
+import { dateFr, plural } from "@/lib/format"
+import type { Collection, EnrichedCard, Price, Product } from "@/types"
+
+export type ImportFormat = {
+  /** Clé racine qui fait reconnaître le fichier — pas son nom. */
+  key: string
+  label: string
+  /** Noms habituels, à titre indicatif. */
+  files: string[]
+  /** Ce que l'import fait des données en place. */
+  effect: string
+}
 
 /**
- * Trois formats acceptés, reconnus à leur clé racine :
- *   priceGuides → price_guide_23.json     (remplace toutes les cotes)
- *   products    → products_*_23.json      (met à jour le catalogue)
- *   cards       → cards_enriched.json     (numéros, raretés, miniatures)
+ * Les formats acceptés, dans l'ordre où la modale d'import les présente. La
+ * modale et le message d'erreur de `parse` en dérivent : un format ajouté ici
+ * est annoncé partout, et un test vérifie que `parse` le reconnaît.
  */
+export const IMPORT_FORMATS: ImportFormat[] = [
+  {
+    key: "products",
+    label: "Catalogue Cardmarket",
+    files: CARDMARKET_FILES.filter((f) => f.name.startsWith("products")).map((f) => f.name),
+    effect: "met à jour le catalogue, sans perdre les produits absents du fichier",
+  },
+  {
+    key: "priceGuides",
+    label: "Cotes Cardmarket",
+    files: CARDMARKET_FILES.filter((f) => f.name.startsWith("price")).map((f) => f.name),
+    effect: "remplace toutes les cotes",
+  },
+  {
+    key: "cards",
+    label: "Base de cartes Netdeck",
+    files: ["cards_enriched.json"],
+    effect: "remplace numéros, raretés et visuels",
+  },
+  {
+    key: "collection",
+    label: "Sauvegarde de collection",
+    files: ["cyberpunk-tcg-collection-AAAA-MM-JJ.json"],
+    effect: "remplace intégralement la collection en cours",
+  },
+]
+
 export type Parsed =
   | { kind: "prices"; prices: Record<string, Price>; pricesAt: string; rows: number; ids: number[] }
   | { kind: "catalog"; products: Product[]; catalogAt: string }
   | { kind: "enrich"; cards: EnrichedCard[]; printings: number; thumbs: number }
+  | { kind: "collection"; collection: Collection; rejected: number }
 
 export class IngestError extends Error {}
 
@@ -26,6 +65,9 @@ export class IngestError extends Error {}
  * et aucune erreur.
  */
 const CARDMARKET_SCHEMA = 1
+
+/** Version du format de sauvegarde écrit par `toBackup`. */
+const COLLECTION_SCHEMA = 1
 
 function checkSchema(o: Record<string, unknown>, filename: string) {
   const v = o.version
@@ -103,13 +145,68 @@ export function parse(json: unknown, filename: string): Parsed {
     }
   }
 
+  if (o?.collection && typeof o.collection === "object" && !Array.isArray(o.collection)) {
+    // Contrairement aux exports Cardmarket, une sauvegarde sans version est
+    // refusée : c'est nous qui l'écrivons, elle en porte toujours une.
+    if (o.version !== COLLECTION_SCHEMA) {
+      throw new IngestError(
+        `${filename} : sauvegarde de collection version ${String(o.version)}, attendu ${COLLECTION_SCHEMA}.`
+      )
+    }
+    return { kind: "collection", ...readCollection(o.collection as Record<string, unknown>) }
+  }
+
+  const keys = IMPORT_FORMATS.map((f) => f.key)
   throw new IngestError(
-    `${filename} : structure inconnue — attendu une clé priceGuides, products ou cards.`
+    `${filename} : structure inconnue — attendu une clé ${keys.slice(0, -1).join(", ")} ou ${keys.at(-1)}.`
   )
 }
 
-/** Message de compte rendu affiché après un import réussi. */
-export function describe(parsed: Parsed, filename: string, catalog: Product[]): string {
+/** Ce qu'écrit « Exporter la sauvegarde » : l'exact inverse de ce que `parse` relit. */
+export const toBackup = (collection: Collection, createdAt = new Date().toISOString()) => ({
+  version: COLLECTION_SCHEMA,
+  createdAt,
+  collection,
+})
+
+/**
+ * Relit les entrées d'une sauvegarde. Une entrée sans quantité entière positive
+ * est écartée et comptée, pas tue : le compte rendu dit combien.
+ */
+function readCollection(raw: Record<string, unknown>): { collection: Collection; rejected: number } {
+  const collection: Collection = {}
+  let rejected = 0
+  const text = (v: unknown) => (typeof v === "string" ? v : null)
+
+  for (const [uuid, value] of Object.entries(raw)) {
+    const e = value as Record<string, unknown> | null
+    const qty = e?.qty
+    if (!uuid || !e || typeof qty !== "number" || !Number.isInteger(qty) || qty <= 0) {
+      rejected++
+      continue
+    }
+    collection[uuid] = {
+      qty,
+      addedAt: text(e.addedAt) ?? "",
+      name: text(e.name) ?? uuid,
+      set: text(e.set) ?? "",
+      num: text(e.num),
+      rarity: text(e.rarity),
+    }
+  }
+  return { collection, rejected }
+}
+
+/**
+ * Message de compte rendu affiché après un import réussi. `collection` est la
+ * collection en place, que la sauvegarde importée remplace.
+ */
+export function describe(
+  parsed: Parsed,
+  filename: string,
+  catalog: Product[],
+  collection: Collection = {}
+): string {
   switch (parsed.kind) {
     case "prices": {
       const known = new Set(catalog.map((p) => p.id))
@@ -132,6 +229,22 @@ export function describe(parsed: Parsed, filename: string, catalog: Product[]): 
         (parsed.thumbs ? `${parsed.thumbs} miniatures. ` : "aucune miniature. ") +
         "Colonne N° et rareté activées."
       )
+    case "collection": {
+      const next = summarize(parsed.collection)
+      const previous = summarize(collection)
+      return (
+        `Collection restaurée depuis ${filename} : ${plural(next.versions, "version")}, ` +
+        `${plural(next.copies, "exemplaire")}. ` +
+        (previous.versions
+          ? `Elle remplace la précédente (${plural(previous.versions, "version")}). `
+          : "") +
+        (parsed.rejected > 1
+          ? `${parsed.rejected} entrées illisibles écartées.`
+          : parsed.rejected
+            ? "1 entrée illisible écartée."
+            : "")
+      ).trim()
+    }
   }
 }
 

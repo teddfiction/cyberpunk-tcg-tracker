@@ -12,6 +12,15 @@
 const DB_NAME = "cptcg"
 const STORE = "imports"
 
+/** Clés conservées. Le store garde son nom d'origine, rien ne justifie une migration. */
+export const KEYS = { data: "dataset", codes: "codes", collection: "collection" } as const
+
+/**
+ * Ce que « Oublier les données conservées » efface. Pas la collection : les
+ * imports se retéléchargent, une saisie à la main ne se retrouve nulle part.
+ */
+export const FORGETTABLE = [KEYS.data, KEYS.codes]
+
 function openDb(): Promise<IDBDatabase | null> {
   return new Promise((resolve) => {
     if (typeof indexedDB === "undefined") return resolve(null)

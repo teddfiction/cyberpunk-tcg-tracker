@@ -1,7 +1,7 @@
 /** Formatage et normalisation — `norm()` est la clé de jointure entre sources. */
 import { describe, expect, it } from "vitest"
 
-import { eur, minOf, norm, pct, sentences, words } from "@/lib/format"
+import { eur, minOf, norm, pct, plural, sentences, words } from "@/lib/format"
 
 describe("norm", () => {
   it("rapproche les deux écritures d'un même nom", () => {
@@ -45,6 +45,14 @@ describe("eur", () => {
 
   it("formate en virgule décimale", () => {
     expect(eur(12.5)).toContain("12,50")
+  })
+})
+
+describe("plural", () => {
+  it("n'accorde qu'au-delà de un, zéro compris au singulier", () => {
+    expect(plural(0, "version")).toBe("0 version")
+    expect(plural(1, "version")).toBe("1 version")
+    expect(plural(3, "exemplaire")).toBe("3 exemplaires")
   })
 })
 
