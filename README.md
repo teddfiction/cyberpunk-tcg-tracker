@@ -29,8 +29,8 @@ ce qu'elle montre, puis comment rafraîchir ses données.
   qu'aucun vendeur ne propose. Facettes, tris (« Couleur › Type › Coût » par
   défaut, comme sur cyberpunktcg.com), et une modale par carte pour parcourir ses
   impressions — visuel, rareté, numéro et cote de chacune, chaque version
-  numérotée sous sa miniature. Elle se remplit une fois `cards_enriched.json`
-  importé.
+  numérotée sous sa miniature, et des liens vers la fiche officielle et la
+  recherche Cardmarket. Elle se remplit une fois `cards_enriched.json` importé.
 - **Collection** — la même grille, réduite aux versions possédées : une tuile
   par version, mêmes filtres, recherche et tris, et la complétion en tête. Les
   quantités se règlent dans la modale d'une carte, depuis la base comme depuis
