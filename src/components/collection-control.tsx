@@ -51,7 +51,7 @@ export function CollectionControl({ qty, onChange }: Props) {
   // que « Retirer », passait sinon à la ligne et faisait sauter la modale.
   return (
     <div className="flex flex-col gap-1.5">
-      {/* Même voix que les informations de la version, juste en dessous. */}
+      {/* Même voix que les informations de la version, juste au-dessus. */}
       <span className={cn(INFO, "text-muted-foreground text-xs")}>Dans ma collection</span>
 
       <div className="flex items-center gap-3">
