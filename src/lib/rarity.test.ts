@@ -68,8 +68,9 @@ describe("appariement certain", () => {
 })
 
 describe("plusieurs produits Cardmarket, une seule impression connue", () => {
-  // Le cas réel : 37 cartes du catalogue, 76 produits. Netdeck publie une
-  // rareté par carte — elle vaut donc pour toutes ses versions Cardmarket.
+  // Une seule impression connue : sa rareté vaut pour chaque produit, sans
+  // ambiguïté. Les 37 doublons réels du catalogue divergent plutôt en rareté —
+  // c'est le cas « appariement ambigu », plus bas.
   const rows = rowsOf(AMBIGUOUS_CATALOG, AMBIGUOUS_ENRICHED)
   const byId = (id: number) => rows.find((r) => r.id === id)!
 

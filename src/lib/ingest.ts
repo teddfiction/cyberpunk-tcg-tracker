@@ -1,4 +1,7 @@
-/** Lecture et validation des trois formats JSON acceptés par l'import à chaud. */
+/**
+ * Lecture et validation des trois formats JSON. Import manuel, bouton
+ * d'actualisation et scripts de données passent tous par `parse()`.
+ */
 import { dateFr } from "@/lib/format"
 import { shortCategory } from "@/data/expansions"
 import type { EnrichedCard, Price, Product } from "@/types"

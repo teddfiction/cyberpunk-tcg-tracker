@@ -1,7 +1,8 @@
 # CLAUDE.md
 
-Consultation des cotes Cardmarket du **Cyberpunk TCG (WeirdCo)** : table de données
-avec recherche, filtres, tri, regroupement par carte, export CSV.
+**Cyberpunk Tracker** : cotes Cardmarket du **Cyberpunk TCG (WeirdCo)** et base
+des cartes officielles Netdeck. Deux vues — une table des cotes, une grille de
+cartes — sur la même mécanique TanStack.
 React 19 · TypeScript · Vite 7 · Tailwind v4 · shadcn/ui (Radix) · TanStack Table v8 · Vitest.
 
 Le `README.md` documente le produit et les sources de données. Ce fichier-ci sert à
@@ -11,7 +12,7 @@ Le `README.md` documente le produit et les sources de données. Ce fichier-ci se
 
 ```bash
 npm run dev              # vite, port 5173
-npm run test             # vitest, ~50 tests, < 1 s   ← le filet
+npm run test             # vitest, ~150 tests, < 1 s  ← le filet
 npm run typecheck        # tsc -b --noEmit
 npm run build            # tsc -b && vite build → dist/
 npm run data:refresh     # rafraîchit les cotes (voir README § « Exploiter l'app »)
@@ -160,13 +161,12 @@ propriété : un stockage qui échoue en silence est pire que pas de stockage.
 ## Architecture
 
 **Les scripts partagent `src/`.** `scripts/*.ts` est lancé par `tsx`, qui
-résout l'alias `@/` depuis `tsconfig.json`. `build-dataset.ts` ne sait donc plus
-lire Cardmarket : il appelle `parse()`, celui-là même qui sert aux imports à
-chaud. Avant, le mapping des prix, celui du catalogue et `shortCategory`
-existaient dans le script **et** dans `lib/ingest.ts`, identiques mot pour mot —
-une seule des deux copies aurait été corrigée le jour où un champ change, et le
-jeu embarqué aurait divergé des imports sans qu'aucun test bronche. Ne pas
-réintroduire de logique de lecture dans `scripts/`.
+résout l'alias `@/` depuis `tsconfig.json`. `build-dataset.ts` ne lit donc pas
+Cardmarket lui-même : il appelle `parse()`, celui des imports à chaud, si bien
+qu'il n'existe qu'une lecture des exports, et qu'elle est testée. **Ne pas
+réintroduire de logique de lecture dans `scripts/`** : une copie divergerait de
+`lib/ingest.ts` le jour où un champ change, et le jeu embarqué ne correspondrait
+plus aux imports sans qu'aucun test bronche.
 
 `netdeck-export.mjs` reste en `.mjs` : il ne partage rien avec `src/`, mais ses
 objets reproduisent à la main `Printing` et `EnrichedCard`. Le passer en TS
@@ -214,7 +214,7 @@ leurs lignes et leurs colonnes :
 
 | Vue | Ligne | Construite par | Colonnes | Rendu |
 |---|---|---|---|---|
-| Data table | un produit Cardmarket, ou une carte regroupée | `lib/dataset.ts` | `components/columns.tsx` | `DataTable` |
+| Cotes Cardmarket | un produit Cardmarket, ou une carte regroupée | `lib/dataset.ts` | `components/columns.tsx` | `DataTable` |
 | Base de cartes | une carte Netdeck, ses impressions en modale | `lib/printings.ts` | `components/grid-columns.ts` | `CardGrid` + `CardDialog` |
 
 **La grille est une table sans table.** Ses colonnes ne rendent rien : elles
@@ -293,7 +293,7 @@ Tous couverts par des tests : si l'un saute, `npm run test` le dit.
   Le début de mot n'est pas cosmétique : en sous-chaîne libre, un terme d'une
   lettre s'apparie partout (« v » dans « Surveillance ») et double le bruit.
   Contrepartie assumée : un fragment pris au milieu d'un mot ne trouve rien.
-  `enableGlobalFilter` n'est vrai que sur la première colonne, sinon TanStack
+  `enableGlobalFilter` n'est vrai que sur la colonne `name`, sinon TanStack
   rejoue le prédicat sur chaque colonne de chaque ligne.
 - **TanStack détient l'état de la table.** `FiltersBar` lit et écrit dans
   l'instance. Ne pas réintroduire de copie React du tri ou des filtres.
@@ -322,13 +322,21 @@ Vitest lit `vite.config.ts` : l'alias `@/` et le JSX marchent sans configuration
 - **La fixture est synthétique, jamais `dataset.json`** : les cotes changent à
   chaque `npm run data:refresh`, des tests assis dessus casseraient sans qu'aucun
   code n'ait bougé. Elle couvre exprès les cas tordus : une réimpression, un
-  scellé sans idMetacard, un produit sans cote, un produit foil seulement, et des
-  noms accentués pour la collation.
+  scellé sans idMetacard, un produit sans cote, un produit foil seulement, des
+  noms accentués pour la collation, les deux formes d'ambiguïté de rareté, et des
+  dates d'ajout, couleurs et types choisis pour qu'un tri naïf — ordre du
+  tableau, alphabet — échoue.
 - `src/test/table.ts` monte une instance TanStack headless : c'est par là qu'on
   teste tri, filtres et CSV, plutôt que les fonctions isolées — c'est le
   comportement observable qui compte.
 - Une nouvelle colonne, un nouveau filtre ou un nouveau mode méritent un test :
-  ils sont tous exprimables en trois lignes avec `makeTable`.
+  ils sont tous exprimables en trois lignes avec `makeTable`. Pour la grille de
+  cartes, c'est `makeGrid` (même fichier), et `gridNames` pour lire l'ordre.
+- **Le typecheck ne voit pas un changement de forme qui garde les mêmes
+  méthodes.** Un tableau d'objets accepte `join()` comme un tableau de chaînes,
+  et rend `[object Object]` à l'écran sans erreur de compilation. Quand une
+  fonction change la forme de ce qu'elle renvoie — c'est arrivé à `cardStats` —,
+  un test sur la nouvelle forme est le seul filet.
 
 ## shadcn/ui, Radix et Tailwind
 
@@ -455,9 +463,9 @@ Ces contraintes viennent des sources, pas du code. Ne pas « réparer » :
   essentiellement en Beta / Demo / Alpha Kit — mais ce sont les mêmes cartes,
   donc l'appariement par nom fonctionne. `PRM01` (« Set 1 Promos ») confirme au
   passage l'hypothèse notée dans `data/expansions.ts` pour 6717 / 6719.
-  Raretés réellement rencontrées : Common, Uncommon, Rare, Epic, Secret, Nova
-  Rare — les trois « Iconic » de `data/rarities.ts` n'existent pas encore dans
-  les données.
+  Les neuf raretés de `data/rarities.ts` sont toutes présentes, sur les 502
+  impressions : Common (186), Uncommon (113), Rare (82), Epic (49), Nova Rare
+  (29), Iconic Legend (21), Iconic Other (10), Secret (8), Iconic Secret (4).
 - **Pas d'URL d'image publique.** `image_url` est signée et expire ;
   `source_image_url`, sa variante nue, est refusée par CloudFront (« Missing
   Key-Pair-Id »). La miniature produite par `npm run data:netdeck:images` est
@@ -467,16 +475,16 @@ Ces contraintes viennent des sources, pas du code. Ne pas « réparer » :
   sont sous licence CD PROJEKT RED.
 - **Netdeck nomme le numéro de collecteur différemment selon l'endpoint** : la
   liste dit `print_number`, le détail dit `collector_number`. `printingOf`
-  (`scripts/netdeck-export.mjs`) lit les deux. N'en lire qu'un laissait 351 des
-  502 impressions sans numéro — seule celle de tête en recevait un, et les
-  autres paraissaient ne pas en avoir. Les numéros distinguent les variantes
-  qu'aucun autre champ ne sépare : « 005a » et « 005b » sont deux Rare du même
-  illustrateur, le préfixe « β » marquant les tirages Beta.
+  (`scripts/netdeck-export.mjs`) lit les deux. N'en lire qu'un laisse 351 des
+  502 impressions sans numéro, et les fait passer pour non numérotées. Les
+  numéros distinguent les variantes qu'aucun autre champ ne sépare : « 005a » et
+  « 005b » sont deux Rare du même illustrateur, le préfixe « β » marquant les
+  tirages Beta.
 - **L'impression de référence d'une carte est celle de rang 0**, pas « celle qui
   porte un numéro » : l'endpoint liste sert la version par défaut, le script la
   pousse en tête, et `PrintRow.rank` la retrouve après le tri à plat de
-  `buildPrintings`. Le critère du numéro ne discrimine plus rien depuis qu'elles
-  en ont toutes un.
+  `buildPrintings`. Le numéro ne peut pas servir de critère : elles en portent
+  toutes un.
 - Cardmarket ne publie **ni numéro de collecteur ni rareté**. L'export brut ne
   contient que `idProduct, name, idCategory, categoryName, idExpansion,
   idMetacard, dateAdded` — rien d'autre à en tirer. Les colonnes « N° » et
@@ -486,13 +494,18 @@ Ces contraintes viennent des sources, pas du code. Ne pas « réparer » :
   extension, sous un nom strictement identique : seuls l'`idProduct` et
   l'horodatage d'ajout les séparent.
 
-  Mesuré sur l'export du 15/09/2026 : **Netdeck publie une rareté par carte**,
-  jamais plusieurs impressions divergentes, et ces 37 cartes sont exclusivement
-  Rare (18), Epic (15) ou Secret (4) — les Common et Uncommon n'ont jamais de
-  doublon. La rareté est donc une propriété de **la carte**, et vaut pour toutes
-  ses versions Cardmarket. `buildRows` l'affiche en clair dès que les
-  impressions connues s'accordent, et ne passe en pointillés que si elles
-  divergent — cas qui ne se produit pas aujourd'hui.
+  Mesuré sur `cards_enriched.json` du 15/09/2026, toutes impressions comprises :
+  **la rareté n'est pas une propriété de la carte**. 43 cartes sur 151 ont des
+  impressions de raretés différentes — une rareté de base doublée d'une
+  variante Iconic ou Nova Rare. Les 37 cartes en doublon côté Cardmarket en font
+  toutes partie : Rare + Iconic Legend (12), Epic + Nova Rare (6), Epic + Iconic
+  Other (6), Secret + Iconic Secret (4), Rare + Iconic Other (3), Rare + Nova
+  Rare + Iconic Legend (3)… Les doublons Cardmarket correspondent donc très
+  probablement à ces variantes — ce qui ne dit toujours pas laquelle est tel
+  `idProduct`. `buildRows` affiche la rareté en clair quand les impressions
+  connues dans l'extension s'accordent, et la liste en pointillés quand elles
+  divergent : c'est le cas d'une soixantaine de lignes sur les quelque 230 que
+  Netdeck enrichit.
 
   Ce qui reste inconnu, c'est **quelle version physique** est tel `idProduct`.
   Cette incertitude-là est portée par `Row.variants` et affichée sous le nom
@@ -503,7 +516,9 @@ Ces contraintes viennent des sources, pas du code. Ne pas « réparer » :
 - Les **codes d'impression** (MS01B, SD02B…) n'existent dans aucune source. Seuls
   MS01B et SD02B sont confirmés (`sure: true`), le reste est déduit et affiché en
   pointillés.
-- Les extensions **6717** et **6719** n'ont aucun produit scellé : nom inconnu.
+- Les extensions **6717** (« Box Toppers — Beta ») et **6719** (« Set 1 Promos »)
+  n'ont aucun produit scellé : leur nom a été déduit puis confirmé par les sets
+  Netdeck, mais **leur code d'impression reste inconnu** (`code: ""`).
 - **CORS Netdeck** : `api.netdeck.gg` restreint l'origine à
   `https://cyberpunktcg.com`. L'appel doit rester dans un script Node avec en-tête
   `Origin`, jamais depuis le navigateur.
@@ -511,7 +526,7 @@ Ces contraintes viennent des sources, pas du code. Ne pas « réparer » :
   `Access-Control-Allow-Origin` — mesuré. Un `fetch` depuis la page échoue, et
   `mode: "no-cors"` ne rend qu'une réponse opaque, illisible. D'où le `proxy` de
   `vite.config.ts`, déclaré pour `server` **et** `preview`. Ce relais n'existe
-  pas dans un `dist/` servi en statique : `fetchPriceGuide` le détecte à la
+  pas dans un `dist/` servi en statique : `fetchCardmarket` le détecte à la
   réponse HTML renvoyée avec un 200, et le dit. Ne pas remplacer par un proxy
   CORS public — ce serait faire transiter les données par un tiers.
 
@@ -525,12 +540,18 @@ n'est le préfixe d'une autre.
 
 ## Versionnement
 
-Dépôt git sur `main`.
+Dépôt `teddfiction/cyberpunk-tcg-tracker` sur GitHub, branche `main`. Chaque
+évolution passe par une branche et une PR, mergée **en rebase** : l'historique
+reste linéaire et chaque commit garde son message. Messages de commit et de PR en
+français, un sujet par commit, le corps disant *pourquoi*. Pas de CI : la PR ne
+vérifie rien d'elle-même, `npm run test && npm run typecheck` se lancent avant
+le push.
 
 | Chemin | Suivi | Pourquoi |
 |---|---|---|
 | `src/data/dataset.json` | **oui** | dérivé qui fait foi, amorce de l'app — le committer après chaque `npm run data:cardmarket` |
 | `src/data/expansions.ts` | **oui** | libellés et codes d'impression saisis à la main, seule mémoire de ce travail |
+| `public/fonts/` | **oui** | Geist et Geist Mono variables, SIL OFL 1.1 — redistribuables |
 | `data/cardmarket/` | non | exports bruts republiés quotidiennement, retéléchargeables — diffs illisibles |
 | `cards_enriched.json`, `netdeck-raw.json` | non | sorties de scripts, régénérables |
 | visuels de cartes | non | licence CD PROJEKT RED, usage local, pas de redistribution |

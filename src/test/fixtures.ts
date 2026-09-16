@@ -46,9 +46,10 @@ export const PRICES: Record<string, Price> = {
 }
 
 /**
- * `number` à null reproduit le cas réel : Netdeck ne numérote qu'une impression
- * par carte. `thumb` reste facultative — le script ne produit les miniatures
- * qu'avec `--images`, et une impression peut n'en avoir aucune.
+ * `number` accepte null, comme `Printing` : rien ne garantit que Netdeck le
+ * renvoie. Aujourd'hui il numérote toutes les impressions, et la fixture fait de
+ * même. `thumb` reste facultative — le script ne produit les miniatures qu'avec
+ * `--images`, et une impression peut n'en avoir aucune.
  */
 const printing = (
   uuid: string,
@@ -107,8 +108,9 @@ export const ENRICHED: EnrichedCard[] = [
  *   rareté est réellement indéterminable. Seule la seconde a une miniature :
  *   de quoi éprouver le repli du visuel de la tuile.
  * « Jumelle - Seule » : deux produits Cardmarket mais une seule impression
- *   connue — c'est le cas réel des 37 cartes du catalogue. La rareté vaut pour
- *   la carte ; seule la version physique reste inconnue.
+ *   connue. Sa rareté vaut alors pour les deux produits ; seule la version
+ *   physique reste inconnue. Les 37 doublons réels du catalogue relèvent plutôt
+ *   de « Double - Face » : leurs impressions divergent en rareté.
  * « Unique - Sûre » : un produit, une impression.
  */
 export const AMBIGUOUS_CATALOG: Product[] = [

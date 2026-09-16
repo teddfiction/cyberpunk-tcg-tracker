@@ -153,9 +153,10 @@ const numColumn: ColumnDef<TableRow> = {
 }
 
 /**
- * Rareté de la carte. En clair dès que les impressions connues s'accordent —
- * c'est le cas général, Netdeck publiant une rareté par carte. En pointillés,
- * listant les candidates, seulement si elles divergent.
+ * Rareté de la carte. En clair quand les impressions connues dans l'extension
+ * s'accordent ; en pointillés, listant les candidates, quand elles divergent —
+ * une rareté de base et sa variante Iconic ou Nova Rare, qu'aucune donnée ne
+ * permet d'attribuer à un produit plutôt qu'à l'autre.
  */
 const rarityColumn: ColumnDef<TableRow> = {
   id: "rarity",
@@ -290,7 +291,8 @@ const filterColumns = (mode: Mode): ColumnDef<TableRow>[] => [
  * sans ajouter sa liste ici ne compile pas.
  *
  * `avg1`, `avg7`, `avg30` et leurs équivalents foil n'y figurent pas :
- * Cardmarket les publie systématiquement vides, `trend-foil` vaut 0 partout.
+ * Cardmarket les publie systématiquement vides, et `trend-foil` ne vaut jamais
+ * autre chose que 0.
  */
 const VISIBLE: Record<Mode, (enriched: boolean) => ColumnDef<TableRow>[]> = {
   normal: (enriched) => [

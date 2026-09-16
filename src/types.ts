@@ -82,7 +82,11 @@ export type Row = Product &
     /** Écart moyenne foil / mini foil, en %. */
     df: number | null
     num: string | null
-    /** Rareté de l'impression, seulement quand l'appariement est certain. */
+    /**
+     * Rareté sur laquelle s'accordent toutes les impressions connues de la carte
+     * dans cette extension. `null` si elles divergent (voir `rarities`) ou si
+     * Netdeck ne connaît pas le produit.
+     */
     rarity: string | null
     /**
      * Raretés possibles quand les impressions connues ne s'accordent pas.
@@ -92,8 +96,9 @@ export type Row = Product &
     /**
      * Nombre de produits Cardmarket partageant ce nom dans cette extension.
      * Au-delà de 1, ce sont des versions que Cardmarket ne distingue que par
-     * leur `idProduct` — la rareté reste celle de la carte, mais on ne sait pas
-     * quelle version physique on regarde.
+     * leur `idProduct`. Netdeck, lui, les sépare — numéros, raretés, visuels —
+     * mais rien ne relie une impression Netdeck à un `idProduct` : on ne sait
+     * pas quelle version physique on regarde.
      */
     variants: number
     thumb: string | null

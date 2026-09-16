@@ -83,10 +83,9 @@ export function buildPrintings({ cards, rows, expansions, codes }: BuildArgs): P
  * sert la version par défaut de la carte, et le script la pousse en tête. C'est
  * elle que la tuile montre tant qu'aucune rareté n'est filtrée.
  *
- * Elle se reconnaissait autrefois à son numéro de collecteur, seule à en porter
- * un. Ce n'est plus vrai — les 502 impressions en ont toutes un depuis que
- * l'export lit `collector_number` — et le critère ne discriminait donc plus
- * rien : la tuile retombait sur l'ordre alphabétique des sets.
+ * Pas le numéro de collecteur : les 502 impressions en portent toutes un, il ne
+ * désigne donc pas la version par défaut — s'y fier ramènerait la tuile à
+ * l'ordre alphabétique des sets.
  *
  * La carte ne porte pas de visuel : c'est `printingIndex` qui l'élit au rendu,
  * puisqu'il dépend des raretés filtrées — donc de l'état de la table, que la
