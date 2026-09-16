@@ -140,7 +140,12 @@ export default function App() {
         onToggleTheme={toggle}
       />
 
-      <SidebarInset>
+      {/* `min-w-0` : sans lui, `SidebarInset` cumule `w-full` et `flex-1`, et sa
+          largeur minimale automatique reste plafonnée à 100 % du conteneur. Il
+          ne rétrécit alors jamais de la largeur de la barre latérale, et c'est
+          la page entière qui défile — au lieu de la seule table, qui a son
+          propre `overflow-x-auto`. */}
+      <SidebarInset className="min-w-0">
         <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-1 !h-4" />

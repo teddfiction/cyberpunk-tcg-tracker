@@ -345,6 +345,13 @@ La consigne du projet : **uniquement Tailwind et les composants shadcn natifs.**
   `extension-combobox.tsx` le reconstruit avec `Popover` + `Command` + `Badge`,
   eux aussi natifs. Ne pas introduire `@base-ui/react` (README § « Note sur le
   combobox »).
+- **`SidebarInset` porte un `min-w-0`, et il n'est pas décoratif.** Le composant
+  du registry cumule `w-full` et `flex-1` : sa largeur minimale automatique
+  reste donc plafonnée à 100 % du conteneur, et il ne rétrécit jamais de la
+  largeur de la barre latérale. Sans ce `min-w-0` posé dans `App.tsx`, c'est la
+  page entière qui défile horizontalement — filtres compris — au lieu de la
+  seule table, qui a pourtant son propre `overflow-x-auto`. Le retirer ramène le
+  débordement, à l'identique et en silence.
 - **Élément brut ou composant shadcn ?** Le composant quand il raccourcit le code
   (`Button variant="ghost"` pour les en-têtes triables). L'élément brut quand le
   composant imposerait une cascade d'overrides pour le neutraliser (les tuiles de
