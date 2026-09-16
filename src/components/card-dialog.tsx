@@ -27,7 +27,7 @@ import {
   Unknown,
 } from "@/components/card-info"
 import { CollectionControl } from "@/components/collection-control"
-import { cyberpunkTcgUrl } from "@/data/expansions"
+import { CARDMARKET_SEARCH, cyberpunkTcgUrl } from "@/data/expansions"
 import { rarityLabel } from "@/data/rarities"
 import { qtyOf } from "@/lib/collection"
 import { eur, plural } from "@/lib/format"
@@ -112,22 +112,13 @@ export function CardDialog({
               {stats.length > 0 && <StatLine stats={stats} color={card.color} className="text-xs" />}
             </div>
           </DialogDescription>
-
-          {card.slug && (
-            <a
-              href={cyberpunkTcgUrl(card.slug)}
-              target="_blank"
-              rel="noopener"
-              className="text-muted-foreground hover:text-foreground flex w-fit items-center gap-1 text-xs hover:underline"
-            >
-              Fiche officielle
-              <ExternalLink className="size-3" />
-            </a>
-          )}
         </DialogHeader>
 
         {!shown ? (
-          <p className="text-muted-foreground text-sm">Aucune impression connue pour cette carte.</p>
+          <div className="flex flex-col gap-4">
+            <p className="text-muted-foreground text-sm">Aucune impression connue pour cette carte.</p>
+            <Links card={card} printing={null} />
+          </div>
         ) : (
           // Côte à côte à partir de `md` seulement : en deçà, la colonne laissée
           // à droite du visuel serrerait les miniatures des versions.
@@ -153,6 +144,10 @@ export function CardDialog({
                 qty={qtyOf(collection, shown.uuid)}
                 onChange={(qty) => onQty(shown, qty)}
               />
+              {/* `mt-auto` : la colonne s'étire à la hauteur du visuel, les liens
+                  se calent donc sur son bord bas. Sur mobile, empilés, ils
+                  suivent simplement le reste. */}
+              <Links card={card} printing={shown} className="mt-auto" />
             </div>
           </div>
         )}
@@ -259,6 +254,48 @@ function Picker({
         )
       })}
     </div>
+  )
+}
+
+/**
+ * Liens sortants, en pied de colonne.
+ *
+ * La fiche officielle vise la version affichée, comme le N° de la table des
+ * cotes. Cardmarket, lui, n'a pas de fiche à viser : ses exports ne donnent ni
+ * URL ni slug, et plusieurs produits partagent souvent le nom d'une carte sans
+ * que rien ne dise lequel est cette version. Le lien ouvre donc sa recherche
+ * sur le nom — la même que la colonne Produit.
+ */
+function Links({
+  card,
+  printing,
+  className,
+}: {
+  card: GridCard
+  printing: PrintRow | null
+  className?: string
+}) {
+  return (
+    <div className={cn("flex flex-wrap gap-x-4 gap-y-1", className)}>
+      {card.slug && (
+        <OutLink href={cyberpunkTcgUrl(card.slug, printing?.uuid)}>Fiche officielle</OutLink>
+      )}
+      <OutLink href={CARDMARKET_SEARCH + encodeURIComponent(card.name)}>Cardmarket</OutLink>
+    </div>
+  )
+}
+
+function OutLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener"
+      className="text-muted-foreground hover:text-foreground flex w-fit items-center gap-1 text-xs hover:underline"
+    >
+      {children}
+      <ExternalLink className="size-3" />
+    </a>
   )
 }
 
