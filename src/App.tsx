@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { Toaster } from "@/components/ui/sonner"
 import { AppSidebar } from "@/components/app-sidebar"
+import { INFO } from "@/components/card-info"
 import { columnsFor } from "@/components/columns"
 import { DataTable } from "@/components/data-table"
 import { FiltersBar } from "@/components/filters-bar"
@@ -25,6 +26,7 @@ import { dateAbbr, sentences } from "@/lib/format"
 import { toBackup } from "@/lib/ingest"
 import { MODES, type Mode } from "@/lib/modes"
 import { HIDDEN_COLUMNS, INITIAL_FILTERS, rowId, searchRow } from "@/lib/table"
+import { cn } from "@/lib/utils"
 import { VIEWS, type View } from "@/lib/views"
 
 export default function App() {
@@ -80,6 +82,14 @@ export default function App() {
   const render: Record<View, () => React.ReactNode> = {
     table: () => (
       <>
+        {/* Propre aux cotes : ni la base de cartes ni la collection ne
+            dépendent de ces exports. D'où sa place ici, et non dans l'en-tête
+            commun. */}
+        <p className={cn(INFO, "text-muted-foreground text-xs")}>
+          {data.rows.length} produits · {data.cards.length} cartes · Prix du{" "}
+          {dateAbbr(data.pricesAt)} · Catalogue du {dateAbbr(data.catalogAt)}
+        </p>
+
         <StatsStrip rows={data.rows} cards={data.cards} />
 
         <FiltersBar
@@ -183,16 +193,14 @@ export default function App() {
           la page entière qui défile — au lieu de la seule table, qui a son
           propre `overflow-x-auto`. */}
       <SidebarInset className="min-w-0">
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
+        {/* Le nom de la page, et rien d'autre : ce qui ne vaut que pour une
+            vue vit dans son contenu. */}
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="mr-1 !h-4" />
-          <div className="min-w-0">
-            <h1 className="truncate text-sm font-medium">{VIEWS[view].label}</h1>
-            <p className="text-muted-foreground truncate text-xs">
-              {data.rows.length} produits · {data.cards.length} cartes · Prix du{" "}
-              {dateAbbr(data.pricesAt)} · Catalogue du {dateAbbr(data.catalogAt)}
-            </p>
-          </div>
+          <Separator orientation="vertical" className="mr-2 !h-6" />
+          <h1 className="min-w-0 truncate text-2xl font-semibold tracking-tight">
+            {VIEWS[view].label}
+          </h1>
         </header>
 
         <ImportDialog
