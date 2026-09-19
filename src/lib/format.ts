@@ -16,14 +16,22 @@ export const plural = (n: number, word: string) => `${n} ${word}${n > 1 ? "s" : 
 export const pct = (n: number) =>
   (n > 0 ? "+" : "") + n.toLocaleString("fr-FR", { maximumFractionDigits: 1 }) + " %"
 
+/**
+ * Part de `n` dans `total`, en pour cent entiers, arrondie par défaut : 100
+ * n'apparaît qu'une fois tout réuni — 303 sur 304 s'arrondirait sinon à 100.
+ * Rien à réunir vaut 0.
+ */
+export const share = (n: number, total: number) =>
+  total > 0 ? Math.floor((n / total) * 100) : 0
+
 export const dateFr = (s: string) =>
   new Date(s).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
 
 export const dateShort = (s: string) => new Date(s).toLocaleDateString("fr-FR")
 
 /**
- * Mois abrégé : « 15 sept. 2026 ». Un seul format pour les deux dates de
- * l'en-tête, prix et catalogue.
+ * Mois abrégé : « 15 sept. 2026 ». Un seul format pour les deux dates de la
+ * mention des données, en tête des cotes : prix et catalogue.
  */
 export const dateAbbr = (s: string) =>
   new Date(s).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })
