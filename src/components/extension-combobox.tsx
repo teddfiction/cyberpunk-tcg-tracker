@@ -1,8 +1,7 @@
-/** Filtre multi-extensions à chips, monté sur Popover + Command + Badge. */
+/** Filtre multi-extensions, monté sur Popover + Command. */
 import * as React from "react"
-import { Check, ChevronDown, X } from "lucide-react"
+import { Check } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
 import {
   Command,
   CommandEmpty,
@@ -13,9 +12,8 @@ import {
 } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { CodeBadge } from "@/components/code-badge"
+import { CONTROL_TEXT, FilterTrigger } from "@/components/controls"
 import type { CodeMap } from "@/types"
-
-const MAX_CHIPS = 2
 
 type Props = {
   options: { exp: string; count: number }[]
@@ -26,12 +24,13 @@ type Props = {
 }
 
 /**
- * Sélection multiple à chips.
+ * Sélection multiple d'extensions.
  *
  * Le `Combobox` du registry shadcn (`multiple` + `ComboboxChips`) s'appuie sur
  * @base-ui/react ; ce projet est en Radix exclusivement, d'où la recette
- * Popover + Command + Badge. Au-delà de deux chips on replie en « +N » pour que
- * le déclencheur tienne sur la ligne de filtres.
+ * Popover + Command. Le déclencheur est celui des filtres de la grille, allumé
+ * et chiffré dès qu'une extension est cochée, et non plus une rangée de chips :
+ * un filtre se lit de la même façon partout. Les codes cochés restent au survol.
  */
 export function ExtensionCombobox({ options, selected, onChange, codes, expansions }: Props) {
   const [open, setOpen] = React.useState(false)
@@ -42,55 +41,31 @@ export function ExtensionCombobox({ options, selected, onChange, codes, expansio
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button
+        <FilterTrigger
           role="combobox"
           aria-expanded={open}
           aria-label="Filtrer par extension"
-          className="border-input focus-visible:border-ring focus-visible:ring-ring/50 flex h-9 min-w-0 shrink-0 max-w-full items-center gap-1 border bg-transparent px-2 text-left text-sm shadow-xs outline-none focus-visible:ring-[3px]"
-        >
-          {selected.length === 0 && <span className="text-muted-foreground px-1">Extensions</span>}
-
-          {selected.slice(0, MAX_CHIPS).map((exp) => (
-            <Badge key={exp} variant="secondary" className="gap-1 font-mono text-[11px]">
-              {codes[exp]?.code || `#${exp}`}
-              <span
-                role="button"
-                tabIndex={-1}
-                aria-label={`Retirer ${expansions[exp] ?? exp}`}
-                className="text-muted-foreground hover:text-foreground"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  toggle(exp)
-                }}
-              >
-                <X className="size-3" />
-              </span>
-            </Badge>
-          ))}
-
-          {selected.length > MAX_CHIPS && (
-            <Badge variant="secondary" className="font-mono text-[11px]">
-              +{selected.length - MAX_CHIPS}
-            </Badge>
-          )}
-
-          <ChevronDown className="text-muted-foreground ml-1 size-4 shrink-0" />
-        </button>
+          label="Extensions"
+          count={selected.length}
+          title={selected.map((exp) => codes[exp]?.code || `#${exp}`).join(", ") || undefined}
+        />
       </PopoverTrigger>
 
       {/* 384 px : le plus long libellé — « Embracing Power — Retail Starter
           Deck » — fait 290 px à lui seul, auxquels s'ajoutent l'effectif, la
           coche et les retraits. À 288 px il tronquait. Plafonné à la fenêtre
           pour ne pas déborder sur un téléphone. */}
-      <PopoverContent className="w-96 max-w-[calc(100vw-2rem)] p-0" align="start">
+      <PopoverContent className="notch-md w-96 max-w-[calc(100vw-2rem)] p-0" align="start">
         <Command>
-          <CommandInput placeholder="Chercher une extension…" />
+          {/* Geist Mono comme les champs de recherche ; sans capitales, comme eux. */}
+          <CommandInput placeholder="Chercher une extension…" className="font-mono text-xs" />
           <CommandList>
             <CommandEmpty>Aucune extension.</CommandEmpty>
             <CommandGroup>
               {options.map(({ exp, count }) => (
                 <CommandItem
                   key={exp}
+                  className={CONTROL_TEXT}
                   value={`${codes[exp]?.code ?? ""} ${expansions[exp] ?? exp}`}
                   onSelect={() => toggle(exp)}
                 >

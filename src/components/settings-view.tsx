@@ -7,18 +7,6 @@ import * as React from "react"
 import { Copy, Download, Trash2, Upload } from "lucide-react"
 
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { Button } from "@/components/ui/button"
-import {
   Card,
   CardContent,
   CardDescription,
@@ -27,6 +15,8 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
+import { ActionButton } from "@/components/action-button"
+import { ConfirmDialog } from "@/components/confirm-dialog"
 import { dateFr, plural } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import type { CodeMap } from "@/types"
@@ -84,7 +74,7 @@ export function SettingsView({
 
   return (
     <div className="flex flex-col gap-4">
-      <Card>
+      <Card className="notch-lg">
       <CardHeader>
         <CardTitle>Codes d'impression</CardTitle>
         <CardDescription>
@@ -127,10 +117,10 @@ export function SettingsView({
         <Separator />
 
         <div className="flex flex-wrap items-center gap-3">
-          <Button variant="outline" size="sm" onClick={copyMapping}>
+          <ActionButton onClick={copyMapping}>
             <Copy />
             Copier le mapping JSON
-          </Button>
+          </ActionButton>
           <p className="text-muted-foreground text-xs">
             Reporte le résultat dans <code>src/data/expansions.ts</code> pour le rendre permanent.
           </p>
@@ -166,7 +156,7 @@ function CollectionCard({
   onImport: () => void
 }) {
   return (
-    <Card>
+    <Card className="notch-lg">
       <CardHeader>
         <CardTitle>Collection</CardTitle>
         <CardDescription>
@@ -180,14 +170,14 @@ function CollectionCard({
       </CardHeader>
 
       <CardContent className="flex flex-wrap gap-2">
-        <Button variant="outline" size="sm" disabled={!collection.versions} onClick={onExport}>
+        <ActionButton disabled={!collection.versions} onClick={onExport}>
           <Download />
           Exporter la sauvegarde (JSON)
-        </Button>
-        <Button variant="ghost" size="sm" onClick={onImport}>
+        </ActionButton>
+        <ActionButton onClick={onImport}>
           <Upload />
           Importer une sauvegarde
-        </Button>
+        </ActionButton>
         <ClearCollection collection={collection} onExport={onExport} onClear={onClear} />
       </CardContent>
     </Card>
@@ -195,12 +185,9 @@ function CollectionCard({
 }
 
 /**
- * Suppression de la collection, confirmée par une boîte de dialogue — et non en
- * deux temps dans le bouton, comme « Oublier les données conservées ». Oublier
- * se répare par un import ; ici rien ne rend la saisie, sauf une sauvegarde
- * exportée avant. Le geste doit donc s'arrêter sur ce qui sera perdu, et offrir
- * l'export sur place. Pas d'empilement à craindre : Paramètres n'est pas une
- * modale.
+ * Suppression de la collection, confirmée par une boîte de dialogue : rien ne
+ * rend la saisie, sauf une sauvegarde exportée avant. Le geste doit donc
+ * s'arrêter sur ce qui sera perdu, et offrir l'export sur place.
  */
 function ClearCollection({
   collection,
@@ -212,52 +199,44 @@ function ClearCollection({
   onClear: () => void
 }) {
   return (
-    <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button variant="outline" size="sm" disabled={!collection.versions} className="sm:ml-auto">
+    <ConfirmDialog
+      trigger={
+        <ActionButton tone="danger" disabled={!collection.versions} className="sm:ml-auto">
           <Trash2 />
           Supprimer ma collection
-        </Button>
-      </AlertDialogTrigger>
-
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Supprimer ma collection ?</AlertDialogTitle>
-          <AlertDialogDescription>
-            {plural(collection.versions, "version")} et {plural(collection.copies, "exemplaire")}{" "}
-            seront effacés de ce navigateur. Aucun import ne les reconstitue : seule une sauvegarde
-            exportée avant la suppression permettra de les retrouver. Les cotes, la base de cartes
-            et les codes ne sont pas touchés.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-
-        <AlertDialogFooter>
-          {/* Hors de `AlertDialogAction` : exporter ne ferme pas la boîte, on
-              peut encore supprimer ensuite — ou renoncer. */}
-          <Button variant="ghost" onClick={onExport} className="sm:mr-auto">
-            <Download />
-            Exporter d'abord
-          </Button>
-          <AlertDialogCancel>Annuler</AlertDialogCancel>
-          <AlertDialogAction variant="destructive" onClick={onClear}>
-            <Trash2 />
-            Supprimer
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+        </ActionButton>
+      }
+      title="Supprimer ma collection ?"
+      description={
+        <>
+          {plural(collection.versions, "version")} et {plural(collection.copies, "exemplaire")}{" "}
+          seront effacés de ce navigateur. Aucun import ne les reconstitue : seule une sauvegarde
+          exportée avant la suppression permettra de les retrouver. Les cotes, la base de cartes et
+          les codes ne sont pas touchés.
+        </>
+      }
+      confirm="Supprimer"
+      onConfirm={onClear}
+      extra={
+        // Hors de l'action : exporter ne ferme pas la boîte, on peut encore
+        // supprimer ensuite — ou renoncer.
+        <ActionButton onClick={onExport} className="sm:mr-auto">
+          <Download />
+          Exporter d'abord
+        </ActionButton>
+      }
+    />
   )
 }
 
 /**
- * Ce que le navigateur retient. Oublier est destructif mais réparable par un
- * nouvel import : une confirmation en deux temps suffit, sans boîte de dialogue.
+ * Ce que le navigateur retient. L'oubli se répare par un nouvel import, mais
+ * il efface tout ce qui a été importé d'un coup : il passe lui aussi par une
+ * boîte de dialogue, qui dit ce qui part et ce qui reste.
  */
 function StoredDataCard({ storedAt, onForget }: { storedAt: string | null; onForget: () => void }) {
-  const [confirming, setConfirming] = React.useState(false)
-
   return (
-    <Card>
+    <Card className="notch-lg">
       <CardHeader>
         <CardTitle>Données conservées</CardTitle>
         <CardDescription>
@@ -269,20 +248,24 @@ function StoredDataCard({ storedAt, onForget }: { storedAt: string | null; onFor
       </CardHeader>
 
       <CardContent>
-        <Button
-          variant={confirming ? "destructive" : "outline"}
-          size="sm"
-          disabled={!storedAt}
-          onClick={() => {
-            if (!confirming) return setConfirming(true)
-            setConfirming(false)
-            onForget()
-          }}
-          onBlur={() => setConfirming(false)}
-        >
-          <Trash2 />
-          {confirming ? "Confirmer l'oubli" : "Oublier les données conservées"}
-        </Button>
+        <ConfirmDialog
+          trigger={
+            <ActionButton tone="danger" disabled={!storedAt}>
+              <Trash2 />
+              Oublier les données conservées
+            </ActionButton>
+          }
+          title="Oublier les données conservées ?"
+          description={
+            <>
+              Le catalogue, les cotes, la base de cartes et les codes saisis seront effacés de ce
+              navigateur : l'app repartira du jeu de données embarqué. Un nouvel import les
+              rétablit. La collection n'est pas touchée.
+            </>
+          }
+          confirm="Oublier"
+          onConfirm={onForget}
+        />
       </CardContent>
     </Card>
   )

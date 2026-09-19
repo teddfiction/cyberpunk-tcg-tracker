@@ -3,14 +3,14 @@
  * réglage, et retrait confirmé en deux temps.
  *
  * L'ajout enregistre un exemplaire tout de suite, sans étape « Valider » : une
- * quantité en attente se perdrait en fermant la modale. Le retrait reprend le
- * geste de « Oublier les données conservées » — pas de boîte de dialogue
- * empilée sur la modale, contrairement à « Supprimer ma collection ».
+ * quantité en attente se perdrait en fermant la modale. Le retrait se confirme
+ * en deux temps dans le bouton, et non par une boîte de dialogue comme les
+ * effacements de Paramètres (`ConfirmDialog`) : elle s'empilerait sur la modale.
  */
 import * as React from "react"
 import { Minus, Plus, Trash2 } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
+import { ActionButton } from "@/components/action-button"
 import { INFO } from "@/components/card-info"
 import { cn } from "@/lib/utils"
 
@@ -40,10 +40,10 @@ export function CollectionControl({ qty, onChange }: Props) {
 
   if (qty <= 0) {
     return (
-      <Button ref={add} size="sm" className="self-start" onClick={() => change(1, "plus")}>
+      <ActionButton ref={add} tone="primary" className="self-start" onClick={() => change(1, "plus")}>
         <Plus />
         Ajouter à ma collection
-      </Button>
+      </ActionButton>
     )
   }
 
@@ -57,35 +57,32 @@ export function CollectionControl({ qty, onChange }: Props) {
       <div className="flex items-center gap-3">
         <div className="flex items-center">
           {/* Grisé à 1 : on ne passe à zéro que par « Retirer », qui confirme. */}
-          <Button
-            variant="outline"
+          <ActionButton
             size="icon"
-            className="size-8"
             aria-label="Retirer un exemplaire"
             disabled={qty <= 1}
             onClick={() => change(qty - 1, qty - 1 <= 1 ? "plus" : null)}
           >
             <Minus />
-          </Button>
+          </ActionButton>
           <span aria-live="polite" className="w-10 text-center font-mono text-sm tabular-nums">
             {qty}
             <span className="sr-only"> {qty > 1 ? "exemplaires" : "exemplaire"}</span>
           </span>
-          <Button
+          <ActionButton
             ref={plus}
-            variant="outline"
             size="icon"
-            className="size-8"
             aria-label="Ajouter un exemplaire"
             onClick={() => change(qty + 1, null)}
           >
             <Plus />
-          </Button>
+          </ActionButton>
         </div>
 
-        <Button
-          variant={confirming ? "destructive" : "ghost"}
-          size="sm"
+        {/* Contour rouge au premier temps, aplat rouge au second : le retrait
+            armé se voit, pas seulement au libellé. */}
+        <ActionButton
+          tone={confirming ? "danger" : "danger-outline"}
           onClick={() => {
             if (!confirming) return setConfirming(true)
             setConfirming(false)
@@ -95,7 +92,7 @@ export function CollectionControl({ qty, onChange }: Props) {
         >
           <Trash2 />
           {confirming ? "Confirmer le retrait" : "Retirer"}
-        </Button>
+        </ActionButton>
       </div>
     </div>
   )

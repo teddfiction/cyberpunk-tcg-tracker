@@ -1,5 +1,7 @@
-/* Tokens du thème shadcn (base Neutral, accent Yellow, charts Cyan, radius 0),
-   couleurs de carte du jeu, polices Geist / Geist Mono, et voile des modales. */
+/* Tokens du thème shadcn (base Neutral, accent Yellow, secondaire et charts
+   Cyan, radius 0),
+   couleurs de carte du jeu, polices Geist / Geist Mono, encoche `notch-*` et
+   voile des modales. */
 @import "tailwindcss";
 @source "./**/*.{ts,tsx}";
 @custom-variant dark (&:where(.dark, .dark *));
@@ -23,7 +25,8 @@
 
 /* Base Neutral : le chrome est noir, blanc et gris, sans la nuance bleutée de
    Slate. L'accent Yellow est un axe à part — `primary`, `ring`,
-   `sidebar-primary`, `sidebar-active` — que changer de base ne touche pas. */
+   `sidebar-primary`, `sidebar-active` — que changer de base ne touche pas ;
+   le cyan de `secondary` aussi. */
 :root {
   --radius: 0rem;
   --background: oklch(98.5% 0 0);
@@ -34,8 +37,12 @@
   --popover-foreground: oklch(14.5% 0 0);
   --primary: oklch(79.5% 0.184 86.047);
   --primary-foreground: oklch(28.6% 0.066 53.813);
-  --secondary: oklch(97% 0 0);
-  --secondary-foreground: oklch(20.5% 0 0);
+  /* Cyan-500 de Tailwind, et non le gris du registry : la couleur secondaire
+     de la charte, après le jaune — « Réinitialiser », barre de complétion.
+     Le même dans les deux thèmes, texte noir à ~8,6:1. Plus aucun composant
+     ne s'en servait en gris. */
+  --secondary: oklch(71.5% 0.143 215.221);
+  --secondary-foreground: oklch(0% 0 0);
   --muted: oklch(97% 0 0);
   /* neutral-600 et non le 500 du registry : sur le fond neutral-50, le 500
      tombe à la limite des 4,5:1 — le texte terne est partout ici. */
@@ -44,7 +51,12 @@
   --accent-foreground: oklch(20.5% 0 0);
   --destructive: oklch(57.7% 0.245 27.325);
   --border: oklch(92.2% 0 0);
-  --input: oklch(92.2% 0 0);
+  /* Bordure de ce qui se manipule — champs, filtres, options : neutral-300, un
+     cran au-dessus de `--border`. Le registry confond les deux ; ici elle
+     s'en détache, sans peser : une commande se repère, la structure (cartes,
+     table, repères chiffrés) reste en retrait. Le neutral-500 essayé d'abord
+     alourdissait les rangées de filtres. */
+  --input: oklch(87% 0 0);
   --ring: oklch(79.5% 0.184 86.047);
   /* Rampe des graphiques : cyan-300 → cyan-700 de Tailwind. Monochrome comme
      l'était la rampe jaune, pour que l'accent reste au primary. Aucun graphique
@@ -73,6 +85,20 @@
      `--primary-foreground` du thème Yellow, un brun yellow-950 : ~11:1 sur ce
      jaune au lieu de ~7,6:1. */
   --selected-foreground: oklch(0% 0 0);
+  /* Boutons d'action (`ActionButton`) : des touches de machine analogique.
+     L'ordinaire prend le contre-pied de la page — noire ici, blanche en
+     sombre —, le contraste maximal dans les deux thèmes ; survol en
+     neutral-800. Les autres ne sont pas redéfinies sous `.dark` : la touche
+     ne change pas, c'est la page autour. De la palette Tailwind : rouge
+     red-600, survol red-700, pour ce qui efface — un aplat franc, là où
+     `--destructive` passe en red-400 en sombre, que le registry pose à 60 % ;
+     texte blanc à 4,8:1. Le cyan de « Réinitialiser » est `--secondary`. */
+  --action: oklch(0% 0 0);
+  --action-foreground: oklch(100% 0 0);
+  --action-hover: oklch(26.9% 0 0);
+  --danger: oklch(57.7% 0.245 27.325);
+  --danger-foreground: oklch(100% 0 0);
+  --danger-hover: oklch(50.5% 0.213 27.518);
   /* Couleurs de carte du jeu. Ce ne sont pas des tons de thème : elles viennent
      des données, et rien ne doit les remplacer. Elles vivent tout de même ici,
      pour être réglées par thème — une teinte lisible sur un fond clair ne l'est
@@ -95,8 +121,8 @@
   --popover-foreground: oklch(98.5% 0 0);
   --primary: oklch(85.2% 0.199 91.936);
   --primary-foreground: oklch(28.6% 0.066 53.813);
-  --secondary: oklch(26.9% 0 0);
-  --secondary-foreground: oklch(98.5% 0 0);
+  --secondary: oklch(71.5% 0.143 215.221);
+  --secondary-foreground: oklch(0% 0 0);
   --muted: oklch(26.9% 0 0);
   --muted-foreground: oklch(70.8% 0 0);
   --accent: oklch(26.9% 0 0);
@@ -105,9 +131,10 @@
   /* Bordures adoucies : entre neutral-900 et neutral-800. Assez sombres pour
      s'effacer sur le noir de la page, assez claires pour rester visibles sur le
      neutral-900 des cartes et des popovers — une bordure calée sur le fond des
-     cartes y disparaîtrait. */
+     cartes y disparaîtrait. Celle des commandes, un cran au-dessus :
+     neutral-700. */
   --border: oklch(23.7% 0 0);
-  --input: oklch(23.7% 0 0);
+  --input: oklch(37.1% 0 0);
   --ring: oklch(79.5% 0.184 86.047);
   /* Même rampe décalée de deux pas vers le clair (cyan-200 → cyan-600) :
      cyan-700 tombe à 52 % de clarté, illisible sur le noir. */
@@ -128,6 +155,10 @@
   --sidebar-active: oklch(85.2% 0.199 91.936);
   /* Le jaune du sombre est plus clair : le noir y monte à ~13:1. */
   --selected-foreground: oklch(0% 0 0);
+  /* La touche ordinaire s'inverse avec la page : blanche sur le noir. */
+  --action: oklch(100% 0 0);
+  --action-foreground: oklch(0% 0 0);
+  --action-hover: oklch(92.2% 0 0);
   --card-red: oklch(70.4% 0.191 22.216);
   --card-yellow: oklch(85.2% 0.199 91.936);
   --card-green: oklch(79.2% 0.209 151.711);
@@ -138,6 +169,10 @@
   --font-sans: Geist, ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, monospace;
   --radius-sm: 0rem; --radius-md: 0rem; --radius-lg: 0rem; --radius-xl: 0rem;
+  /* Encoche (`notch-*`, plus bas) : le côté de la coupe, par gabarit — `xs`
+     pour les badges, `sm` pour les commandes de 40 px, `md` pour onglets,
+     menus et repères, `lg` pour les cartes. */
+  --notch-xs: 6px; --notch-sm: 12px; --notch-md: 16px; --notch-lg: 24px;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -171,11 +206,66 @@
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-active: var(--sidebar-active);
   --color-selected-foreground: var(--selected-foreground);
+  --color-action: var(--action);
+  --color-action-foreground: var(--action-foreground);
+  --color-action-hover: var(--action-hover);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-danger-hover: var(--danger-hover);
 }
 
 @layer base {
   * { @apply border-border outline-ring/50; }
   body { @apply bg-background text-foreground; }
+}
+
+/* Encoche : le coin supérieur droit coupé à 45°, élément de la charte —
+   boutons d'action, filtres, champs de recherche, badges, onglets, menus,
+   certaines cartes. `notch-sm`, `notch-md`… ou `notch-[10px]`.
+
+   Par `clip-path`, et non `corner-shape: bevel` qui ferait suivre bordure et
+   halo de focus d'un seul trait : ni Firefox ni Safari ne le connaissent
+   (relevé du 19/09/2026). Ce que la découpe impose :
+   - Elle emporte le filet de bordure du biais. `::before` le redessine en
+     héritant épaisseur, style et couleur de la bordure du haut : survol,
+     onglet actif et focus suivent sans rien déclarer, et un élément sans
+     bordure n'en reçoit pas. Il suppose une bordure de 1 px, la seule ici.
+   - Le polygone déborde de la boîte (100vmax) : halo de focus et ombres
+     passent, et s'arrêtent au prolongement du biais.
+   - Un conteneur qui défile emporterait le filet avec son contenu : c'est un
+     enfant qui doit défiler (voir `FacetFilter`).
+   - Un `<input>` n'a pas de `::before` : bordure et encoche passent au groupe
+     qui l'entoure (`SearchField`).
+   `position: relative` en `:where()`, de spécificité nulle : une classe
+   `fixed` ou `absolute` l'emporte, quel que soit l'ordre des utilitaires.
+   `::before` parce que le `TabsTrigger` du registry occupe `::after`. */
+@utility notch-* {
+  --notch: --value(--notch-*, [length]);
+  clip-path: polygon(
+    -100vmax -100vmax,
+    calc(100% - var(--notch) - 100vmax) -100vmax,
+    calc(100% + 100vmax) calc(var(--notch) + 100vmax),
+    calc(100% + 100vmax) calc(100% + 100vmax),
+    -100vmax calc(100% + 100vmax)
+  );
+
+  :where(&) {
+    position: relative;
+  }
+
+  /* Un trait de la longueur du biais, pivoté autour de son extrémité haute :
+     son épaisseur tombe alors vers l'intérieur. */
+  &::before {
+    content: "";
+    position: absolute;
+    top: -1px;
+    left: calc(100% + 1px - var(--notch));
+    width: calc(var(--notch) * 1.41421356);
+    border-top: inherit;
+    transform: rotate(45deg);
+    transform-origin: top left;
+    pointer-events: none;
+  }
 }
 
 /* Voile des modales : un flou léger plutôt qu'un aplat sombre, celui de

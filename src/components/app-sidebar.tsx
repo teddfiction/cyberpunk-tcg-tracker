@@ -25,6 +25,7 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
 } from "@/components/ui/sidebar"
+import { CONTROL_TEXT } from "@/components/controls"
 import { cn } from "@/lib/utils"
 import { VIEWS, VIEW_IDS, type View } from "@/lib/views"
 
@@ -52,6 +53,8 @@ const ICONS: Record<View, LucideIcon> = {
  * touche au fichier du registry.
  */
 const ITEM = cn(
+  // La voix des commandes, comme partout ailleurs.
+  CONTROL_TEXT,
   "text-sidebar-foreground/70",
   "hover:bg-transparent hover:text-sidebar-foreground",
   "active:bg-transparent active:text-sidebar-foreground",

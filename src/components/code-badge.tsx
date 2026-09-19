@@ -1,5 +1,5 @@
 /** Badge du code d'impression d'une extension. Plein = confirmé, pointillés = déduit. */
-import { Badge } from "@/components/ui/badge"
+import { NotchBadge } from "@/components/notch-badge"
 import { cn } from "@/lib/utils"
 import type { CodeMap } from "@/types"
 
@@ -21,7 +21,7 @@ export function CodeBadge({ exp, codes, expansions }: Props) {
     (entry?.code && !entry.sure ? " — code à confirmer" : "")
 
   return (
-    <Badge
+    <NotchBadge
       variant={entry?.code && entry.sure ? "default" : "outline"}
       title={title}
       className={cn(
@@ -30,6 +30,6 @@ export function CodeBadge({ exp, codes, expansions }: Props) {
       )}
     >
       {label}
-    </Badge>
+    </NotchBadge>
   )
 }

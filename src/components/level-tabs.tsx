@@ -11,7 +11,9 @@
 import { Tabs as TabsPrimitive } from "radix-ui"
 
 import { Item, ItemContent, ItemDescription, ItemTitle } from "@/components/ui/item"
+import { CONTROL_TEXT } from "@/components/controls"
 import { LEVEL_IDS, LEVELS } from "@/lib/collection"
+import { cn } from "@/lib/utils"
 
 /**
  * À placer dans le `Tabs` qui porte le niveau choisi.
@@ -34,11 +36,15 @@ export function LevelTabs() {
             asChild
             variant="outline"
             size="sm"
-            className="bg-card data-[state=inactive]:hover:border-foreground/40 data-[state=inactive]:hover:bg-accent data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:text-selected-foreground cursor-pointer text-left"
+            className="notch-md bg-card data-[state=inactive]:hover:border-foreground/40 data-[state=inactive]:hover:bg-accent data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:text-selected-foreground cursor-pointer text-left"
           >
             <button>
               <ItemContent>
-                <ItemTitle>{LEVELS[id].label}</ItemTitle>
+                {/* Le titre parle la voix des commandes ; le sous-titre, qui
+                    explique, reste en texte courant. */}
+                <ItemTitle className={cn(CONTROL_TEXT, "font-semibold")}>
+                  {LEVELS[id].label}
+                </ItemTitle>
                 {/* En entier : le registry coupe à deux lignes, et celui du
                     Masterset en prend trois à la largeur d'un onglet. */}
                 <ItemDescription className="group-data-[state=active]/item:text-selected-foreground line-clamp-none">

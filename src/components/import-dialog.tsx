@@ -10,7 +10,6 @@ import * as React from "react"
 import { FolderOpen, TriangleAlert, Upload } from "lucide-react"
 
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
@@ -18,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { ActionButton } from "@/components/action-button"
 import { plural } from "@/lib/format"
 import { IMPORT_FORMATS } from "@/lib/ingest"
 import { cn } from "@/lib/utils"
@@ -45,7 +45,8 @@ export function ImportDialog({ open, onOpenChange, onFiles, collection }: Props)
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="sm:max-w-xl"
+        // Encochée comme toute modale.
+        className="notch-lg sm:max-w-xl"
         // Un fichier lâché à côté de la zone ne doit pas faire ouvrir le JSON par
         // le navigateur, qui quitterait l'app.
         onDragOver={(e) => e.preventDefault()}
@@ -144,10 +145,10 @@ function Dropzone({
         <p className="text-sm font-medium">Déposer les fichiers ici</p>
         <p className="text-muted-foreground text-xs">JSON uniquement</p>
       </div>
-      <Button size="sm" variant="outline" onClick={onBrowse}>
+      <ActionButton onClick={onBrowse}>
         <FolderOpen />
         Importer depuis les fichiers
-      </Button>
+      </ActionButton>
     </div>
   )
 }

@@ -32,6 +32,7 @@ import {
   Unknown,
 } from "@/components/card-info"
 import { CollectionControl } from "@/components/collection-control"
+import { CONTROL_TEXT } from "@/components/controls"
 import { CARDMARKET_SEARCH, cyberpunkTcgUrl } from "@/data/expansions"
 import { rarityLabel } from "@/data/rarities"
 import { qtyOf } from "@/lib/collection"
@@ -98,8 +99,10 @@ export function CardDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         // Plus large qu'une modale ordinaire : les versions y gagnent des
-        // miniatures lisibles à côté du grand visuel.
-        className="max-h-[90vh] overflow-y-auto sm:max-w-4xl"
+        // miniatures lisibles à côté du grand visuel. Encochée comme toute
+        // modale ; elle ne défile pas elle-même, c'est son contenu — le filet
+        // du biais, posé sur elle, partirait sinon avec lui.
+        className="notch-lg flex max-h-[90vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl"
         // Radix rend le focus à ce qui l'avait avant l'ouverture, mais ici il
         // retombe sur `body` — mesuré. Le clavier repartirait alors du haut du
         // document à chaque carte refermée, sur une grille de 151 tuiles : on
@@ -118,50 +121,52 @@ export function CardDialog({
           onStep(delta)
         }}
       >
-        {/* `text-left` : le registry centre l'en-tête sur mobile, ce qui
-            décalerait le titre des badges alignés à gauche en dessous. */}
-        <DialogHeader className="text-left">
-          {/* Navigation calée à droite, contre la croix : elle ne bouge pas d'une
-              carte à l'autre, quelle que soit la longueur du nom, et l'on
-              enchaîne les clics sans déplacer la souris. Absente quand la
-              grille n'a qu'une carte : deux boutons grisés n'y diraient rien.
-              Sous `sm`, elle passe au-dessus du titre, sur la ligne de la
-              croix : à côté, elle le repliait sur quatre lignes. */}
-          <div className="flex flex-col-reverse gap-2 pr-6 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-            <DialogTitle className="leading-tight">{card.name}</DialogTitle>
-            {count > 1 && <Stepper name={card.name} at={at} count={count} onStep={onStep} />}
-          </div>
-          {/* Mêmes badges et même ligne de caractéristiques que la tuile. La
-              quantité possédée n'y figure pas : elle se lit par version, dans
-              `collection`, jamais dans cet instantané de la carte. */}
-          <DialogDescription asChild>
-            <div className="flex flex-col gap-2">
-              <div className="flex flex-wrap gap-1">
-                <TypeBadge type={card.type} color={card.color} className="text-xs" />
-                {/* Comme sur la tuile. Sans eux, « 2 impressions » d'une carte
-                    déclinée par rareté se lirait comme le compte de la carte. */}
-                <CollectibleBadges collectible={collectible} className="text-xs" />
-                {/* Une version du Masterset ne porte qu'elle-même : compter ses
-                    impressions y dirait « 1 », ce qui est faux pour la carte.
-                    Déclinée, ou à un autre niveau de la collection, ce sont les
-                    impressions de sa carte à collectionner. */}
-                {scope !== "masterset" && (
-                  <InfoBadge className="text-muted-foreground gap-1 text-xs">
-                    <Layers className="size-3" />
-                    {plural(n, "impression")}
-                  </InfoBadge>
-                )}
-              </div>
-              {stats.length > 0 && <StatLine stats={stats} color={card.color} className="text-xs" />}
+        <div className="flex min-h-0 flex-col gap-4 overflow-y-auto p-6">
+          {/* `text-left` : le registry centre l'en-tête sur mobile, ce qui
+              décalerait le titre des badges alignés à gauche en dessous. */}
+          <DialogHeader className="text-left">
+            {/* Navigation calée à droite, contre la croix : elle ne bouge pas d'une
+                carte à l'autre, quelle que soit la longueur du nom, et l'on
+                enchaîne les clics sans déplacer la souris. Absente quand la
+                grille n'a qu'une carte : deux boutons grisés n'y diraient rien.
+                Sous `sm`, elle passe au-dessus du titre, sur la ligne de la
+                croix : à côté, elle le repliait sur quatre lignes. */}
+            <div className="flex flex-col-reverse gap-2 pr-6 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+              <DialogTitle className="leading-tight">{card.name}</DialogTitle>
+              {count > 1 && <Stepper name={card.name} at={at} count={count} onStep={onStep} />}
             </div>
-          </DialogDescription>
-        </DialogHeader>
+            {/* Mêmes badges et même ligne de caractéristiques que la tuile. La
+                quantité possédée n'y figure pas : elle se lit par version, dans
+                `collection`, jamais dans cet instantané de la carte. */}
+            <DialogDescription asChild>
+              <div className="flex flex-col gap-2">
+                <div className="flex flex-wrap gap-1">
+                  <TypeBadge type={card.type} color={card.color} className="text-xs" />
+                  {/* Comme sur la tuile. Sans eux, « 2 impressions » d'une carte
+                      déclinée par rareté se lirait comme le compte de la carte. */}
+                  <CollectibleBadges collectible={collectible} className="text-xs" />
+                  {/* Une version du Masterset ne porte qu'elle-même : compter ses
+                      impressions y dirait « 1 », ce qui est faux pour la carte.
+                      Déclinée, ou à un autre niveau de la collection, ce sont les
+                      impressions de sa carte à collectionner. */}
+                  {scope !== "masterset" && (
+                    <InfoBadge className="text-muted-foreground gap-1 text-xs">
+                      <Layers className="size-3" />
+                      {plural(n, "impression")}
+                    </InfoBadge>
+                  )}
+                </div>
+                {stats.length > 0 && <StatLine stats={stats} color={card.color} className="text-xs" />}
+              </div>
+            </DialogDescription>
+          </DialogHeader>
 
-        {/* `key` : changer de carte repart d'un état neuf, sur la version que
-            montre sa tuile — sans passer par un rendu qui porterait encore la
-            version choisie sur la carte précédente. La navigation reste hors
-            de ce sous-arbre : remontée, elle perdrait le focus à chaque clic. */}
-        <Versions key={card.id} card={card} pick={pick} collection={collection} onQty={onQty} />
+          {/* `key` : changer de carte repart d'un état neuf, sur la version que
+              montre sa tuile — sans passer par un rendu qui porterait encore la
+              version choisie sur la carte précédente. La navigation reste hors
+              de ce sous-arbre : remontée, elle perdrait le focus à chaque clic. */}
+          <Versions key={card.id} card={card} pick={pick} collection={collection} onQty={onQty} />
+        </div>
       </DialogContent>
     </Dialog>
   )
@@ -341,8 +346,8 @@ function Picker({
     <div
       role="listbox"
       aria-label="Versions de la carte"
-      // `gap-3` : l'outline de sélection déborde de 4 px. À `gap-2`, il tombait à
-      // mi-chemin de la miniature voisine, sans qu'on sache à laquelle il est.
+      // `gap-3` : entre deux cadres de sélection, assez d'écart pour qu'on
+      // voie à quelle miniature appartient le cadre jaune.
       className="grid grid-cols-[repeat(auto-fill,minmax(5.5rem,1fr))] gap-3"
     >
       {printings.map((p, i) => {
@@ -359,27 +364,33 @@ function Picker({
               (qty ? ` — ${qty} dans ma collection` : "")
             }
             className={cn(
-              // `gap-2` et non `gap-1` : l'outline de sélection toucherait le numéro.
+              // `gap-2` et non `gap-1` : le cadre de sélection toucherait le numéro.
               "focus-visible:ring-ring/50 flex cursor-pointer flex-col gap-2 text-left outline-none focus-visible:ring-[3px]",
               !selected && "opacity-60 hover:opacity-100"
             )}
           >
-            {/* Sélection en `outline` et non en bordure : l'outline ne prend
-                pas de place. La bordure de 1 px reste, devenue transparente, et
-                l'outline se pose 3 px au-delà — 4 px d'air autour du visuel,
-                sans qu'aucune dimension change. Une bordure épaissie ou un
-                padding feraient bouger toute la grille à chaque clic. */}
+            {/* Sélection : un cadre encoché, jaune sur la version choisie et
+                transparent sur les autres. Posé sur toutes, avec sa marge : à la
+                sélection, seule une couleur change, et la grille ne bouge pas.
+                Un `outline` ne se laisserait pas encocher — la découpe le
+                couperait sans redessiner le biais.
+                6 px de marge, plus les deux bordures : le coin du visuel tombe
+                à 8 px du coin du cadre, à l'intérieur du biais de 12 px, qui ne
+                le rogne pas. Le filet du visuel lui-même s'efface sur la
+                version choisie, que le cadre entoure déjà. */}
             <span
               className={cn(
-                "block border",
-                selected ? "outline-ring border-transparent outline outline-offset-3" : "border-border"
+                "notch-sm block border p-1.5",
+                selected ? "border-ring" : "border-transparent"
               )}
             >
-              {p.thumb ? (
-                <img src={p.thumb} alt="" className="block w-full" />
-              ) : (
-                <span className="bg-muted block aspect-[5/7] w-full" />
-              )}
+              <span className={cn("block border", selected ? "border-transparent" : "border-border")}>
+                {p.thumb ? (
+                  <img src={p.thumb} alt="" className="block w-full" />
+                ) : (
+                  <span className="bg-muted block aspect-[5/7] w-full" />
+                )}
+              </span>
             </span>
             {/* Pas de capitales : « 005a » et « 005A » ne désignent pas la même
                 chose, et le « β » des tirages Beta passerait pour un B latin.
@@ -443,7 +454,10 @@ function OutLink({ href, children }: { href: string; children: React.ReactNode }
       href={href}
       target="_blank"
       rel="noopener"
-      className="text-muted-foreground hover:text-foreground flex w-fit items-center gap-1 text-xs hover:underline"
+      className={cn(
+        CONTROL_TEXT,
+        "text-muted-foreground hover:text-foreground flex w-fit items-center gap-1 hover:underline"
+      )}
     >
       {children}
       <ExternalLink className="size-3" />
