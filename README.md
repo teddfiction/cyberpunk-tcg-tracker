@@ -200,18 +200,23 @@ src/
     card-dialog.tsx     versions d'une carte, en modale : visuel, versions numérotées, quantité, carte voisine
     collection-control.tsx  quantité possédée d'une version, retrait en deux temps
     collection-stats.tsx    complétion du niveau, sous ses onglets
+    stats.tsx           repères chiffrés à la largeur de leur contenu, barre de complétion
+    confirm-dialog.tsx  confirmation d'un effacement, en boîte de dialogue
     level-tabs.tsx      onglets des niveaux de la collection, en Item shadcn
-    owned-filter.tsx    sélecteur Toutes / Possédées / Manquantes (ToggleGroup)
+    owned-filter.tsx    sélecteur Toutes / Possédées / Manquantes (ChoiceGroup)
+    controls.tsx        commandes à état, éteintes ou allumées : filtre, bascule, options, recherche
+    action-button.tsx   bouton d'action : noir ou blanc, jaune, rouge, cyan — capitales, encoche
+    notch-badge.tsx     badge droit, encoché
     import-dialog.tsx   formats reconnus et zone de dépôt
     facet-filter.tsx    filtre à facette générique (menu à cases à cocher)
     sort-menu.tsx       menu de tri de la grille
     netdeck-view.tsx    vue base de cartes et collection
     data-table.tsx      rendu de la table depuis l'instance TanStack
-    filters-bar.tsx     recherche, onglets, combobox, cases à cocher
+    filters-bar.tsx     recherche, mode d'affichage, extensions, bascules
     extension-combobox.tsx
     code-badge.tsx
     settings-view.tsx   codes d'impression, sauvegarde et suppression de la collection
-    stats-strip.tsx
+    stats-strip.tsx     repères de la table des cotes
   data/
     dataset.json        jeu de données embarqué (généré, versionné)
     expansions.ts       libellés d'extensions, codes d'impression, URLs externes
@@ -302,11 +307,12 @@ Trois sources, toutes publiques.
 
 ## Thème
 
-Tokens shadcn/ui : base **Neutral**, accent **Yellow**, graphiques **Cyan**,
-radius **0**, polices **Geist** et **Geist Mono**. La base fait un chrome noir,
-blanc et gris, sans la nuance bleutée de Slate ; l'accent jaune reste porté par
-les boutons principaux, l'anneau de focus et l'entrée active de la barre
-latérale. Les valeurs OKLCH sont celles du registry officiel, mappées à la main
+Tokens shadcn/ui : base **Neutral**, accent **Yellow**, secondaire et
+graphiques **Cyan**, radius **0**, polices **Geist** et **Geist Mono**. La base
+fait un chrome noir, blanc et gris, sans la nuance bleutée de Slate ; l'accent
+jaune reste porté par les boutons principaux, les filtres allumés, l'anneau de
+focus et l'entrée active de la barre latérale ; le cyan secondaire, par
+« Réinitialiser » et la barre de complétion de la collection. Les valeurs OKLCH sont celles du registry officiel, mappées à la main
 sur le scaffold de tokens dans `src/index.css`. Pour appliquer un thème généré
 par le configurateur shadcn, remplacer les blocs `:root` et `.dark`.
 
@@ -324,14 +330,26 @@ Geist Mono capitales, dans la grille comme dans la modale ; les valeurs
 numériques de la table des cotes, en Geist Mono. Les modales s'ouvrent sur un
 voile flouté, celui de l'AlertDialog des styles récents de shadcn.
 
+Les commandes suivent une charte de machine analogique, très contrastée sur un
+fond neutre, et parlent toutes Geist Mono en capitales — boutons, filtres,
+menus, onglets, navigation. Les boutons d'action sont des touches à aplat
+franc : noires en clair et blanches en sombre, jaune pour l'action principale,
+rouges pour ce qui efface, cyan pour « Réinitialiser », toujours en fin de
+dernière ligne de filtres. Les filtres, bascules et options sont bordés tant
+qu'ils sont éteints, et s'allument en jaune quand ils s'appliquent. Boutons,
+filtres, champs de recherche, badges, onglets, menus et cartes portent une
+encoche : le coin supérieur droit coupé à 45°. L'en-tête ne porte que le nom
+de la page ; les repères chiffrés sont des modules à la largeur de leur
+contenu, et la complétion de la collection a sa barre de progression.
+
 ## Note sur le combobox
 
 Le `Combobox` du registry shadcn (`multiple` + `ComboboxChips`) importe
 `@base-ui/react` — c'est le seul composant du registry qui ne soit pas Radix. Ce
 projet étant en Radix exclusivement, la sélection multiple est construite avec
-`Popover` + `Command` + `Badge`, la recette combobox documentée côté Radix.
-Pour passer au composant officiel : `npm i @base-ui/react`, récupérer
-`combobox.tsx` et `input-group.tsx` du registry, et remplacer
+`Popover` + `Command`, la recette combobox documentée côté Radix, derrière le
+déclencheur commun des filtres. Pour passer au composant officiel :
+`npm i @base-ui/react`, récupérer `combobox.tsx` du registry, et remplacer
 `src/components/extension-combobox.tsx`.
 
 ## Licences
