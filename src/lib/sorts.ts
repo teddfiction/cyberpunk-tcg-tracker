@@ -21,14 +21,20 @@ export type SortConfig = { label: string; sorting: SortingState }
 const asc = (id: string) => ({ id, desc: false })
 
 /**
- * Ajoute le nom en dernier critère : deux cartes ex æquo — même coût, ou coût
- * absent — se lisent dans l'ordre alphabétique.
+ * Ajoute les derniers critères, le nom puis la rareté : deux cartes ex æquo —
+ * même coût, ou coût absent — se lisent dans l'ordre alphabétique, et deux
+ * tuiles d'une même carte — déclinée par rareté, ou versions de la
+ * collection — de la plus commune à la plus rare.
  *
  * Explicite plutôt que laissé à l'ordre d'origine des lignes : celui-ci ne
- * départage que si les lignes arrivent déjà triées par nom, ce que rien
- * n'impose à la grille qu'on passe à `useTable`.
+ * départage que si les lignes arrivent déjà triées, ce que rien n'impose à la
+ * grille qu'on passe à `useTable`.
  */
-const thenName = (...keys: SortingState): SortingState => [...keys, asc("name")]
+const tieBreak = (...keys: SortingState): SortingState => [
+  ...keys,
+  asc("name"),
+  asc("rarities"),
+]
 
 /**
  * Les tris proposés. Une entrée ici suffit : `SortMenu` lit le registre, et
@@ -38,17 +44,17 @@ const thenName = (...keys: SortingState): SortingState => [...keys, asc("name")]
 export const SORTS = {
   default: {
     label: "Défaut (Couleur › Type › Coût)",
-    sorting: thenName(asc("color"), asc("type"), asc("cost")),
+    sorting: tieBreak(asc("color"), asc("type"), asc("cost")),
   },
-  name: { label: "Nom", sorting: [asc("name")] },
-  color: { label: "Couleur", sorting: thenName(asc("color")) },
-  type: { label: "Type", sorting: thenName(asc("type")) },
-  cost: { label: "Coût", sorting: thenName(asc("cost")) },
-  power: { label: "Puissance", sorting: thenName(asc("power")) },
-  ram: { label: "RAM", sorting: thenName(asc("ram")) },
-  num: { label: "Numéro de carte", sorting: thenName(asc("num")) },
+  name: { label: "Nom", sorting: tieBreak() },
+  color: { label: "Couleur", sorting: tieBreak(asc("color")) },
+  type: { label: "Type", sorting: tieBreak(asc("type")) },
+  cost: { label: "Coût", sorting: tieBreak(asc("cost")) },
+  power: { label: "Puissance", sorting: tieBreak(asc("power")) },
+  ram: { label: "RAM", sorting: tieBreak(asc("ram")) },
+  num: { label: "Numéro de carte", sorting: tieBreak(asc("num")) },
   // Décroissant : on cherche d'abord ce qu'on a en nombre.
-  qty: { label: "Exemplaires", sorting: thenName({ id: "qty", desc: true }) },
+  qty: { label: "Exemplaires", sorting: tieBreak({ id: "qty", desc: true }) },
 } as const satisfies Record<string, SortConfig>
 
 export type SortId = keyof typeof SORTS

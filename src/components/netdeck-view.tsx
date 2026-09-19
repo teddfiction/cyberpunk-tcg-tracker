@@ -35,7 +35,7 @@ import {
   type Scope,
 } from "@/lib/collection"
 import { download, toCsv } from "@/lib/csv"
-import { FACETS, RARITY_FACET, facetOptions } from "@/lib/facets"
+import { FACETS, RARITY_FACET, facetOptions, gridRows } from "@/lib/facets"
 import { plural } from "@/lib/format"
 import { buildGrid, buildPrintings, searchCard } from "@/lib/printings"
 import { SORTS } from "@/lib/sorts"
@@ -82,6 +82,9 @@ export function NetdeckView({
 
   const table = useTable({
     data: grid,
+    // Cocher une rareté décline chaque carte en une tuile par rareté : Secret
+    // et Iconic Secret sont deux cartes à collectionner, pas deux visuels.
+    rowsOf: gridRows,
     columns: GRID_COLUMNS,
     defaultSort: SORTS.default.sorting,
     getRowId: (c) => c.id,
@@ -91,17 +94,21 @@ export function NetdeckView({
 
   // Comptées sur toutes les tuiles du périmètre : cocher une option ne doit pas
   // faire disparaître les autres, sinon on ne peut plus élargir sa sélection.
+  // Les tuiles de TanStack et non `grid` : déclinée par rareté, la grille
+  // compte une tuile par rareté — ce que montre, et ce que filtre, la grille.
   // La collection masque Possédée / Manquante : chaque onglet n'y aurait qu'une
   // valeur, et c'est ce que l'onglet dit déjà.
   const columnFilters = table.getState().columnFilters
+  const core = table.getCoreRowModel()
   const options = React.useMemo(() => {
+    const tiles = core.rows.map((r) => r.original)
     const selected = (id: string) =>
       (columnFilters.find((f) => f.id === id)?.value as string[] | undefined) ?? []
     return FACETS.filter((facet) => !inCollection || facet.id !== OWNED_FACET).map((facet) => ({
       facet,
-      options: facetOptions(facet, grid, selected(facet.id)),
+      options: facetOptions(facet, tiles, selected(facet.id)),
     }))
-  }, [grid, inCollection, columnFilters])
+  }, [core, inCollection, columnFilters])
 
   const lost = React.useMemo(
     () => (inCollection && base.length ? orphans(collection, base) : []),
@@ -118,6 +125,7 @@ export function NetdeckView({
   // qui distingue deux versions, une grille filtrée qui garderait le visuel par
   // défaut ne montrerait pas ce qu'on vient de cocher.
   const rarities = (table.getColumn(RARITY_FACET)?.getFilterValue() as string[]) ?? []
+  const impressions = visible.reduce((n, c) => n + c.printings.length, 0)
   const filtering = columnFilters.length > 0 || search.length > 0
 
   // Recherche, filtres, grille : ce que chaque onglet de la collection montre
@@ -182,11 +190,13 @@ export function NetdeckView({
 
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="text-muted-foreground text-xs tabular-nums">
+              {/* Déclinée par rareté, la base compte ses cartes et ses tuiles à
+                  part : Sasha en Secret et en Iconic Secret, c'est une carte
+                  de la base et deux tuiles. */}
               {shown === "all"
-                ? `${visible.length} / ${grid.length} cartes · ${visible.reduce(
-                    (n, c) => n + c.printings.length,
-                    0
-                  )} impressions`
+                ? `${new Set(visible.map((c) => c.name)).size} / ${grid.length} cartes` +
+                  (rarities.length ? ` · ${plural(visible.length, "tuile")}` : "") +
+                  ` · ${impressions} impressions`
                 : `${visible.length} / ${plural(grid.length, "version")}` +
                   (shown === "owned"
                     ? ` · ${plural(
@@ -275,9 +285,10 @@ const FOOTNOTES: Record<Scope, React.ReactNode> = {
   all: (
     <>
       Source : <code>api.netdeck.gg</code> via <code>npm run data:netdeck:images</code>. Cliquer
-      une carte ouvre ses versions. La cote Cardmarket n'est rattachée que lorsqu'un seul produit
-      correspond à cette carte dans cette extension ; sinon la fourchette est affichée en
-      pointillés — rien ne dit lequel est cette impression précise.
+      une carte ouvre ses versions. Cocher une rareté décline chaque carte en une tuile par
+      rareté cochée, réduite aux versions de cette rareté. La cote Cardmarket n'est rattachée
+      que lorsqu'un seul produit correspond à cette carte dans cette extension ; sinon la
+      fourchette est affichée en pointillés — rien ne dit lequel est cette impression précise.
     </>
   ),
   owned: (

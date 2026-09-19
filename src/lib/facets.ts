@@ -6,9 +6,12 @@
  * facette, c'est ajouter une ligne ici puis la colonne qui la porte dans
  * `components/grid-columns.ts`.
  */
+import type { ColumnFiltersState } from "@tanstack/react-table"
+
 import { rarityRank } from "@/data/rarities"
 import { MISSING, OWNED, OWNED_FACET } from "@/lib/collection"
 import { words } from "@/lib/format"
+import { byRarity } from "@/lib/printings"
 import type { GridCard } from "@/types"
 
 export type FacetSort = "count" | "numeric" | "rarity"
@@ -48,6 +51,26 @@ export const FACETS: Facet[] = [
 ]
 
 const num = (v: number | null) => (v != null ? [String(v)] : [])
+
+/**
+ * Tuiles de la grille selon les filtres posés : cocher une rareté décline
+ * chaque carte en une tuile par rareté. Sans quoi Sasha Yakovleva, cochée en
+ * Secret et en Iconic Secret, ne ferait qu'une tuile — et la seconde, celle
+ * qu'on cherchait peut-être, ne se verrait pas.
+ *
+ * Appliquée avant TanStack (`rowsOf` de `useTable`), qui filtre et trie ensuite
+ * ces tuiles comme les autres : la facette Rareté ne garde que les raretés
+ * cochées, et chaque tuile ne porte que les sets, la cote et les exemplaires
+ * des siennes. Pas de second moteur de filtrage.
+ *
+ * Sans rareté cochée, une tuile par carte : la base telle que la présente le
+ * site officiel, chaque carte dans sa version par défaut. Sans effet sur la
+ * collection, dont chaque tuile est déjà une version.
+ */
+export function gridRows(grid: GridCard[], filters: ColumnFiltersState): GridCard[] {
+  const checked = filters.find((f) => f.id === RARITY_FACET)?.value as string[] | undefined
+  return checked?.length ? grid.flatMap(byRarity) : grid
+}
 
 export type FacetOption = { value: string; count: number }
 

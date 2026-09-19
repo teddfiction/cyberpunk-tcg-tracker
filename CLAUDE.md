@@ -90,9 +90,11 @@ d'union de chaînes à maintenir en parallèle.
 2. `components/grid-columns.ts` → la colonne du même identifiant, avec son
    `filterFn` : `filterIn` pour une valeur scalaire, `filterAny` pour une liste.
 
-Les effectifs affichés sont comptés sur **toutes** les cartes, jamais sur les
+Les effectifs affichés sont comptés sur **toutes** les tuiles, jamais sur les
 seules visibles : sinon cocher une option ferait disparaître les autres et l'on
-ne pourrait plus élargir sa sélection.
+ne pourrait plus élargir sa sélection. Toutes les tuiles de TanStack
+(`getCoreRowModel`), et non `grid` : une rareté cochée décline la grille en une
+tuile par rareté, et c'est ce qu'elle filtre alors.
 
 La facette vaut pour la base **et** la collection, qui partagent registre et
 colonnes. Seule « Collection » (`OWNED_FACET`) est masquée dans la collection,
@@ -106,10 +108,11 @@ n'exister dans l'autre sur aucune tuile.
 ### Ajouter un tri à la grille de cartes
 
 **Un fichier : `lib/sorts.ts`**, une entrée dans `SORTS` — un libellé et l'état
-TanStack correspondant, passé par `thenName(…)` pour que le nom départage les
-ex æquo. Le menu se remplit tout seul, et des tests vérifient que chaque tri vise
-une colonne qui existe dans `grid-columns.ts`, se termine par le nom, et ne trie
-qu'en ascendant une colonne à valeurs manquantes.
+TanStack correspondant, passé par `tieBreak(…)` pour que le nom, puis la
+rareté, départagent les ex æquo. Le menu se remplit tout seul, et des tests
+vérifient que chaque tri vise une colonne qui existe dans `grid-columns.ts`, se
+termine par le nom puis la rareté, et ne trie qu'en ascendant une colonne à
+valeurs manquantes.
 
 Le tri ne se double pas d'un `useState` : `sortIdOf` retrouve l'entrée active
 depuis l'état de la table, qui en reste seule dépositaire.
@@ -144,7 +147,9 @@ chaînes à maintenir à côté. Même mécanique que les modes.
 est générique sur la forme de ligne. Lui passer `data`, `columns`, `defaultSort`,
 `getRowId`, `globalFilterFn` et `meta`, et `DataTable` rend l'instance telle
 quelle. C'est ce que fait la base de cartes, dont les lignes n'ont rien à voir
-avec celles des cotes.
+avec celles des cotes. Si l'unité de ligne dépend des filtres, `rowsOf` tire
+les lignes de `data` selon les filtres posés, avant TanStack — une fonction de
+`lib/`, comme `gridRows` pour la grille.
 
 ### Ajouter une donnée venue de Netdeck
 
@@ -249,8 +254,9 @@ imports JSON (mémoire) ──┘        ▲                                  �
                                               columnsFor(mode, enriched)
 
 useDataset ─► buildPrintings ─► buildGrid ──┬───────────────► useTable ─► CardGrid / toCsv
- (enrichedCards,  (qty)          (owned)    │   (base)            ▲
-  collection)                               ├─► ownedGrid ────────┤
+ (enrichedCards,  (qty)          (owned)    │   (base)            ▲  (gridRows : une tuile
+  collection)                               │                     │   par rareté cochée)
+                                            ├─► ownedGrid ────────┤
                                             │   (Collectées)      │
                                             └─► missingGrid ──────┘
                                                 (Manquantes)
@@ -265,7 +271,7 @@ toute la mécanique et ne diffèrent que par leurs lignes et leurs colonnes :
 | Vue | Ligne | Construite par | Colonnes | Rendu |
 |---|---|---|---|---|
 | Cotes Cardmarket | un produit Cardmarket, ou une carte regroupée | `lib/dataset.ts` | `components/columns.tsx` | `DataTable` |
-| Base de cartes | une carte Netdeck, ses impressions en modale | `lib/printings.ts` | `components/grid-columns.ts` | `CardGrid` + `CardDialog` |
+| Base de cartes | une carte Netdeck, ses impressions en modale ; une carte dans une rareté, quand une rareté est cochée | `lib/printings.ts` | `components/grid-columns.ts` | `CardGrid` + `CardDialog` |
 | Collection | une version possédée, ou manquante | `lib/collection.ts` (`ownedGrid`, `missingGrid`) | `components/grid-columns.ts` | `CardGrid` + `CardDialog` |
 
 **La grille est une table sans table.** Ses colonnes ne rendent rien : elles
@@ -310,17 +316,46 @@ miniatures des versions sont une grille `auto-fill` : elles gardent ~90 px que
 la carte ait deux versions ou sept, et chacune porte son numéro de collecteur,
 seul texte qui sépare deux versions d'une même rareté.
 
-**Le visuel d'une tuile suit la rareté filtrée.** Cocher « Iconic Legend » fait
-montrer l'illustration Iconic Legend de chaque carte, et la modale s'ouvre sur
-cette version-là. C'est `printingIndex` (`lib/printings.ts`) qui l'élit, au
-rendu et non dans la donnée : le choix dépend de l'état de la table, que
-`buildGrid` ne connaît pas — d'où l'absence de champ `thumb` sur `GridCard`. La
-raison est celle de la modale : l'artwork est la seule chose qui distingue deux
-impressions, donc une grille filtrée par rareté qui garderait le visuel par
-défaut ne montrerait rien de ce qu'on vient de demander. Les replis — carte qui
-ne porte pas la rareté cochée, impression sans miniature — ramènent au rang 0.
-C'est aussi pourquoi la facette Rareté a un identifiant nommé (`RARITY_FACET`,
-`lib/facets.ts`) : `NetdeckView` la vise en dehors du registre des facettes.
+**Cocher une rareté décline les cartes par rareté.** Sans rareté cochée, une
+tuile par carte, sur sa version par défaut — la base telle que la présente le
+site officiel. Dès qu'une rareté est cochée, une tuile par rareté de chaque
+carte (`byRarity`, `lib/printings.ts`), et la facette ne garde que les cochées :
+Secret et Iconic Secret cochées montrent Sasha Yakovleva deux fois, sa Secret
+et son Iconic Secret. C'est la rareté qu'on collectionne, pas l'impression :
+l'Iconic Secret est une carte d'exception, la Secret complète le jeu de base, et
+l'une ne tient pas lieu de l'autre. Ce qui en découle :
+
+- **Une tuile par rareté, pas par impression.** Réimpressions et illustrations
+  alternatives d'une même rareté — #109 et #β109 de Sasha, #005a et #005b de
+  V - Streetkid — restent sur une tuile, et dans sa modale : l'une ou l'autre
+  complète la collection.
+- **Chaque tuile ne porte que ses impressions** (`narrow`) : sets, cote et
+  exemplaires sont les leurs. Filtrer un set ou « Manquante » vaut donc rareté
+  par rareté — l'Iconic Secret possédée ne cache plus la Secret qui manque.
+  `narrow` sert aussi aux versions de la collection : une seule agrégation.
+- **La déclinaison se fait avant TanStack**, par `gridRows` (`lib/facets.ts`),
+  que `useTable` applique aux données selon les filtres posés (`rowsOf`).
+  TanStack filtre et trie ensuite ces tuiles comme les autres : pas de second
+  moteur de filtrage, et les filtres restent son seul état. `makeGrid` passe
+  par la même fonction.
+- **Identifiant `nom|rareté`**, sauf pour une carte d'une seule rareté, rendue
+  telle quelle. Les tuiles d'une carte se suivent de la plus commune à la plus
+  rare : `tieBreak` trie par rareté après le nom.
+- **La tuile porte alors sa rareté en badge**, comme une version de la
+  collection, et la modale aussi (`tileRarity`) : sans lui, « 2 impressions »
+  se lirait comme le compte de la carte. Le compteur de la vue dit cartes,
+  tuiles et impressions.
+
+Le visuel suit la même logique : c'est `printingIndex` (`lib/printings.ts`) qui
+élit l'impression montrée, au rendu et non dans la donnée — le choix dépend de
+l'état de la table, que `buildGrid` ne connaît pas, d'où l'absence de champ
+`thumb` sur `GridCard`. Déclinée, la tuile n'a plus que des impressions de sa
+rareté : c'est la première qui a une miniature. L'artwork est la seule chose qui
+distingue deux impressions, donc une grille filtrée par rareté qui garderait le
+visuel par défaut ne montrerait rien de ce qu'on vient de demander. C'est aussi
+pourquoi la facette Rareté a un identifiant nommé (`RARITY_FACET`,
+`lib/facets.ts`) : `gridRows` et `NetdeckView` la visent en dehors du registre
+des facettes.
 
 **La collection est la base de cartes sur un autre périmètre**, pas une seconde
 interface. Même `NetdeckView` (prop `scope`), même grille, même modale, même
@@ -411,8 +446,10 @@ Tous couverts par des tests : si l'un saute, `npm run test` le dit.
   collation française, et à valeur égale TanStack retombe sur l'index
   d'origine, donc sur ce tri-là — supprimer ce tri amont rendrait l'ordre des
   ex æquo aléatoire. Grille : chaque tri de `SORTS` se termine **explicitement**
-  par le nom (`thenName`), sans dépendre de l'ordre dans lequel les cartes
-  arrivent. Un test passe la grille à rebours pour le vérifier.
+  par le nom puis la rareté (`tieBreak`), sans dépendre de l'ordre dans lequel
+  les tuiles arrivent — la rareté départage les tuiles d'une même carte,
+  déclinée par rareté ou versions de la collection. Des tests passent la
+  grille à rebours pour le vérifier.
 - **Recherche : la déclarer par `id`, jamais par rang.** `enableGlobalFilter`
   n'est vrai que sur la colonne `name`. La viser par sa position casserait la
   recherche en silence dès qu'une colonne passe devant — la colonne Visuel n'a
@@ -478,7 +515,9 @@ Vitest lit `vite.config.ts` : l'alias `@/` et le JSX marchent sans configuration
   comportement observable qui compte.
 - Une nouvelle colonne, un nouveau filtre ou un nouveau mode méritent un test :
   ils sont tous exprimables en trois lignes avec `makeTable`. Pour la grille de
-  cartes, c'est `makeGrid` (même fichier), et `gridNames` pour lire l'ordre.
+  cartes, c'est `makeGrid` (même fichier), `gridNames` pour lire l'ordre et
+  `gridIds` pour distinguer les tuiles d'une même carte. Comme `useTable`,
+  `makeGrid` décline la grille par rareté dès qu'une rareté est cochée.
   `makeGrid(state, data)` accepte une autre grille : `gridOf(COLLECTION)` pour
   la base avec quantités, `ownedGrid(gridOf(COLLECTION))` et
   `missingGrid(gridOf(COLLECTION))` pour les deux onglets de la collection.

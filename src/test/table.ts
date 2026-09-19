@@ -14,6 +14,7 @@ import { GRID_COLUMNS } from "@/components/grid-columns"
 import { buildCards, buildRows } from "@/lib/dataset"
 import { buildGrid, buildPrintings, searchCard } from "@/lib/printings"
 import { emptyIndex } from "@/lib/enrich"
+import { gridRows } from "@/lib/facets"
 import { MODES, type Mode } from "@/lib/modes"
 import { HIDDEN_COLUMNS, rowId, searchRow } from "@/lib/table"
 import { buildEnrichIndex } from "@/lib/enrich"
@@ -84,10 +85,13 @@ export const gridCards = gridOf()
  * Instance headless de la grille. Le tri et les filtres s'y testent par l'ordre
  * qu'ils produisent, pas par les fonctions prises isolément. `data` permet d'y
  * passer la grille de la collection, qui partage colonnes et facettes.
+ *
+ * Les lignes passent par `gridRows`, comme dans `useTable` : une rareté cochée
+ * décline les cartes par rareté, ici aussi.
  */
 export function makeGrid(state: State = {}, data: GridCard[] = gridCards): Table<GridCard> {
   const table = createTable<GridCard>({
-    data,
+    data: gridRows(data, state.columnFilters ?? []),
     columns: GRID_COLUMNS,
     state: {},
     onStateChange: () => {},
@@ -111,3 +115,6 @@ export function makeGrid(state: State = {}, data: GridCard[] = gridCards): Table
 /** Noms des cartes affichées par la grille, dans l'ordre. */
 export const gridNames = (table: Table<GridCard>) =>
   table.getRowModel().rows.map((r) => r.original.name)
+
+/** Tuiles affichées, par leur identifiant : ce qui sépare deux raretés d'une même carte. */
+export const gridIds = (table: Table<GridCard>) => table.getRowModel().rows.map((r) => r.id)
