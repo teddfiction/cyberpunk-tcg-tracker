@@ -1,7 +1,7 @@
 /** Formatage et normalisation — `norm()` est la clé de jointure entre sources. */
 import { describe, expect, it } from "vitest"
 
-import { eur, minOf, norm, pct, plural, sentences, words } from "@/lib/format"
+import { eur, minOf, norm, pct, plural, sentences, share, words } from "@/lib/format"
 
 describe("norm", () => {
   it("rapproche les deux écritures d'un même nom", () => {
@@ -110,5 +110,20 @@ describe("sentences", () => {
 
   it("rend une liste vide sur une chaîne vide", () => {
     expect(sentences("   ")).toEqual([])
+  })
+})
+
+describe("share", () => {
+  it("arrondit par défaut : 100 seulement une fois tout réuni", () => {
+    expect(share(303, 304)).toBe(99)
+    expect(share(304, 304)).toBe(100)
+  })
+
+  it("rend une part entière", () => {
+    expect(share(87, 152)).toBe(57)
+  })
+
+  it("vaut 0 quand il n'y a rien à réunir", () => {
+    expect(share(0, 0)).toBe(0)
   })
 })
