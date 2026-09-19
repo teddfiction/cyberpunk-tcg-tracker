@@ -13,14 +13,14 @@
  * colonnes de `grid-columns.ts` ne rendent rien, elles portent les facettes.
  */
 import * as React from "react"
-import { Download, Library, RotateCcw, Search, TriangleAlert, Upload } from "lucide-react"
+import { Download, Library, RotateCcw, TriangleAlert, Upload } from "lucide-react"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent } from "@/components/ui/tabs"
+import { ActionButton } from "@/components/action-button"
 import { CardGrid } from "@/components/card-grid"
 import { CollectionStats } from "@/components/collection-stats"
+import { SearchField } from "@/components/controls"
 import { FacetFilter } from "@/components/facet-filter"
 import { GRID_COLUMNS } from "@/components/grid-columns"
 import { LevelTabs } from "@/components/level-tabs"
@@ -153,24 +153,17 @@ export function NetdeckView({
       {grid.length > 0 && (
         <>
           <div className="flex flex-wrap items-center gap-2">
-            <div className="relative min-w-56 flex-1">
-              <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
-              <Input
-                value={search}
-                onChange={(e) => table.setGlobalFilter(e.target.value)}
-                placeholder="Chercher un nom, un tag, un set, une rareté…"
-                className="pl-8"
-              />
-            </div>
+            <SearchField
+              value={search}
+              onChange={(e) => table.setGlobalFilter(e.target.value)}
+              placeholder="Chercher un nom, un tag, un set, une rareté…"
+              className="min-w-56 flex-1"
+            />
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => download(CSV_NAMES[shown], toCsv(table, codes))}
-            >
+            <ActionButton onClick={() => download(CSV_NAMES[shown], toCsv(table, codes))}>
               <Download />
               <span className="hidden sm:inline">Exporter en CSV</span>
-            </Button>
+            </ActionButton>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -185,27 +178,14 @@ export function NetdeckView({
                 }
               />
             ))}
-
-            {filtering && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  table.resetColumnFilters()
-                  table.resetGlobalFilter()
-                }}
-              >
-                <RotateCcw />
-                Réinitialiser
-              </Button>
-            )}
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2">
             {/* Possession et tri côte à côte, à gauche, sous les filtres : les
                 deux disent comment la grille se présente, pas ce qu'elle
                 contient. La possession, dans la collection seulement — la base
-                ne mesure pas de complétion. */}
+                ne mesure pas de complétion. « Réinitialiser » ferme la ligne,
+                la dernière des commandes, comme dans la table des cotes. */}
             <div className="flex flex-wrap items-center gap-2">
               {inCollection && (
                 <OwnedFilter
@@ -217,6 +197,18 @@ export function NetdeckView({
                 sorting={table.getState().sorting}
                 onSort={(next) => table.setSorting(next)}
               />
+              {filtering && (
+                <ActionButton
+                  tone="secondary"
+                  onClick={() => {
+                    table.resetColumnFilters()
+                    table.resetGlobalFilter()
+                  }}
+                >
+                  <RotateCcw />
+                  Réinitialiser
+                </ActionButton>
+              )}
             </div>
 
             {/* À droite, et y reste passé à la ligne (`ml-auto`). */}
@@ -353,10 +345,10 @@ function EmptyState({
           </p>
         )}
       </div>
-      <Button size="sm" onClick={onImport}>
+      <ActionButton tone="primary" onClick={onImport}>
         <Upload />
         Importer un JSON
-      </Button>
+      </ActionButton>
     </div>
   )
 }
@@ -371,10 +363,10 @@ function EmptyCollection({ onBrowse }: { onBrowse: () => void }) {
           cartes. Ouvrir une carte, puis « Ajouter à ma collection ».
         </p>
       </div>
-      <Button size="sm" onClick={onBrowse}>
+      <ActionButton tone="primary" onClick={onBrowse}>
         <Library />
         Parcourir la base de cartes
-      </Button>
+      </ActionButton>
     </div>
   )
 }

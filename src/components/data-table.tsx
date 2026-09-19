@@ -14,6 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { CONTROL_TEXT } from "@/components/controls"
 import { cn } from "@/lib/utils"
 
 /** Générique : sert aussi bien aux cotes Cardmarket qu'aux impressions Netdeck. */
@@ -47,7 +48,8 @@ export function DataTable<T>({ table }: { table: TanstackTable<T> }) {
                           // `px-2` et non `px-3` : c'est le retrait des cellules
                           // du registry, donc l'en-tête s'aligne enfin sur sa
                           // colonne — et douze colonnes y gagnent 8 px chacune.
-                          "h-auto w-full justify-start gap-1 px-2 py-2 text-xs whitespace-nowrap",
+                          CONTROL_TEXT,
+                          "h-auto w-full justify-start gap-1 px-2 py-2 whitespace-nowrap",
                           sorted ? "text-foreground font-semibold" : "text-muted-foreground",
                           right && "justify-end"
                         )}
@@ -58,7 +60,13 @@ export function DataTable<T>({ table }: { table: TanstackTable<T> }) {
                       </Button>
                     ) : (
                       // Sans tri, un bouton serait un leurre : rien ne s'y passe.
-                      <div className="text-muted-foreground px-2 py-2 text-xs whitespace-nowrap">
+                      // Même voix que les en-têtes triables, qu'il côtoie.
+                      <div
+                        className={cn(
+                          CONTROL_TEXT,
+                          "text-muted-foreground px-2 py-2 whitespace-nowrap"
+                        )}
+                      >
                         {label}
                       </div>
                     )}

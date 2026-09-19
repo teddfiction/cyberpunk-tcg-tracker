@@ -5,7 +5,7 @@
  */
 import * as React from "react"
 
-import { Badge } from "@/components/ui/badge"
+import { NotchBadge } from "@/components/notch-badge"
 import { colorVar } from "@/data/colors"
 import { rarityLabel } from "@/data/rarities"
 import { cn } from "@/lib/utils"
@@ -15,11 +15,12 @@ import type { CardStat, Collectible } from "@/lib/printings"
 export const INFO = "font-mono uppercase"
 
 /**
- * Badge en contour. Même graisse que la ligne de caractéristiques : les badges
- * accompagnent l'illustration, ils ne lui disputent pas le regard.
+ * Badge en contour, droit et encoché (`NotchBadge`). Même graisse que la ligne
+ * de caractéristiques : les badges accompagnent l'illustration, ils ne lui
+ * disputent pas le regard.
  */
-export function InfoBadge({ className, ...props }: React.ComponentProps<typeof Badge>) {
-  return <Badge variant="outline" className={cn(INFO, "text-[10px]", className)} {...props} />
+export function InfoBadge({ className, ...props }: React.ComponentProps<typeof NotchBadge>) {
+  return <NotchBadge variant="outline" className={cn(INFO, "text-[10px]", className)} {...props} />
 }
 
 /** Le type, teinté de la couleur de la carte : seule couleur que portent les badges. */

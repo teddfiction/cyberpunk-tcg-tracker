@@ -1,5 +1,5 @@
 /**
- * Registre des modes d'affichage — ce qui change quand on bascule d'onglet.
+ * Registre des modes d'affichage — ce qui change quand on choisit un autre mode.
  *
  * Ajouter un mode : une entrée ici, plus sa liste de colonnes dans
  * `components/columns.tsx`. Les deux sont des `Record<Mode, …>` : le
@@ -7,7 +7,7 @@
  */
 
 export type ModeConfig = {
-  /** Libellé de l'onglet. */
+  /** Libellé de l'option, dans le sélecteur de mode. */
   label: string
   /** Nom des lignes, pour le compteur « 12 / 319 produits ». */
   noun: string
@@ -45,5 +45,5 @@ export const MODES = {
 
 export type Mode = keyof typeof MODES
 
-/** Ordre des onglets. */
+/** Ordre des options du sélecteur. */
 export const MODE_IDS = Object.keys(MODES) as Mode[]
