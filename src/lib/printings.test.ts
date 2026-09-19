@@ -8,17 +8,26 @@ import { GRID_COLUMNS } from "@/components/grid-columns"
 import { MISSING, OWNED, OWNED_FACET, ownedGrid } from "@/lib/collection"
 import { toCsv } from "@/lib/csv"
 import { buildRows } from "@/lib/dataset"
-import { FACETS, RARITY_FACET, facetOptions, gridRows, matchOptions } from "@/lib/facets"
+import {
+  FACETS,
+  RARITY_FACET,
+  facetOptions,
+  gridFacets,
+  gridRows,
+  matchOptions,
+} from "@/lib/facets"
 import { emptyIndex } from "@/lib/enrich"
 import {
   buildGrid,
+  altOf,
   buildPrintings,
-  byRarity,
   cardStats,
+  collectibleText,
+  collectibles,
   focusTarget,
   printingIndex,
   statText,
-  tileRarity,
+  tileCollectible,
   tileStats,
 } from "@/lib/printings"
 import { COLOR_RANK, SORT_IDS, SORTS, TYPE_RANK, sortIdOf } from "@/lib/sorts"
@@ -252,10 +261,10 @@ describe("déclinaison par rareté", () => {
     expect(gridIds(table)).toEqual(["Sasha - Test|Iconic Secret"])
   })
 
-  it("garde sur une tuile les versions d'une même rareté", () => {
+  it("garde sur une tuile les réimpressions d'une même rareté", () => {
     // #109 et #β109 sont la même carte à collectionner : l'une ou l'autre
     // complète le jeu de base. La modale de la tuile présente les deux.
-    const [secret, iconic] = byRarity(sasha[0])
+    const [secret, iconic] = collectibles(sasha[0])
     expect(secret.printings.map((p) => p.uuid)).toEqual(["s1", "s2"])
     expect(secret.sets).toEqual(["Retail", "Beta"])
     expect(iconic.printings.map((p) => p.uuid)).toEqual(["s3"])
@@ -265,8 +274,8 @@ describe("déclinaison par rareté", () => {
 
   it("rend telle quelle une carte d'une seule rareté", () => {
     const eclair = gridOf().find((c) => c.name === "Éclair - Vif")!
-    expect(byRarity(eclair)).toEqual([eclair])
-    expect(byRarity(eclair)[0]).toBe(eclair)
+    expect(collectibles(eclair)).toEqual([eclair])
+    expect(collectibles(eclair)[0]).toBe(eclair)
   })
 
   it("range les tuiles d'une carte de la plus commune à la plus rare, d'où qu'elles arrivent", () => {
@@ -303,16 +312,18 @@ describe("déclinaison par rareté", () => {
   })
 
   it("ne compte la cote et les exemplaires que de la rareté de la tuile", () => {
-    const [common, nova] = byRarity(gridOf(COLLECTION).find((c) => c.name === "Zébu - Calme")!)
+    const [common, nova] = collectibles(gridOf(COLLECTION).find((c) => c.name === "Zébu - Calme")!)
     expect([common.owned, nova.owned]).toEqual([3, 0])
     expect([common.low, nova.low]).toEqual([15, 8])
   })
 
-  it("compte autant de tuiles par rareté que de cartes qui la portent", () => {
-    // Cocher une rareté ne change pas les effectifs de la facette Rareté.
-    const rarete = FACETS.find((f) => f.id === RARITY_FACET)!
-    const grid = gridOf()
-    expect(facetOptions(rarete, gridRows(grid, zebu))).toEqual(facetOptions(rarete, grid))
+  it("compte les autres facettes sur les tuiles du moment", () => {
+    // Déclinée, la grille compte Zébu deux fois : une Common, une Nova Rare.
+    const couleur = FACETS.find((f) => f.id === "color")!
+    const count = (filters: typeof zebu) =>
+      gridFacets([couleur], gridOf(), filters)[0].options.find((o) => o.value === "Red")?.count
+    expect(count([])).toBe(1)
+    expect(count(zebu)).toBe(2)
   })
 
   it("laisse la collection telle quelle : chaque tuile y est déjà une version", () => {
@@ -328,15 +339,138 @@ describe("déclinaison par rareté", () => {
     expect(lines.map((l) => l.includes('"Nova Rare"'))).toEqual([false, true])
   })
 
-  it("montre la rareté d'une tuile qui n'en représente qu'une", () => {
-    const [secret] = byRarity(sasha[0])
+  it("montre la carte à collectionner d'une tuile qui n'en représente qu'une", () => {
+    const [secret] = collectibles(sasha[0])
     // Carte entière de la base : pas de badge, il ne figurerait que sur les
     // cartes d'une seule rareté.
-    expect(tileRarity(sasha[0], "all", [])).toBeNull()
-    expect(tileRarity(gridOf().find((c) => c.name === "Éclair - Vif")!, "all", [])).toBeNull()
+    expect(tileCollectible(sasha[0], "all", [])).toBeNull()
+    expect(tileCollectible(gridOf().find((c) => c.name === "Éclair - Vif")!, "all", [])).toBeNull()
     // Déclinée par rareté, ou version de la collection : la sienne.
-    expect(tileRarity(secret, "all", ["Secret"])).toBe("Secret")
-    expect(tileRarity(ownedGrid(gridOf(COLLECTION))[0], "owned", [])).toBe("Epic")
+    expect(tileCollectible(secret, "all", ["Secret"])).toEqual({ rarity: "Secret", alt: "" })
+    expect(tileCollectible(ownedGrid(gridOf(COLLECTION))[0], "owned", [])).toEqual({
+      rarity: "Epic",
+      alt: "",
+    })
+  })
+})
+
+describe("illustrations alternatives", () => {
+  // Calquée sur V - Streetkid : deux illustrations Rare, masculine (a) et
+  // féminine (b), chacune en Retail et en Beta, et une Iconic Legend.
+  const print = (uuid: string, set: string, number: string, rarity: string) => ({
+    uuid,
+    set,
+    setCode: set.toLowerCase(),
+    number,
+    rarity,
+    artist: null,
+    thumb: `data:${uuid}`,
+  })
+  const V: EnrichedCard = {
+    name: "V - Test",
+    slug: null,
+    color: "Yellow",
+    type: "Legend",
+    printings: [
+      print("v1", "Retail", "005a", "Rare"),
+      print("v2", "Retail", "005b", "Rare"),
+      print("v3", "Beta", "β005a", "Rare"),
+      print("v4", "Beta", "β005b", "Rare"),
+      print("v5", "Beta", "β144", "Iconic Legend"),
+    ],
+  }
+  const v = buildGrid([V], buildPrintings({ cards: [V], rows: [], expansions: EXPANSIONS, codes: CODES }))
+  const rare = [{ id: RARITY_FACET, value: ["Rare"] }]
+
+  it("lit la lettre du numéro de collecteur, Beta comprise", () => {
+    expect(altOf("005a")).toBe("a")
+    expect(altOf("β005b")).toBe("b")
+    // La casse est celle de la source : « 005A » n'est pas « 005a ».
+    expect(altOf("005A")).toBe("A")
+  })
+
+  it("ne voit pas d'illustration alternative dans un numéro sans lettre", () => {
+    // Deux numéros différents ne suffisent pas : Royce a deux Rare, #002 et
+    // #004, qui ne sont qu'une réimpression.
+    for (const num of ["109", "β169", "002", null]) expect(altOf(num)).toBe("")
+  })
+
+  it("montre les deux illustrations d'une même rareté cochée", () => {
+    // Le cas signalé : Rare cochée, seule la version masculine apparaissait.
+    expect(gridIds(makeGrid({ columnFilters: rare }, v))).toEqual([
+      "V - Test|Rare|a",
+      "V - Test|Rare|b",
+    ])
+  })
+
+  it("réunit sur une tuile les réimpressions d'une même illustration", () => {
+    // #005a en Retail et #β005a en Beta : la même carte à collectionner.
+    const [a, b, iconic] = collectibles(v[0])
+    expect(a.printings.map((p) => p.uuid)).toEqual(["v1", "v3"])
+    expect(b.printings.map((p) => p.uuid)).toEqual(["v2", "v4"])
+    expect(iconic.id).toBe("V - Test|Iconic Legend")
+    expect(iconic.printings.map((p) => p.uuid)).toEqual(["v5"])
+  })
+
+  it("montre la version féminine sur sa tuile, pas la masculine du rang 0", () => {
+    const [, b] = collectibles(v[0])
+    expect(b.printings[printingIndex(b, ["Rare"])].num).toBe("005b")
+  })
+
+  it("range a avant b par le numéro, d'où qu'elles arrivent", () => {
+    // Même nom, même rareté : seul le numéro de collecteur les départage.
+    const declined = gridRows(v, rare).reverse()
+    for (const sorting of [SORTS.default.sorting, SORTS.name.sorting]) {
+      expect(gridIds(makeGrid({ sorting: [...sorting], columnFilters: rare }, declined))).toEqual([
+        "V - Test|Rare|a",
+        "V - Test|Rare|b",
+      ])
+    }
+  })
+
+  it("garde une tuile par carte tant qu'aucune rareté n'est cochée", () => {
+    // La base montre V une fois, sur sa version par défaut — comme le site
+    // officiel.
+    expect(gridIds(makeGrid({}, v))).toEqual(["V - Test"])
+    expect(v[0].printings[printingIndex(v[0], [])].num).toBe("005a")
+  })
+
+  it("annonce pour une rareté autant de tuiles qu'y en montrera la grille", () => {
+    // V compte pour deux Rare, cochée ou non : sinon l'effectif passerait de 1
+    // à 2 au moment où l'on coche.
+    const rarete = FACETS.find((f) => f.id === RARITY_FACET)!
+    const rareCount = (filters: typeof rare) =>
+      gridFacets([rarete], v, filters)[0].options.find((o) => o.value === "Rare")?.count
+    expect(rareCount([])).toBe(2)
+    expect(rareCount(rare)).toBe(2)
+    expect(gridIds(makeGrid({ columnFilters: rare }, v))).toHaveLength(2)
+  })
+
+  it("nomme la version sur la tuile, dans la base comme dans la collection", () => {
+    const [a, b, iconic] = collectibles(v[0])
+    expect(tileCollectible(a, "all", ["Rare"])).toEqual({ rarity: "Rare", alt: "a" })
+    expect(tileCollectible(iconic, "all", ["Iconic Legend"])).toEqual({
+      rarity: "Iconic Legend",
+      alt: "",
+    })
+    expect(collectibleText(tileCollectible(b, "all", ["Rare"])!)).toBe("Rare, version b")
+    expect(collectibleText({ rarity: "Rare", alt: "" })).toBe("Rare")
+    // Carte entière : ni rareté ni version, même si toutes ses impressions en
+    // ont une.
+    expect(tileCollectible(v[0], "all", [])).toBeNull()
+    const owned = ownedGrid(
+      buildGrid(
+        [V],
+        buildPrintings({
+          cards: [V],
+          rows: [],
+          expansions: EXPANSIONS,
+          codes: CODES,
+          collection: { v4: { ...COLLECTION.u3, name: "V - Test", num: "β005b", rarity: "Rare" } },
+        })
+      )
+    )
+    expect(tileCollectible(owned[0], "owned", [])).toEqual({ rarity: "Rare", alt: "b" })
   })
 })
 
@@ -474,23 +608,26 @@ describe("tri de la grille", () => {
     expect(TYPE_RANK.indexOf("Legend")).toBeLessThan(TYPE_RANK.indexOf("Gear"))
   })
 
-  it("le tri par défaut enchaîne couleur, type, coût, puis nom et rareté", () => {
+  it("le tri par défaut enchaîne couleur, type, coût, puis nom, rareté et numéro", () => {
     expect(SORTS.default.sorting.map((s) => s.id)).toEqual([
       "color",
       "type",
       "cost",
       "name",
       "rarities",
+      "num",
     ])
     expect(SORTS.default.sorting.every((s) => !s.desc)).toBe(true)
   })
 
-  it("chaque tri se termine par le nom puis la rareté, qui départagent les ex æquo", () => {
+  it("chaque tri finit par le nom, la rareté puis le numéro, qui départagent les ex æquo", () => {
     for (const id of SORT_IDS) {
-      expect(SORTS[id].sorting.slice(-2)).toEqual([
-        { id: "name", desc: false },
-        { id: "rarities", desc: false },
-      ])
+      const ids = SORTS[id].sorting.map((s) => s.id)
+      // Chacun une fois : le tri par numéro ne reprend pas le numéro en départage.
+      expect(new Set(ids).size).toBe(ids.length)
+      expect(ids.slice(-3)).toEqual(
+        id === "num" ? ["num", "name", "rarities"] : ["name", "rarities", "num"]
+      )
     }
   })
 

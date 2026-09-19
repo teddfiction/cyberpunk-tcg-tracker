@@ -35,7 +35,7 @@ import {
   type Scope,
 } from "@/lib/collection"
 import { download, toCsv } from "@/lib/csv"
-import { FACETS, RARITY_FACET, facetOptions, gridRows } from "@/lib/facets"
+import { FACETS, RARITY_FACET, gridFacets, gridRows } from "@/lib/facets"
 import { plural } from "@/lib/format"
 import { buildGrid, buildPrintings, searchCard } from "@/lib/printings"
 import { SORTS } from "@/lib/sorts"
@@ -82,8 +82,9 @@ export function NetdeckView({
 
   const table = useTable({
     data: grid,
-    // Cocher une rareté décline chaque carte en une tuile par rareté : Secret
-    // et Iconic Secret sont deux cartes à collectionner, pas deux visuels.
+    // Cocher une rareté décline chaque carte en ses cartes à collectionner :
+    // Secret et Iconic Secret, ou les deux V - Streetkid Rare, ne sont pas deux
+    // visuels d'une tuile mais deux cartes à réunir.
     rowsOf: gridRows,
     columns: GRID_COLUMNS,
     defaultSort: SORTS.default.sorting,
@@ -92,23 +93,21 @@ export function NetdeckView({
     meta: { codes, expansions },
   })
 
-  // Comptées sur toutes les tuiles du périmètre : cocher une option ne doit pas
-  // faire disparaître les autres, sinon on ne peut plus élargir sa sélection.
-  // Les tuiles de TanStack et non `grid` : déclinée par rareté, la grille
-  // compte une tuile par rareté — ce que montre, et ce que filtre, la grille.
+  // Comptées sur toutes les tuiles du périmètre, déclinées comme la grille
+  // (`gridFacets`) : cocher une option ne doit pas faire disparaître les
+  // autres, sinon on ne peut plus élargir sa sélection.
   // La collection masque Possédée / Manquante : chaque onglet n'y aurait qu'une
   // valeur, et c'est ce que l'onglet dit déjà.
   const columnFilters = table.getState().columnFilters
-  const core = table.getCoreRowModel()
-  const options = React.useMemo(() => {
-    const tiles = core.rows.map((r) => r.original)
-    const selected = (id: string) =>
-      (columnFilters.find((f) => f.id === id)?.value as string[] | undefined) ?? []
-    return FACETS.filter((facet) => !inCollection || facet.id !== OWNED_FACET).map((facet) => ({
-      facet,
-      options: facetOptions(facet, tiles, selected(facet.id)),
-    }))
-  }, [core, inCollection, columnFilters])
+  const options = React.useMemo(
+    () =>
+      gridFacets(
+        FACETS.filter((facet) => !inCollection || facet.id !== OWNED_FACET),
+        grid,
+        columnFilters
+      ),
+    [grid, inCollection, columnFilters]
+  )
 
   const lost = React.useMemo(
     () => (inCollection && base.length ? orphans(collection, base) : []),
@@ -286,9 +285,10 @@ const FOOTNOTES: Record<Scope, React.ReactNode> = {
     <>
       Source : <code>api.netdeck.gg</code> via <code>npm run data:netdeck:images</code>. Cliquer
       une carte ouvre ses versions. Cocher une rareté décline chaque carte en une tuile par
-      rareté cochée, réduite aux versions de cette rareté. La cote Cardmarket n'est rattachée
-      que lorsqu'un seul produit correspond à cette carte dans cette extension ; sinon la
-      fourchette est affichée en pointillés — rien ne dit lequel est cette impression précise.
+      rareté cochée — et par illustration alternative, comme les deux V - Streetkid Rare —,
+      réduite à ses versions. La cote Cardmarket n'est rattachée que lorsqu'un seul produit
+      correspond à cette carte dans cette extension ; sinon la fourchette est affichée en
+      pointillés — rien ne dit lequel est cette impression précise.
     </>
   ),
   owned: (

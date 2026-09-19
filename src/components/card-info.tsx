@@ -7,8 +7,9 @@ import * as React from "react"
 
 import { Badge } from "@/components/ui/badge"
 import { colorVar } from "@/data/colors"
+import { rarityLabel } from "@/data/rarities"
 import { cn } from "@/lib/utils"
-import type { CardStat } from "@/lib/printings"
+import type { CardStat, Collectible } from "@/lib/printings"
 
 /** Geist Mono en capitales : ce qui fait reconnaître une information de carte. */
 export const INFO = "font-mono uppercase"
@@ -40,6 +41,34 @@ export function TypeBadge({
     >
       {type}
     </InfoBadge>
+  )
+}
+
+/**
+ * Ce qui distingue une tuile des autres tuiles de sa carte : sa rareté, et
+ * « Version a » quand l'illustration change à rareté égale — les deux V -
+ * Streetkid Rare ne se sépareraient sinon que par l'artwork. Rien pour une
+ * carte entière (`tileCollectible` rend `null`).
+ */
+export function CollectibleBadges({
+  collectible,
+  className,
+}: {
+  collectible: Collectible | null
+  className?: string
+}) {
+  if (!collectible) return null
+  return (
+    <>
+      <InfoBadge className={cn("text-muted-foreground", className)}>
+        {rarityLabel(collectible.rarity)}
+      </InfoBadge>
+      {collectible.alt && (
+        <InfoBadge className={cn("text-muted-foreground", className)}>
+          Version {collectible.alt}
+        </InfoBadge>
+      )}
+    </>
   )
 }
 

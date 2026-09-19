@@ -11,7 +11,7 @@ import type { ColumnFiltersState } from "@tanstack/react-table"
 import { rarityRank } from "@/data/rarities"
 import { MISSING, OWNED, OWNED_FACET } from "@/lib/collection"
 import { words } from "@/lib/format"
-import { byRarity } from "@/lib/printings"
+import { collectibles } from "@/lib/printings"
 import type { GridCard } from "@/types"
 
 export type FacetSort = "count" | "numeric" | "rarity"
@@ -54,9 +54,11 @@ const num = (v: number | null) => (v != null ? [String(v)] : [])
 
 /**
  * Tuiles de la grille selon les filtres posés : cocher une rareté décline
- * chaque carte en une tuile par rareté. Sans quoi Sasha Yakovleva, cochée en
- * Secret et en Iconic Secret, ne ferait qu'une tuile — et la seconde, celle
- * qu'on cherchait peut-être, ne se verrait pas.
+ * chaque carte en ses cartes à collectionner — une tuile par rareté, et par
+ * illustration alternative (`collectibles`). Sans quoi Sasha Yakovleva, cochée
+ * en Secret et en Iconic Secret, ne ferait qu'une tuile — et la seconde, celle
+ * qu'on cherchait peut-être, ne se verrait pas ; ni V - Streetkid féminine,
+ * cochée en Rare.
  *
  * Appliquée avant TanStack (`rowsOf` de `useTable`), qui filtre et trie ensuite
  * ces tuiles comme les autres : la facette Rareté ne garde que les raretés
@@ -68,8 +70,37 @@ const num = (v: number | null) => (v != null ? [String(v)] : [])
  * collection, dont chaque tuile est déjà une version.
  */
 export function gridRows(grid: GridCard[], filters: ColumnFiltersState): GridCard[] {
-  const checked = filters.find((f) => f.id === RARITY_FACET)?.value as string[] | undefined
-  return checked?.length ? grid.flatMap(byRarity) : grid
+  return selectedIn(filters, RARITY_FACET).length ? grid.flatMap(collectibles) : grid
+}
+
+/** Valeurs cochées d'une facette, vide si elle n'est pas filtrée. */
+const selectedIn = (filters: ColumnFiltersState, id: string) =>
+  (filters.find((f) => f.id === id)?.value as string[] | undefined) ?? []
+
+/**
+ * Les options de chaque facette, comptées sur les tuiles qu'y cocher une option
+ * donnerait : celles du moment, sauf pour la Rareté, toujours comptée sur la
+ * grille déclinée. Cocher « Rare » donne 33 tuiles pour 32 cartes — V -
+ * Streetkid en compte deux, ses illustrations a et b. Comptée sur les cartes,
+ * la Rareté annoncerait 32 puis passerait à 33 au moment où on la coche.
+ *
+ * Toutes les tuiles, jamais les seules visibles : voir `facetOptions`.
+ */
+export function gridFacets(
+  facets: Facet[],
+  grid: GridCard[],
+  filters: ColumnFiltersState
+): { facet: Facet; options: FacetOption[] }[] {
+  const tiles = gridRows(grid, filters)
+  const declined = tiles === grid ? grid.flatMap(collectibles) : tiles
+  return facets.map((facet) => ({
+    facet,
+    options: facetOptions(
+      facet,
+      facet.id === RARITY_FACET ? declined : tiles,
+      selectedIn(filters, facet.id)
+    ),
+  }))
 }
 
 export type FacetOption = { value: string; count: number }
