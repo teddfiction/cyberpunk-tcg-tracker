@@ -58,26 +58,26 @@ coupable n'est pas toujours celui qu'on croit.
 
 1. `components/columns.tsx` → une colonne **masquée** dans `filterColumns()` :
    un `accessorFn` qui expose la donnée à filtrer, un `filterFn`
-   (`filterFlag` pour une case à cocher, `filterExpansions` pour une liste, ou
+   (`filterFlag` pour une bascule, `filterExpansions` pour une liste, ou
    une nouvelle fonction dans `lib/table.ts`).
 2. `lib/table.ts` → ajouter son id à `HIDDEN_COLUMNS`, sinon la colonne s'affiche.
-3. `components/filters-bar.tsx` → la commande. Pour une case à cocher, il suffit
-   d'une entrée dans `FLAGS`.
+3. `components/filters-bar.tsx` → la commande. Pour une bascule (`FilterToggle`),
+   il suffit d'une entrée dans `FLAGS`.
 
-Une case à cocher inactive doit poser `undefined`, pas `false` : TanStack ne garde
+Une bascule éteinte doit poser `undefined`, pas `false` : TanStack ne garde
 que les filtres actifs, et `resetColumnFilters()` s'appuie là-dessus.
 
 ### Ajouter un mode d'affichage
 
 **Deux fichiers, et le compilateur indique le second.**
 
-1. `lib/modes.ts` → une entrée dans `MODES` : libellé de l'onglet, nom des lignes
+1. `lib/modes.ts` → une entrée dans `MODES` : libellé de l'option, nom des lignes
    pour le compteur, source (`rows` ou `cards`), tri par défaut, et ce que
    « coté » signifie dans ce mode.
 2. `npm run typecheck` échoue alors sur `VISIBLE` dans `components/columns.tsx`,
    qui est un `Record<Mode, …>` : ajouter la liste de colonnes du mode.
 
-C'est tout. Onglets, compteur, source de données et repli de tri se déduisent du
+C'est tout. Sélecteur, compteur, source de données et repli de tri se déduisent du
 registre. `Mode` est dérivé de `MODES` (`keyof typeof MODES`) : il n'y a pas
 d'union de chaînes à maintenir en parallèle.
 
@@ -327,7 +327,8 @@ clavier —, pour constituer sa collection sans la refermer. Ce qui la fait teni
 Dans la modale, visuel et versions ne sont côte à côte qu'à partir de `md`. Les
 miniatures des versions sont une grille `auto-fill` : elles gardent ~90 px que
 la carte ait deux versions ou sept, et chacune porte son numéro de collecteur,
-seul texte qui sépare deux versions d'une même rareté.
+seul texte qui sépare deux versions d'une même rareté. La version choisie est
+cerclée d'un cadre jaune encoché (voir « Encoche »).
 
 **Cocher une rareté décline les cartes en cartes à collectionner.** Sans
 rareté cochée, une tuile par carte, sur sa version par défaut — la base telle
@@ -406,7 +407,8 @@ se comportent différemment. Ce qui en découle :
 - **Chaque niveau montre toutes ses tuiles** : les possédées en pleine opacité,
   les manquantes estompées. C'est au milieu de ce qu'on a que se voit ce qui
   manque, dans l'ordre de la grille. Un sélecteur **Toutes / Possédées /
-  Manquantes** (`OwnedFilter`), à gauche du tri, isole l'un ou l'autre : une
+  Manquantes** (`OwnedFilter`, le `ChoiceGroup` des modes de la table des
+  cotes), à gauche du tri, isole l'un ou l'autre : une
   seule donnée, le filtre TanStack de la colonne `OWNED_FACET` (`undefined`,
   `[OWNED]` ou `[MISSING]`). « Toutes » est l'absence de filtre, et
   « Réinitialiser » y revient comme pour tout filtre. À côté du tri parce que
@@ -427,10 +429,14 @@ se comportent différemment. Ce qui en découle :
   orphelines valent pour la collection entière ; les statistiques — possédées,
   manquantes, exemplaires (`levelStats`) — comptent le niveau choisi, sur
   toutes ses tuiles et non sur celles que les filtres laissent voir. Elles
-  s'affichent même à zéro. Contraste inversé entre les deux blocs : les
+  s'affichent même à zéro. La part possédée a sa barre (`Progress`), sur la
+  ligne du libellé, et son pour cent entre parenthèses après le total —
+  « 24 / 152 (15 %) » —, arrondi par défaut (`share`, `lib/format.ts`) :
+  100 % ne s'affiche qu'une fois le niveau complet. Contraste inversé entre les deux blocs : les
   onglets en aplat `card` — gris foncé en sombre —, se lisent comme des
-  commandes ; les statistiques sur le fond de la page, bordées en `input`
-  comme la recherche et les filtres, comme des données.
+  commandes ; les statistiques sur le fond de la page, bordées en `border`
+  comme les cartes et la table, comme des données — la bordure `input`,
+  franche, est réservée aux commandes.
 - **Chaque vue porte son `key` dans `App.tsx`.** Même composant à la même place
   de l'arbre : sans `key`, React garderait l'état TanStack de l'une dans
   l'autre, filtres et recherche compris.
@@ -603,19 +609,64 @@ La consigne du projet : **uniquement Tailwind et les composants shadcn natifs.**
   empilés en deçà. Le `Tabs` et le `TabsContent` restent ceux du registry : un
   seul panneau, dont la valeur suit l'onglet actif — le contenu est le même
   pour les trois, seule la grille change.
-- **Possession dans la collection : `ToggleGroup` à choix unique**, variante
-  `outline` — même bordure `input` et même hauteur que le menu de tri, qu'il
-  côtoie. Radix laisse décocher l'option active d'un groupe `single` et rend
-  alors `""` : `OwnedFilter` l'ignore, pour qu'il se comporte en groupe radio.
-  L'option choisie a une bordure `primary` sur fond `background`, et le garde
-  au survol. Le registry ôte la bordure gauche des options suivantes pour ne
-  pas doubler le filet, ce qui ne laisserait que trois côtés jaunes :
-  `OwnedFilter` la leur rend, en surchargeant la classe à variantes égales
-  pour que `cn` écarte `border-l-0`. Elles se chevauchent d'un pixel
-  (`not-first:-ml-px`), et l'option choisie passe au-dessus (`z-10`).
+- **Commandes : deux familles, partagées par tous les écrans.** C'est ce qui
+  donne à l'app son caractère — des commandes de machine analogique, très
+  contrastées, sur un fond neutre — et ce qui la garde cohérente : un nouvel
+  écran les réutilise, il ne restyle pas un `Button`.
+  - **Les actions** (`ActionButton`, `action-button.tsx`) : 40 px, aplat
+    franc dès le repos, sans bordure visible, encoche. Quatre tons :
+    ordinaire (`--action`), qui prend le contre-pied de la page — noir en
+    clair, blanc en sombre ; jaune (`primary`) pour l'action principale d'un
+    écran ; rouge (`--danger`) pour ce qui efface ; cyan (`secondary`) pour
+    « Réinitialiser ». Posé sur la variante `default` du registry, la seule
+    sans classe `dark:`, pour que `cn` arbitre fond, texte et survol. Jamais
+    de `ghost` ni d'`outline` pour une action — sauf `danger-outline`, le
+    premier temps d'un retrait confirmé dans le bouton, en `destructive`
+    (red-400 en sombre) : le red-600 de `--danger`, en texte sur le noir,
+    tomberait à 3,6:1.
+  - **Les commandes à état** (`controls.tsx`) — `FilterTrigger` (menu de
+    filtre ou de tri), `FilterToggle` (bascule), `ChoiceGroup` (options à
+    choix unique : modes des cotes, possession de la collection) et
+    `SearchField`. Même gabarit de 40 px, et deux apparences seulement :
+    **éteinte**, bordure `input` sur le fond de la page ; **allumée**, aplat
+    jaune et texte `selected-foreground`, comme un bouton dont la lampe
+    s'allume — filtre actif, option choisie. Un menu allumé affiche le
+    nombre de ses choix en chiffres jaunes sur noir. Le tri n'est jamais
+    allumé : il n'écarte rien.
+
+  `ChoiceGroup` est sur les primitives `ToggleGroup` de Radix, pas sur le
+  composant du registry : son aplat `accent` à l'état actif, sa bordure
+  gauche retirée et ses coins étaient tous à neutraliser. Radix laisse
+  décocher l'option active et rend alors `""` : ignoré, le groupe se comporte
+  en groupe radio. Les options se chevauchent d'un pixel, l'allumée et celle
+  qui a le focus passent au-dessus. Même raison dans la boîte « Supprimer ma
+  collection » : `Cancel` et `Action` de Radix en `asChild` sur des
+  `ActionButton`, parce que ceux du registry posent leurs classes par
+  `asChild`, que `cn` n'arbitre pas.
+
+  `SearchField` est un `InputGroup` du registry : la bordure et l'encoche
+  sont au groupe, parce qu'un `<input>` n'a pas de `::before`.
+
+  **Une seule voix pour tout ce qui se manipule** : `CONTROL_TEXT`
+  (`controls.tsx`), Geist Mono en capitales `text-xs` — actions, filtres,
+  options, entrées de menu, titres des onglets de niveau, liens de la
+  modale, navigation de la barre latérale, en-têtes de la table (triables
+  ou non, qui se côtoient). Pleine graisse sur une commande, normale dans
+  une liste. Les champs de saisie sont en Geist Mono **sans** capitales :
+  ce qu'on tape se relit tel quel. Le texte courant — sous-titres des
+  onglets, descriptions, cellules — reste en Geist.
+
+  **« Réinitialiser » ferme la dernière ligne de commandes**, en cyan :
+  après les bascules dans la table des cotes, après le tri dans la grille
+  (base et collection), le compteur calé à droite derrière lui.
+
+  **Badges : `NotchBadge`** (`notch-badge.tsx`), le `Badge` du registry
+  droit (`rounded-none`) et encoché en `xs`. Type, rareté et version d'une
+  carte, code d'impression, compte d'un filtre allumé : tous y passent, et
+  gardent leur style en ligne — contour, plein ou pointillés.
 - **Filtres de la grille : `DropdownMenu` + `DropdownMenuCheckboxItem`.** Son
   indicateur est déjà posé à gauche du libellé par le registry, rien à
-  surcharger. Le champ de recherche est un `Input` ordinaire et non `Command` :
+  surcharger. Le champ de recherche est un `SearchField` et non `Command` :
   cmdk ne peut pas vivre dans un menu Radix, les deux se disputent les flèches
   et la frappe. Deux conséquences à ne pas défaire — le champ se focalise à la
   frame suivant l'ouverture (un menu Radix focalise toujours son premier item
@@ -623,7 +674,7 @@ La consigne du projet : **uniquement Tailwind et les composants shadcn natifs.**
   explicitement le premier item, faute de quoi le clavier reste prisonnier de
   la recherche.
 - **Radix exclusivement.** Le `Combobox` du registry dépend de `@base-ui/react` ;
-  `extension-combobox.tsx` le reconstruit avec `Popover` + `Command` + `Badge`,
+  `extension-combobox.tsx` le reconstruit avec `Popover` + `Command`,
   eux aussi natifs. Ne pas introduire `@base-ui/react` (README § « Note sur le
   combobox »).
 - **`SidebarInset` porte un `min-w-0`, et il n'est pas décoratif.** Le composant
@@ -633,21 +684,38 @@ La consigne du projet : **uniquement Tailwind et les composants shadcn natifs.**
   page entière qui défile horizontalement — filtres compris — au lieu de la
   seule table, qui a pourtant son propre `overflow-x-auto`. Le retirer ramène le
   débordement, à l'identique et en silence.
+- **L'en-tête ne porte que le nom de la vue**, en grand (`App.tsx`). Ce qui
+  ne vaut que pour une vue vit dans son contenu : la mention des exports —
+  produits, cartes, dates des prix et du catalogue — ouvre la table des
+  cotes, au-dessus de ses repères. La base de cartes et la collection n'en
+  dépendent pas.
+- **Repères chiffrés : `Stats` et `Stat`** (`stats.tsx`), partagés par la
+  table des cotes et la collection. Un module par repère, à la largeur de son
+  contenu — une bande étirée sur toute la page pour quatre nombres gâchait la
+  place —, libellé et valeur en Geist Mono, bordure `border`, encoche.
+  `progress` pose une barre de 4 px, cyan (`secondary`), sur la ligne du
+  libellé, qu'elle prolonge jusqu'au bord : la valeur garde sa ligne, le
+  module ne s'élargit pas. `Of` écrit « n / total », et le pour cent entre
+  parenthèses dans le même retrait. La barre est `aria-hidden` : le
+  `Progress` du registry ne transmet pas `value` à Radix, qui l'annoncerait
+  indéterminée ; les chiffres de la valeur disent tout.
 - **Élément brut ou composant shadcn ?** Le composant quand il raccourcit le code
   (`Button variant="ghost"` pour les en-têtes triables). L'élément brut quand le
-  composant imposerait une cascade d'overrides pour le neutraliser (les tuiles de
-  `StatsStrip` et `CollectionStats`, qui partagent une bordure de grille qu'une
-  `Card` casserait), ou quand le registry n'a rien : la zone de dépôt de
+  composant imposerait une cascade d'overrides pour le neutraliser (les modules
+  de `Stats`, bordés sans aplat ni ombre, qu'une `Card` alourdirait de son
+  padding et de son ombre), ou quand le registry n'a rien : la zone de dépôt de
   `ImportDialog` est un `div` en `border-dashed`, avec un compteur d'entrées
   pour que `dragleave` sur un enfant ne fasse pas clignoter la bordure.
-- **Confirmer une action destructive : en deux temps, dans le bouton.** Le
-  bouton passe en `destructive` et change de libellé, perdre le focus annule
-  (`StoredDataCard`, `CollectionControl`). Pas d'`AlertDialog` : dans la modale
-  de carte, il s'empilerait sur une autre modale. **Une exception**, la
-  suppression de la collection (`ClearCollection`, Paramètres) : rien ne la
-  répare, sauf une sauvegarde exportée avant — le geste doit s'arrêter sur ce
-  qui sera perdu, et Paramètres n'est pas une modale. Un oubli qu'un import
-  répare reste en deux temps.
+- **Confirmer une action destructive : une boîte de dialogue, sauf dans une
+  modale.** Paramètres n'en est pas une : « Supprimer ma collection » et
+  « Oublier les données conservées » passent par `ConfirmDialog`, qui dit ce
+  qui sera perdu et ce qui ne l'est pas, garde le focus sur « Annuler » et
+  pose l'action en rouge ; la suppression y ajoute « Exporter d'abord ». Dans
+  la modale de carte, une boîte s'empilerait sur une autre : « Retirer » se
+  confirme **en deux temps, dans le bouton** (`CollectionControl`) — contour
+  rouge (`danger-outline`) au premier, aplat rouge et libellé « Confirmer le
+  retrait » au second, pour que le changement d'état se voie ; perdre le
+  focus annule.
 - **Voile des modales : un flou, pas un aplat.** `bg-black/10` et
   `backdrop-blur-xs`, celui de l'AlertDialog des styles récents de shadcn (nova,
   vega) ; le registry new-york pose `bg-black/50` sans flou. La règle vit dans
@@ -655,6 +723,39 @@ La consigne du projet : **uniquement Tailwind et les composants shadcn natifs.**
   `sheet`), **hors de toute couche** : c'est ce qui la fait passer devant les
   utilitaires du registry. Dans `@layer base` ou `components`, elle perdrait
   contre `bg-black/50`, en silence.
+- **Encoche : `notch-*`, le coin supérieur droit coupé à 45°.** Élément de
+  charte, porté par les commandes (`ActionButton`, `controls.tsx`) et les
+  badges (`NotchBadge`), et posé par `className` ailleurs : **toutes les
+  modales** (`DialogContent` et `AlertDialogContent`, en `lg`), onglets des
+  niveaux, menus et popover, cartes de Paramètres, bandeaux de repères, cadre
+  de la version choisie dans la modale de carte. Pas sur les en-têtes de la
+  table, la barre latérale ni les chevrons de la modale. Gabarits dans
+  `@theme` : `xs` (6 px) pour les badges, `sm` (12 px) pour les commandes de
+  40 px, `md` (16 px) pour onglets, menus et repères, `lg` (24 px) pour les
+  cartes et les modales. Ou `notch-[10px]`. L'utilitaire vit
+  dans `index.css` (`@utility notch-*`).
+
+  Par `clip-path`, pas `corner-shape: bevel`, que ni Firefox ni Safari ne
+  connaissent. Contreparties à garder en tête :
+  - le filet du biais est redessiné par `::before`, qui hérite de la bordure
+    du haut — survol, actif et focus suivent seuls, mais il suppose 1 px.
+    `::before` parce que `TabsTrigger` occupe `::after` ;
+  - halo de focus et ombres s'arrêtent au prolongement du biais, sans le
+    suivre ;
+  - un conteneur qui défile emporte le filet avec son contenu : c'est la
+    liste de `FacetFilter` qui défile, pas son menu, et le contenu de la
+    modale de carte, pas son `DialogContent` (`p-0 overflow-hidden`, un
+    enfant `overflow-y-auto p-6`) — la croix du registry y reste en place ;
+  - ce qui est encadré ne doit pas toucher le biais : le visuel d'une
+    version choisie est à 8 px du coin de son cadre (1 px de bordure, 6 de
+    marge, 1 de filet), à l'intérieur de la coupe de 12 px. Un `outline`
+    ne s'encoche pas — la découpe le couperait sans redessiner le biais :
+    la sélection est une bordure, posée sur toutes les miniatures pour que
+    rien ne bouge au clic ;
+  - dans un groupe sans bordure propre (`ChoiceGroup`), l'encoche va au
+    dernier élément (`last:notch-sm`), qui porte le coin et la bordure ;
+  - un `<input>` n'a pas de `::before` : l'encoche d'un champ va au groupe
+    qui porte sa bordure (`SearchField`).
 - **Informations de carte : Geist Mono en capitales** (`components/card-info.tsx`).
   Tuile et modale partagent badges, ligne de caractéristiques et liste
   libellé / valeur ; seule la taille change, par `className` (`text-[10px]`
@@ -665,8 +766,21 @@ La consigne du projet : **uniquement Tailwind et les composants shadcn natifs.**
   taille du N°, parce qu'en `text-sm` la table s'élargissait de 37 px.
 - **Aucune couleur en dur.** Toujours les tokens : `bg-card`,
   `text-muted-foreground`, `text-destructive`. Ils vivent dans les blocs `:root` /
-  `.dark` de `src/index.css`. Thème : base **Neutral**, accent **Yellow**,
-  graphiques **Cyan**, `--radius: 0`, polices **Geist** et **Geist Mono**
+  `.dark` de `src/index.css`. Ceux des boutons d'action : `--action`, noir
+  en clair et blanc en sombre — il s'inverse avec la page, pour garder le
+  contraste maximal ; `--danger` (red-600 de la palette Tailwind, red-700 au
+  survol), défini une fois sous `:root` : cette touche-là est la même dans
+  les deux thèmes. `--danger` et
+  non `--destructive`, qui passe en red-400 en sombre et que le registry pose
+  à 60 %. **`--input` n'est pas `--border`** : un cran au-dessus —
+  neutral-300 en clair, neutral-700 en sombre —, pour qu'une commande se
+  repère sans alourdir les rangées de filtres ; la structure reste en
+  retrait. Le neutral-500 essayé d'abord pesait trop. **`--secondary` est
+  cyan**, cyan-500 dans les deux thèmes, texte noir : la couleur secondaire
+  de la charte, après le jaune — « Réinitialiser », barre de complétion. Le
+  gris du registry ne servait plus à aucun composant. Thème : base
+  **Neutral**, accent **Yellow**, secondaire et graphiques **Cyan**,
+  `--radius: 0`, polices **Geist** et **Geist Mono**
   (locales, SIL OFL 1.1). Base et accent sont deux axes : la base est passée de
   Slate à Neutral — un chrome noir, blanc et gris, sans nuance bleutée — sans
   toucher aux tons `primary` / `ring` / `sidebar-primary` / `sidebar-active`,
@@ -680,11 +794,12 @@ La consigne du projet : **uniquement Tailwind et les composants shadcn natifs.**
   sont un noir pur et non neutral-950/900 : rien ne doit disputer l'éclat des
   visuels de carte, qui sont ce que la base de cartes montre. Le chrome et le
   contenu ne se distinguent donc plus que par une bordure. Celle-ci est adoucie
-  (`--border`, `--input`, `--sidebar-border` entre neutral-900 et neutral-800) :
+  (`--border`, `--sidebar-border` entre neutral-900 et neutral-800) :
   assez sombre pour s'effacer sur le noir, assez claire pour rester visible sur
   le neutral-900 des cartes. Le thème clair n'y touche pas — un fond noir n'y
   aurait aucun sens.
 - **Entrées de la barre latérale : le texte signale l'état, jamais le fond.**
+  En Geist Mono capitales (`CONTROL_TEXT`), comme toute commande.
   Repos un cran sous le blanc, survol en blanc plein, actif en jaune — y compris
   survolé. Le registry pose des aplats `bg-sidebar-accent` au survol et à
   l'activation ; `app-sidebar.tsx` les neutralise par `className` (constante
