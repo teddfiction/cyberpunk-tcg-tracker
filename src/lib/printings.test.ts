@@ -5,7 +5,7 @@
 import { describe, expect, it } from "vitest"
 
 import { GRID_COLUMNS } from "@/components/grid-columns"
-import { MISSING, OWNED, OWNED_FACET, ownedGrid } from "@/lib/collection"
+import { LEVELS, MISSING, OWNED, OWNED_FACET } from "@/lib/collection"
 import { toCsv } from "@/lib/csv"
 import { buildRows } from "@/lib/dataset"
 import {
@@ -327,8 +327,8 @@ describe("déclinaison par rareté", () => {
   })
 
   it("laisse la collection telle quelle : chaque tuile y est déjà une version", () => {
-    const owned = ownedGrid(gridOf(COLLECTION))
-    expect(gridRows(owned, zebu)).toEqual(owned)
+    const masterset = LEVELS.masterset.grid(gridOf(COLLECTION))
+    expect(gridRows(masterset, zebu)).toEqual(masterset)
   })
 
   it("exporte une ligne par tuile, avec sa rareté", () => {
@@ -347,7 +347,7 @@ describe("déclinaison par rareté", () => {
     expect(tileCollectible(gridOf().find((c) => c.name === "Éclair - Vif")!, "all", [])).toBeNull()
     // Déclinée par rareté, ou version de la collection : la sienne.
     expect(tileCollectible(secret, "all", ["Secret"])).toEqual({ rarity: "Secret", alt: "" })
-    expect(tileCollectible(ownedGrid(gridOf(COLLECTION))[0], "owned", [])).toEqual({
+    expect(tileCollectible(LEVELS.masterset.grid(gridOf(COLLECTION))[0], "masterset", [])).toEqual({
       rarity: "Epic",
       alt: "",
     })
@@ -458,7 +458,7 @@ describe("illustrations alternatives", () => {
     // Carte entière : ni rareté ni version, même si toutes ses impressions en
     // ont une.
     expect(tileCollectible(v[0], "all", [])).toBeNull()
-    const owned = ownedGrid(
+    const masterset = LEVELS.masterset.grid(
       buildGrid(
         [V],
         buildPrintings({
@@ -470,7 +470,12 @@ describe("illustrations alternatives", () => {
         })
       )
     )
-    expect(tileCollectible(owned[0], "owned", [])).toEqual({ rarity: "Rare", alt: "b" })
+    const owned = masterset.find((c) => c.id === "v4")!
+    expect(tileCollectible(owned, "masterset", [])).toEqual({ rarity: "Rare", alt: "b" })
+    // Au jeu de base, la tuile est la carte à collectionner : #005b et #β005b.
+    const [, base] = LEVELS.base.grid(v)
+    expect(base.printings.map((p) => p.num)).toEqual(["005b", "β005b"])
+    expect(tileCollectible(base, "base", [])).toEqual({ rarity: "Rare", alt: "b" })
   })
 })
 
@@ -483,7 +488,7 @@ describe("focusTarget", () => {
   })
 
   it("passe à la suivante quand la carte quittée est sortie de la grille", () => {
-    // Ajoutée depuis « Manquante » : la tuile suivante a pris sa place. Et pas
+    // Ajoutée, seules les manquantes affichées : la tuile suivante a pris sa place. Et pas
     // seulement la voisine immédiate, si elle aussi est sortie entre-temps.
     expect(focusTarget(seq, 1, mounted("a", "c", "d"))).toBe("c")
     expect(focusTarget(seq, 1, mounted("a", "d"))).toBe("d")
@@ -555,7 +560,7 @@ describe("facettes", () => {
   })
 
   it("garde une valeur cochée absente des cartes, pour pouvoir la décocher", () => {
-    // Un filtre posé dans « Collectées » et que « Manquantes » ne porte pas.
+    // Un filtre posé dans « Toutes les raretés » et que « Jeu de base » ne porte pas.
     const rarete = FACETS.find((f) => f.id === "rarities")!
     expect(facetOptions(rarete, cards, ["Secret", "Epic"])).toEqual([
       { value: "Common", count: 1 },
@@ -578,7 +583,7 @@ describe("facettes", () => {
     expect(facetOptions(cout, cards)).toEqual([])
   })
 
-  it("couvre les dix filtres demandés", () => {
+  it("couvre les neuf filtres de la base, sans la possession", () => {
     expect(FACETS.map((f) => f.id)).toEqual([
       "color",
       "type",
@@ -589,7 +594,6 @@ describe("facettes", () => {
       "eddiable",
       "sets",
       "rarities",
-      "owned",
     ])
   })
 

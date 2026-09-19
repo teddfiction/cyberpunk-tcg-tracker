@@ -4,9 +4,10 @@
  *
  * La base montre ce que la table des cotes ne peut pas montrer — les cartes
  * qu'aucun vendeur ne propose, et les artworks de chaque variante. La collection
- * est la même vue réduite aux versions, une tuile chacune, en deux onglets :
- * celles qu'on possède, celles qui manquent. Mêmes filtres, même modale, même
- * réglage de quantité — rien de nouveau à apprendre.
+ * est la même vue mesurée à trois niveaux, en onglets : jeu de base, toutes les
+ * raretés, chaque version. Chacun montre toutes ses tuiles, celles qui manquent
+ * en retrait. Mêmes filtres, même modale, même réglage de quantité — rien de
+ * nouveau à apprendre.
  *
  * Le filtrage et la recherche passent par TanStack, comme les tables : les
  * colonnes de `grid-columns.ts` ne rendent rien, elles portent les facettes.
@@ -17,21 +18,25 @@ import { Download, Library, RotateCcw, Search, TriangleAlert, Upload } from "luc
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsContent } from "@/components/ui/tabs"
 import { CardGrid } from "@/components/card-grid"
 import { CollectionStats } from "@/components/collection-stats"
 import { FacetFilter } from "@/components/facet-filter"
 import { GRID_COLUMNS } from "@/components/grid-columns"
+import { LevelTabs } from "@/components/level-tabs"
+import { OwnedFilter } from "@/components/owned-filter"
 import { SortMenu } from "@/components/sort-menu"
 import { useTable } from "@/hooks/use-table"
 import {
-  COLLECTION_TABS,
+  LEVELS,
+  MISSING,
+  OWNED,
   OWNED_FACET,
-  SCOPE_GRID,
-  collectionStats,
+  levelStats,
   orphans,
+  scopeGrid,
   summarize,
-  type CollectionTab,
+  type Level,
   type Scope,
 } from "@/lib/collection"
 import { download, toCsv } from "@/lib/csv"
@@ -43,7 +48,7 @@ import type { CodeMap, Collection, EnrichedCard, PrintRow, Row } from "@/types"
 
 type Props = {
   /**
-   * Périmètre à l'ouverture : « all » pour la base, un onglet pour la
+   * Périmètre à l'ouverture : « all » pour la base, un niveau pour la
    * collection, que ses onglets font ensuite changer.
    */
   scope: Scope
@@ -75,10 +80,13 @@ export function NetdeckView({
   }, [cards, rows, expansions, codes, collection])
 
   // Un état local, perdu en quittant la vue comme ses filtres : la collection
-  // rouvre sur ce qu'on possède.
+  // rouvre sur le jeu de base.
   const [shown, setShown] = React.useState(scope)
   const inCollection = shown !== "all"
-  const grid = React.useMemo(() => SCOPE_GRID[shown](base), [base, shown])
+  const grid = React.useMemo(() => scopeGrid(shown, base), [base, shown])
+  // Sur toutes les tuiles du niveau, pas sur celles que les filtres laissent :
+  // c'est la complétion du niveau qu'on lit.
+  const stats = React.useMemo(() => levelStats(grid), [grid])
 
   const table = useTable({
     data: grid,
@@ -96,17 +104,10 @@ export function NetdeckView({
   // Comptées sur toutes les tuiles du périmètre, déclinées comme la grille
   // (`gridFacets`) : cocher une option ne doit pas faire disparaître les
   // autres, sinon on ne peut plus élargir sa sélection.
-  // La collection masque Possédée / Manquante : chaque onglet n'y aurait qu'une
-  // valeur, et c'est ce que l'onglet dit déjà.
   const columnFilters = table.getState().columnFilters
   const options = React.useMemo(
-    () =>
-      gridFacets(
-        FACETS.filter((facet) => !inCollection || facet.id !== OWNED_FACET),
-        grid,
-        columnFilters
-      ),
-    [grid, inCollection, columnFilters]
+    () => gridFacets(FACETS, grid, columnFilters),
+    [grid, columnFilters]
   )
 
   const lost = React.useMemo(
@@ -124,18 +125,31 @@ export function NetdeckView({
   // qui distingue deux versions, une grille filtrée qui garderait le visuel par
   // défaut ne montrerait pas ce qu'on vient de cocher.
   const rarities = (table.getColumn(RARITY_FACET)?.getFilterValue() as string[]) ?? []
+  // Possédée ou Manquante, que pose le sélecteur de la collection.
+  const ownedColumn = table.getColumn(OWNED_FACET)
+  const owned = (ownedColumn?.getFilterValue() as string[] | undefined)?.[0]
   const impressions = visible.reduce((n, c) => n + c.printings.length, 0)
   const filtering = columnFilters.length > 0 || search.length > 0
 
-  // Recherche, filtres, grille : ce que chaque onglet de la collection montre
-  // sur son périmètre. La même instance TanStack sert les deux onglets, donc
-  // tri, filtres et recherche suivent de l'un à l'autre — « les rouges que
-  // j'ai », puis « les rouges qui me manquent », sans rien ressaisir.
+  // Ce qui remplace une grille vide quand le sélecteur qui l'a vidée dit pourquoi :
+  // plus rien ne manque au niveau, ou rien n'y est encore possédé. Sinon, le
+  // constat de filtres de `CardGrid`.
+  const empty =
+    shown === "all" ? undefined : owned === MISSING && stats.missing === 0 ? (
+      <Complete level={shown} />
+    ) : owned === OWNED && stats.owned === 0 ? (
+      <EmptyCollection onBrowse={onBrowse} />
+    ) : undefined
+
+  // Recherche, filtres, grille : ce que chaque niveau de la collection montre.
+  // La même instance TanStack sert les trois onglets, donc tri, filtres et
+  // recherche suivent de l'un à l'autre — « les rouges qui me manquent au jeu
+  // de base », puis « au Masterset », sans rien ressaisir.
   const content = (
     <>
-      {/* Une grille vide — collection vide, ou plus rien qui manque — n'a rien
-          à filtrer. La grille, elle, reste montée pour ne pas emporter la
-          modale — voir `CardGrid`. */}
+      {/* Une grille vide n'a rien à filtrer — ce qui n'arrive plus qu'à une
+          base sans carte de ce niveau. La grille, elle, reste montée pour ne
+          pas emporter la modale — voir `CardGrid`. */}
       {grid.length > 0 && (
         <>
           <div className="flex flex-wrap items-center gap-2">
@@ -188,7 +202,25 @@ export function NetdeckView({
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="text-muted-foreground text-xs tabular-nums">
+            {/* Possession et tri côte à côte, à gauche, sous les filtres : les
+                deux disent comment la grille se présente, pas ce qu'elle
+                contient. La possession, dans la collection seulement — la base
+                ne mesure pas de complétion. */}
+            <div className="flex flex-wrap items-center gap-2">
+              {inCollection && (
+                <OwnedFilter
+                  value={owned}
+                  onChange={(next) => ownedColumn?.setFilterValue(next ? [next] : undefined)}
+                />
+              )}
+              <SortMenu
+                sorting={table.getState().sorting}
+                onSort={(next) => table.setSorting(next)}
+              />
+            </div>
+
+            {/* À droite, et y reste passé à la ligne (`ml-auto`). */}
+            <span className="text-muted-foreground ml-auto text-xs tabular-nums">
               {/* Déclinée par rareté, la base compte ses cartes et ses tuiles à
                   part : Sasha en Secret et en Iconic Secret, c'est une carte
                   de la base et deux tuiles. */}
@@ -196,19 +228,8 @@ export function NetdeckView({
                 ? `${new Set(visible.map((c) => c.name)).size} / ${grid.length} cartes` +
                   (rarities.length ? ` · ${plural(visible.length, "tuile")}` : "") +
                   ` · ${impressions} impressions`
-                : `${visible.length} / ${plural(grid.length, "version")}` +
-                  (shown === "owned"
-                    ? ` · ${plural(
-                        visible.reduce((n, c) => n + c.owned, 0),
-                        "exemplaire"
-                      )}`
-                    : "")}
+                : `${visible.length} / ${plural(grid.length, LEVELS[shown].unit)}`}
             </span>
-
-            <SortMenu
-              sorting={table.getState().sorting}
-              onSort={(next) => table.setSorting(next)}
-            />
           </div>
         </>
       )}
@@ -219,13 +240,7 @@ export function NetdeckView({
         scope={shown}
         collection={collection}
         onQty={onQty}
-        empty={
-          grid.length ? undefined : shown === "missing" ? (
-            <Complete />
-          ) : (
-            <EmptyCollection onBrowse={onBrowse} />
-          )
-        }
+        empty={empty}
       />
 
       <p className="text-muted-foreground text-xs leading-relaxed">{FOOTNOTES[shown]}</p>
@@ -239,29 +254,21 @@ export function NetdeckView({
     // 640 px, pour Retina). Au-delà ils seraient agrandis, et l'original ne
     // fait que 733 px.
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
-      {/* Montrées même à zéro : ajouter la première carte depuis « Manquantes »
-          ne fait pas apparaître un bloc qui repousserait les onglets. */}
-      {inCollection && <CollectionStats stats={collectionStats(base)} />}
+      {/* Au-dessus des onglets : elles valent pour la collection entière. */}
       {lost.length > 0 && <Orphans entries={lost} />}
 
       {inCollection ? (
-        // Onglets en variante par défaut, pas `line` : un bloc qui se lit
-        // comme une bascule entre deux périmètres, pas comme une navigation.
         <Tabs
           value={shown}
-          onValueChange={(value) => setShown(value as CollectionTab)}
+          onValueChange={(value) => setShown(value as Level)}
           className="gap-4"
         >
-          <TabsList>
-            {Object.entries(COLLECTION_TABS).map(([value, label]) => (
-              <TabsTrigger key={value} value={value}>
-                {label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+          <LevelTabs />
           {/* Un seul panneau, dont la valeur suit l'onglet : le contenu est le
-              même pour les deux, seule la grille change. */}
+              même pour les trois, seule la grille change. */}
           <TabsContent value={shown} className="flex flex-col gap-4">
+            {/* Sous les onglets, parce qu'elles comptent le niveau choisi. */}
+            <CollectionStats stats={stats} />
             {content}
           </TabsContent>
         </Tabs>
@@ -275,9 +282,19 @@ export function NetdeckView({
 /** Nom du fichier CSV, par périmètre. */
 const CSV_NAMES: Record<Scope, string> = {
   all: "cyberpunk-tcg-cartes.csv",
-  owned: "cyberpunk-tcg-collection.csv",
-  missing: "cyberpunk-tcg-manquantes.csv",
+  base: "cyberpunk-tcg-jeu-de-base.csv",
+  full: "cyberpunk-tcg-toutes-raretes.csv",
+  masterset: "cyberpunk-tcg-masterset.csv",
 }
+
+/** Ce que rappelle la note de chaque niveau de la collection. */
+const KEPT = (
+  <>
+    Les manquantes ont le visuel en retrait ; les quantités se règlent dans la modale, ici comme
+    dans la base de cartes. La collection est conservée dans ce navigateur seulement : l'exporter
+    depuis Paramètres pour la sauvegarder.
+  </>
+)
 
 /** Note en pied de vue, par périmètre : d'où viennent les tuiles, et ce qu'on en fait. */
 const FOOTNOTES: Record<Scope, React.ReactNode> = {
@@ -291,17 +308,22 @@ const FOOTNOTES: Record<Scope, React.ReactNode> = {
       pointillés — rien ne dit lequel est cette impression précise.
     </>
   ),
-  owned: (
+  base: (
     <>
-      Une tuile par version possédée ; les quantités se règlent dans la modale, ici comme dans la
-      base de cartes. La collection est conservée dans ce navigateur seulement : l'exporter depuis
-      Paramètres pour la sauvegarder.
+      Une tuile par carte à collectionner du jeu de base, de Common à Secret — et par illustration
+      alternative, comme les deux V - Streetkid Rare. N'importe laquelle de ses impressions la
+      complète : #109 ou #β109. {KEPT}
     </>
   ),
-  missing: (
+  full: (
     <>
-      Une tuile par version absente de la collection, visuel en retrait. L'ajouter depuis sa
-      modale la fait passer dans « Collectées ».
+      Une tuile par carte à collectionner, toutes raretés confondues : le jeu de base, plus chaque
+      Iconic et chaque Nova Rare. N'importe laquelle de ses impressions la complète. {KEPT}
+    </>
+  ),
+  masterset: (
+    <>
+      Une tuile par version : chaque set, chaque tirage Retail et Beta, chaque réimpression. {KEPT}
     </>
   ),
 }
@@ -343,10 +365,10 @@ function EmptyCollection({ onBrowse }: { onBrowse: () => void }) {
   return (
     <div className="flex flex-col items-start gap-3 border p-6">
       <div>
-        <h2 className="text-sm font-medium">La collection est vide</h2>
+        <h2 className="text-sm font-medium">Rien de possédé à ce niveau</h2>
         <p className="text-muted-foreground mt-1 max-w-prose text-sm leading-relaxed">
-          Ouvrir une version depuis l'onglet « Manquantes » ou la base de cartes, puis « Ajouter à
-          ma collection ».
+          Choisir « Toutes » ou « Manquantes » pour voir ce qui manque, ou parcourir la base de
+          cartes. Ouvrir une carte, puis « Ajouter à ma collection ».
         </p>
       </div>
       <Button size="sm" onClick={onBrowse}>
@@ -357,11 +379,11 @@ function EmptyCollection({ onBrowse }: { onBrowse: () => void }) {
   )
 }
 
-/** L'onglet « Manquantes » vide : toutes les versions de la base sont possédées. */
-function Complete() {
+/** « Manquantes » choisi, et il n'en reste aucune : le niveau est complet. */
+function Complete({ level }: { level: Level }) {
   return (
     <div className="text-muted-foreground border p-8 text-center text-sm">
-      Aucune version ne manque : la collection couvre toute la base de cartes.
+      Aucune carte ne manque : le niveau « {LEVELS[level].label} » est complet.
     </div>
   )
 }

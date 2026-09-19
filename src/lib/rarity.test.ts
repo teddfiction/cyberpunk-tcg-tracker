@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from "vitest"
 
-import { RARITIES, rarityLabel, rarityRank } from "@/data/rarities"
+import { RARITIES, isBaseRarity, rarityLabel, rarityRank } from "@/data/rarities"
 import { buildRows } from "@/lib/dataset"
 import { buildEnrichIndex } from "@/lib/enrich"
 import { makeTable } from "@/test/table"
@@ -32,6 +32,15 @@ describe("taxonomie", () => {
     const base = ["Common", "Uncommon", "Rare", "Epic", "Secret"].map(rarityRank)
     const variants = ["Iconic Legend", "Iconic Other", "Iconic Secret", "Nova Rare"].map(rarityRank)
     expect(Math.max(...base)).toBeLessThan(Math.min(...variants))
+  })
+
+  it("borne le jeu de base à Secret : ni Iconic, ni Nova, ni rareté inconnue", () => {
+    for (const r of ["Common", "Uncommon", "Rare", "Epic", "Secret", "SECRET", "un-common"]) {
+      expect(isBaseRarity(r)).toBe(true)
+    }
+    for (const r of ["Iconic Legend", "Iconic Other", "Iconic Secret", "Nova Rare", "Promo Kiosque"]) {
+      expect(isBaseRarity(r)).toBe(false)
+    }
   })
 
   it("tolère la casse et la ponctuation de Netdeck", () => {

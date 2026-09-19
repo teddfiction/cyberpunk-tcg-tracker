@@ -220,10 +220,10 @@ export type Collectible = {
 
 /**
  * La carte à collectionner que représente une tuile, quand elle n'en
- * représente qu'une : une version de la collection, ou une carte de la base
- * déclinée parce qu'une rareté est cochée. `null` pour une carte entière de la
- * base : un badge de rareté n'y figurerait que sur les cartes d'une seule
- * rareté, et son absence sur les autres ne dirait rien.
+ * représente qu'une : une tuile de la collection, à tout niveau, ou une carte
+ * de la base déclinée parce qu'une rareté est cochée. `null` pour une carte
+ * entière de la base : un badge de rareté n'y figurerait que sur les cartes
+ * d'une seule rareté, et son absence sur les autres ne dirait rien.
  */
 export function tileCollectible(
   card: GridCard,
@@ -275,9 +275,9 @@ export function printingIndex(card: GridCard, rarities: string[]): number {
  * la suit — qui a pris sa place dans la grille —, puis la plus proche qui la
  * précède.
  *
- * La carte quittée n'a pas toujours encore sa tuile : l'ajouter depuis un filtre
- * « Manquante », ou retirer une version de la collection, la fait sortir de la
- * grille. Sans repli, le focus retomberait sur `body` et le clavier repartirait
+ * La carte quittée n'a pas toujours encore sa tuile : l'ajouter quand seules
+ * les manquantes sont affichées, ou la retirer quand ce sont les possédées, la
+ * fait sortir de la grille. Sans repli, le focus retomberait sur `body` et le clavier repartirait
  * du haut des 151 tuiles.
  */
 export function focusTarget(

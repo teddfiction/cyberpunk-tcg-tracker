@@ -12,7 +12,7 @@ Le `README.md` documente le produit et les sources de données. Ce fichier-ci se
 
 ```bash
 npm run dev              # vite, port 5173
-npm run test             # vitest, ~180 tests, < 1 s  ← le filet
+npm run test             # vitest, ~215 tests, < 1 s  ← le filet
 npm run typecheck        # tsc -b --noEmit
 npm run build            # tsc -b && vite build → dist/
 npm run data:refresh     # rafraîchit les cotes (voir README § « Exploiter l'app »)
@@ -99,13 +99,24 @@ Sinon « Rare » annoncerait 32 cartes puis passerait à 33 tuiles au moment où
 la coche : V - Streetkid y compte deux fois, ses illustrations a et b.
 
 La facette vaut pour la base **et** la collection, qui partagent registre et
-colonnes. Seule « Collection » (`OWNED_FACET`) est masquée dans la collection,
-où chaque onglet n'y aurait qu'une valeur.
+colonnes. La possession n'en est pas une : la colonne `OWNED_FACET` existe, mais
+seul le sélecteur Toutes / Possédées / Manquantes de la collection la filtre
+(`OwnedFilter`) —
+la base de cartes ne propose pas de filtre Possédée / Manquante.
 
 Une valeur **cochée** reste proposée même à zéro (`facetOptions`, argument
-`selected`) : sans quoi on ne pourrait plus la décocher. Les onglets de la
+`selected`) : sans quoi on ne pourrait plus la décocher. Les niveaux de la
 collection partagent leurs filtres, et une valeur cochée dans l'un peut
-n'exister dans l'autre sur aucune tuile.
+n'exister dans l'autre sur aucune tuile — Nova Rare au jeu de base.
+
+### Ajouter un niveau à la collection
+
+**Un fichier : `lib/collection.ts`**, une entrée dans `LEVELS` — libellé,
+sous-titre, unité du compteur et fonction qui tire ses tuiles de la base.
+L'onglet, les statistiques et le compteur suivent ; `npm run typecheck` réclame
+ensuite son nom de CSV et sa note dans `netdeck-view.tsx` (`CSV_NAMES`,
+`FOOTNOTES`, des `Record<Scope, …>`). `Level` est dérivé de `LEVELS`, et
+`Scope` vaut `"all" | Level`.
 
 ### Ajouter un tri à la grille de cartes
 
@@ -258,10 +269,9 @@ imports JSON (mémoire) ──┘        ▲                                  �
 useDataset ─► buildPrintings ─► buildGrid ──┬───────────────► useTable ─► CardGrid / toCsv
  (enrichedCards,  (qty)          (owned)    │   (base)            ▲  (gridRows : une tuile
   collection)                               │                     │   par rareté cochée)
-                                            ├─► ownedGrid ────────┤
-                                            │   (Collectées)      │
-                                            └─► missingGrid ──────┘
-                                                (Manquantes)
+                                            └─► LEVELS[niveau] ───┘
+                                                (Jeu de base, Toutes
+                                                 les raretés, Masterset)
 ```
 
 `useDataset` est la source de vérité des **données**, `useTable` celle de l'**état
@@ -274,7 +284,7 @@ toute la mécanique et ne diffèrent que par leurs lignes et leurs colonnes :
 |---|---|---|---|---|
 | Cotes Cardmarket | un produit Cardmarket, ou une carte regroupée | `lib/dataset.ts` | `components/columns.tsx` | `DataTable` |
 | Base de cartes | une carte Netdeck, ses impressions en modale ; une carte dans une rareté, quand une rareté est cochée | `lib/printings.ts` | `components/grid-columns.ts` | `CardGrid` + `CardDialog` |
-| Collection | une version possédée, ou manquante | `lib/collection.ts` (`ownedGrid`, `missingGrid`) | `components/grid-columns.ts` | `CardGrid` + `CardDialog` |
+| Collection | une carte à collectionner du niveau (Jeu de base, Toutes les raretés), ou une version (Masterset) | `lib/collection.ts` (`LEVELS`) | `components/grid-columns.ts` | `CardGrid` + `CardDialog` |
 
 **La grille est une table sans table.** Ses colonnes ne rendent rien : elles
 portent les facettes, la recherche et l'export CSV, et `CardGrid` dessine les
@@ -298,7 +308,8 @@ clavier —, pour constituer sa collection sans la refermer. Ce qui la fait teni
 
 - **Elle parcourt un instantané de la grille**, pris au clic sur la tuile : tri
   et filtres de ce moment-là, pas la grille vivante. Celle-ci bouge sous la
-  modale ouverte — ajouter une carte depuis « Manquante » la retire, trier par
+  modale ouverte — ajouter une carte quand seules les manquantes sont
+  affichées la retire, trier par
   exemplaires la déplace — et « suivante » sauterait une carte, « précédente »
   ne ramènerait plus à celle qu'on quitte. La séquence ne boucle pas.
 - **Le corps de la modale est remonté à chaque carte** (`Versions`,
@@ -339,9 +350,9 @@ et l'une ne tient pas lieu de l'autre. Ce qui en découle :
   #005a et #β005a partagent la tuile « a ». Relevé du 19/09/2026 : V -
   Streetkid est la seule carte concernée, mais la règle ne la nomme pas.
 - **Chaque tuile ne porte que ses impressions** (`narrow`) : sets, cote et
-  exemplaires sont les leurs. Filtrer un set ou « Manquante » vaut donc rareté
+  exemplaires sont les leurs. Filtrer un set ou les manquantes vaut donc rareté
   par rareté — l'Iconic Secret possédée ne cache plus la Secret qui manque.
-  `narrow` sert aussi aux versions de la collection : une seule agrégation.
+  `narrow` sert aussi aux niveaux de la collection : une seule agrégation.
 - **La déclinaison se fait avant TanStack**, par `gridRows` (`lib/facets.ts`),
   que `useTable` applique aux données selon les filtres posés (`rowsOf`).
   TanStack filtre et trie ensuite ces tuiles comme les autres : pas de second
@@ -374,42 +385,68 @@ interface. Même `NetdeckView` (prop `scope`), même grille, même modale, même
 réglage de quantité : on ne jongle pas entre deux écrans qui se ressemblent mais
 se comportent différemment. Ce qui en découle :
 
-- **Une tuile par version**, pas par carte, en deux onglets `Tabs` :
-  « Collectées » (`ownedGrid`) et « Manquantes » (`missingGrid`), l'une le
-  complément exact de l'autre — un test le vérifie. Chaque tuile ne porte que
-  ses propres set, rareté et cote : sinon filtrer « Nova Rare » garderait une
-  carte dont on n'a que la Common. `GridCard.id` vaut le nom dans la base,
-  l'uuid dans la collection — c'est la clé de ligne et la `key` React.
-- **Le périmètre est un `Scope`** — `all`, `owned`, `missing` —, et
-  `SCOPE_GRID` en tire la grille : un `Record<Scope, …>`, donc un périmètre
-  ajouté sans sa grille ne compile pas. `NetdeckView` reçoit celui d'ouverture ;
-  dans la collection, l'onglet le change ensuite.
-- **Les deux onglets partagent une instance TanStack** : tri, filtres et
-  recherche suivent de l'un à l'autre — « les Epic que j'ai », puis « celles qui
-  me manquent ». C'est l'inverse de deux vues (ci-dessous), et c'est voulu :
-  les onglets sont deux côtés d'une même collection.
-- **Une version manquante n'estompe que son visuel** (`opacity-40`) : nom,
+- **Trois niveaux, en onglets** (`LEVELS`, `lib/collection.ts`), chacun plus
+  exigeant que le précédent et le contenant :
+  - **Jeu de base** — une tuile par carte à collectionner de Common à Secret
+    (`isBaseRarity`, `data/rarities.ts`) : 152 sur l'export du 16/09/2026. Les
+    cartes propres aux starter decks en font partie, Minotaur y compte deux fois
+    (Uncommon, et l'Epic du Night City Brawl), Rebecca — seulement Nova Rare —
+    n'y est pas.
+  - **Toutes les raretés** — les mêmes tuiles avec Iconic et Nova Rare :
+    `grid.flatMap(collectibles)`, 199.
+  - **Masterset** — une tuile par version, réimpressions comprises : 502.
+    L'ancien onglet « Manquantes », possédées en plus.
+
+  Une carte à collectionner est complète dès qu'une de ses impressions l'est :
+  #109 ou #β109 de Sasha. Chaque tuile ne porte que ses propres sets, rareté et
+  cote, sinon filtrer « Nova Rare » garderait une carte dont on n'a que la
+  Common. `GridCard.id` vaut le nom dans la base, `nom|rareté` pour une carte
+  à collectionner déclinée, l'uuid au Masterset — c'est la clé de ligne et la
+  `key` React.
+- **Chaque niveau montre toutes ses tuiles** : les possédées en pleine opacité,
+  les manquantes estompées. C'est au milieu de ce qu'on a que se voit ce qui
+  manque, dans l'ordre de la grille. Un sélecteur **Toutes / Possédées /
+  Manquantes** (`OwnedFilter`), à gauche du tri, isole l'un ou l'autre : une
+  seule donnée, le filtre TanStack de la colonne `OWNED_FACET` (`undefined`,
+  `[OWNED]` ou `[MISSING]`). « Toutes » est l'absence de filtre, et
+  « Réinitialiser » y revient comme pour tout filtre. À côté du tri parce que
+  les deux disent comment la grille se présente, pas ce qu'elle contient ; le
+  compteur passe à droite de la ligne, dans la base comme dans la collection.
+- **Le périmètre est un `Scope`** — `"all" | Level` —, et `scopeGrid` en tire
+  la grille. `NetdeckView` reçoit celui d'ouverture — `base` pour la
+  collection ; l'onglet le change ensuite.
+- **Les trois onglets partagent une instance TanStack** : tri, filtres,
+  recherche et possession suivent de l'un à l'autre — « les rouges qui me manquent
+  au jeu de base », puis « au Masterset ». C'est l'inverse de deux vues
+  (ci-dessous), et c'est voulu : les niveaux mesurent une même collection.
+- **Une tuile manquante n'estompe que son visuel** (`opacity-40`) : nom,
   badges et caractéristiques gardent leur contraste. La modale, elle, montre
-  l'artwork en pleine opacité.
-- **Statistiques et entrées orphelines restent au-dessus des onglets** : elles
-  valent pour la collection entière. Les statistiques s'affichent même à zéro,
-  pour qu'ajouter la première version depuis « Manquantes » ne fasse pas
-  apparaître un bloc qui repousserait les onglets.
+  l'artwork en pleine opacité. La base de cartes n'estompe rien : elle ne
+  mesure pas une complétion.
+- **Entrées orphelines au-dessus des onglets, statistiques en dessous.** Les
+  orphelines valent pour la collection entière ; les statistiques — possédées,
+  manquantes, exemplaires (`levelStats`) — comptent le niveau choisi, sur
+  toutes ses tuiles et non sur celles que les filtres laissent voir. Elles
+  s'affichent même à zéro. Contraste inversé entre les deux blocs : les
+  onglets en aplat `card` — gris foncé en sombre —, se lisent comme des
+  commandes ; les statistiques sur le fond de la page, bordées en `input`
+  comme la recherche et les filtres, comme des données.
 - **Chaque vue porte son `key` dans `App.tsx`.** Même composant à la même place
   de l'arbre : sans `key`, React garderait l'état TanStack de l'une dans
   l'autre, filtres et recherche compris.
 - **La possession se voit depuis la base** — quantités sur les tuiles et sur les
-  miniatures de versions, facette Possédée / Manquante. C'est ce qui évite
-  d'aller vérifier dans la collection.
+  miniatures de versions. Elle ne s'y filtre pas : c'est le rôle des niveaux
+  de la collection.
 - **`CardDialog` lit les quantités dans `collection`, jamais dans `card`.** La
   carte que tient `CardGrid` est un instantané pris au clic, que la
   reconstruction de la grille ne met pas à jour : lire `card.owned` figerait le
   compteur.
 - **`CardGrid` ne démonte pas la modale quand la grille se vide.** Ajouter la
-  dernière carte d'un filtre « Manquante », ou retirer la dernière version de la
-  collection, fait disparaître la tuile sous la modale ouverte : elle reste, et
-  repasse sur « Ajouter ». C'est aussi pourquoi l'état vide de la collection
-  passe par la prop `empty` de `CardGrid` plutôt que par un retour anticipé.
+  dernière carte qui manque, seules les manquantes affichées, ou retirer la
+  dernière possédée, seules les possédées affichées, fait disparaître la tuile
+  sous la modale ouverte : elle reste, et repasse sur « Ajouter ». C'est aussi
+  pourquoi « niveau complet » et « rien de possédé » passent par la prop
+  `empty` de `CardGrid` plutôt que par un retour anticipé.
 
 La base de cartes montre ce que la table des cotes ne peut pas montrer : les
 cartes qu'aucun vendeur ne propose. Sa cote Cardmarket n'est rattachée que
@@ -532,11 +569,11 @@ Vitest lit `vite.config.ts` : l'alias `@/` et le JSX marchent sans configuration
   `gridIds` pour distinguer les tuiles d'une même carte. Comme `useTable`,
   `makeGrid` décline la grille par rareté dès qu'une rareté est cochée.
   `makeGrid(state, data)` accepte une autre grille : `gridOf(COLLECTION)` pour
-  la base avec quantités, `ownedGrid(gridOf(COLLECTION))` et
-  `missingGrid(gridOf(COLLECTION))` pour les deux onglets de la collection.
-  La fixture `COLLECTION` ne possède Zébu qu'en Common, alors que la carte
-  existe en Nova Rare : c'est ce qui rend vérifiable l'exactitude des facettes
-  de la collection.
+  la base avec quantités, `LEVELS.base.grid(gridOf(COLLECTION))` — et `full`,
+  `masterset` — pour les niveaux de la collection. La fixture `COLLECTION` ne
+  possède Zébu qu'en Common, alors que la carte existe en Nova Rare : c'est ce
+  qui rend vérifiable l'exactitude des facettes et des manquantes de chaque
+  niveau — rien ne manque au jeu de base, la Nova Rare manque aux deux autres.
 - **Le typecheck ne voit pas un changement de forme qui garde les mêmes
   méthodes.** Un tableau d'objets accepte `join()` comme un tableau de chaînes,
   et rend `[object Object]` à l'écran sans erreur de compilation. Quand une
@@ -552,10 +589,30 @@ La consigne du projet : **uniquement Tailwind et les composants shadcn natifs.**
   CLI — donc pas d'édition, pas même un commentaire d'en-tête. Nouveau composant :
   `npx shadcn@latest add <nom>`, jamais écrit à la main. Toute personnalisation
   vit dans `src/components/`.
-- **Onglets de la collection : `Tabs` en variante par défaut**, pas `line` —
-  une bascule entre deux périmètres, pas une navigation. Un seul `TabsContent`,
-  dont la valeur suit l'onglet actif : le contenu est le même pour les deux,
-  seule la grille change, et chaque déclencheur garde un panneau à désigner.
+- **Niveaux de la collection : des `Item` sur les primitives `Tabs` de Radix**
+  (`level-tabs.tsx`), titre et sous-titre. Pas le `TabsTrigger` du registry :
+  ses trente classes — hauteur, `flex-1`, `whitespace-nowrap`, aplats actifs,
+  soulignement `after:` — seraient toutes à neutraliser. `Trigger asChild` >
+  `Item asChild` > `<button>` garde la sémantique d'onglet de Radix (flèches,
+  activation au focus, `aria-controls`) sur un seul bouton qui porte les
+  classes de l'`Item` ; `cn` y arbitre les conflits. `text-left`, parce qu'un
+  bouton centre son texte. Trois états : aplat `card` au repos ; au survol,
+  fond `accent` et bordure foncée, sur l'inactif seulement — en clair,
+  `accent` n'est qu'à 3 % de `card` ; actif en aplat `primary`, texte
+  `selected-foreground` jusqu'au sous-titre. Côte à côte à partir de `lg`,
+  empilés en deçà. Le `Tabs` et le `TabsContent` restent ceux du registry : un
+  seul panneau, dont la valeur suit l'onglet actif — le contenu est le même
+  pour les trois, seule la grille change.
+- **Possession dans la collection : `ToggleGroup` à choix unique**, variante
+  `outline` — même bordure `input` et même hauteur que le menu de tri, qu'il
+  côtoie. Radix laisse décocher l'option active d'un groupe `single` et rend
+  alors `""` : `OwnedFilter` l'ignore, pour qu'il se comporte en groupe radio.
+  L'option choisie a une bordure `primary` sur fond `background`, et le garde
+  au survol. Le registry ôte la bordure gauche des options suivantes pour ne
+  pas doubler le filet, ce qui ne laisserait que trois côtés jaunes :
+  `OwnedFilter` la leur rend, en surchargeant la classe à variantes égales
+  pour que `cn` écarte `border-l-0`. Elles se chevauchent d'un pixel
+  (`not-first:-ml-px`), et l'option choisie passe au-dessus (`z-10`).
 - **Filtres de la grille : `DropdownMenu` + `DropdownMenuCheckboxItem`.** Son
   indicateur est déjà posé à gauche du libellé par le registry, rien à
   surcharger. Le champ de recherche est un `Input` ordinaire et non `Command` :
@@ -613,7 +670,11 @@ La consigne du projet : **uniquement Tailwind et les composants shadcn natifs.**
   (locales, SIL OFL 1.1). Base et accent sont deux axes : la base est passée de
   Slate à Neutral — un chrome noir, blanc et gris, sans nuance bleutée — sans
   toucher aux tons `primary` / `ring` / `sidebar-primary` / `sidebar-active`,
-  qui restent jaunes. `--muted-foreground` est neutral-600 en clair, et non le
+  qui restent jaunes. **`--selected-foreground` est un noir pur**, pour le
+  texte posé sur un aplat `primary` quand le contraste doit être maximal —
+  l'onglet actif des niveaux : ~11:1 sur le jaune clair, ~13:1 sur le sombre,
+  là où le `--primary-foreground` du thème Yellow, un brun yellow-950, donne
+  ~7,6:1. `--muted-foreground` est neutral-600 en clair, et non le
   500 du registry, qui tombe à la limite des 4,5:1 sur le fond neutral-50.
 - **Le thème sombre s'écarte de Neutral, exprès.** `--background` et `--sidebar`
   sont un noir pur et non neutral-950/900 : rien ne doit disputer l'éclat des

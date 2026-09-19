@@ -61,7 +61,7 @@ type Props = {
   onStep: (delta: -1 | 1) => void
   /** Rend le focus à la grille en sortant. Voir `onCloseAutoFocus` plus bas. */
   returnFocus: () => void
-  /** Dans la collection, la carte n'apporte que la version possédée. */
+  /** Au Masterset, la carte n'apporte qu'une version. */
   scope: Scope
   /**
    * Quantités lues ici, pas dans `card` : la carte est un instantané pris au
@@ -141,10 +141,11 @@ export function CardDialog({
                 {/* Comme sur la tuile. Sans eux, « 2 impressions » d'une carte
                     déclinée par rareté se lirait comme le compte de la carte. */}
                 <CollectibleBadges collectible={collectible} className="text-xs" />
-                {/* Dans la collection la carte ne porte que sa version : compter
-                    ses impressions y dirait « 1 », ce qui est faux pour la carte.
-                    Déclinée, ce sont les impressions de sa carte à collectionner. */}
-                {scope === "all" && (
+                {/* Une version du Masterset ne porte qu'elle-même : compter ses
+                    impressions y dirait « 1 », ce qui est faux pour la carte.
+                    Déclinée, ou à un autre niveau de la collection, ce sont les
+                    impressions de sa carte à collectionner. */}
+                {scope !== "masterset" && (
                   <InfoBadge className="text-muted-foreground gap-1 text-xs">
                     <Layers className="size-3" />
                     {plural(n, "impression")}

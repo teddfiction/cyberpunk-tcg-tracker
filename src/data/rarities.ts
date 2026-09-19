@@ -32,3 +32,10 @@ export const rarityLabel = (raw: string) => KNOWN.get(norm(raw))?.label ?? raw
 
 /** Rang de tri. Les raretés inconnues passent après les connues. */
 export const rarityRank = (raw: string) => KNOWN.get(norm(raw))?.rank ?? RARITIES.length
+
+/**
+ * Rareté du jeu de base : de Common à Secret, qui le complète. Les variantes
+ * Iconic et Nova Rare viennent après, comme une rareté inconnue — rien ne dit
+ * qu'elle en fasse partie.
+ */
+export const isBaseRarity = (raw: string) => rarityRank(raw) <= rarityRank("Secret")

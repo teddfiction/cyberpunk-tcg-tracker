@@ -112,8 +112,9 @@ export const GRID_COLUMNS: ColumnDef<GridCard>[] = [
     sortUndefined: MISSING_LAST,
     meta: { align: "right", decimal: true },
   },
-  // Deux colonnes pour une donnée : l'une filtre en Possédée / Manquante,
-  // l'autre trie et s'exporte en nombre. Le CSV n'en garde qu'une.
+  // Deux colonnes pour une donnée : l'une filtre en Possédée / Manquante — le
+  // sélecteur de la collection —, l'autre trie et s'exporte en nombre. Le CSV
+  // n'en garde qu'une.
   {
     id: OWNED_FACET,
     accessorFn: (c) => (c.owned > 0 ? OWNED : MISSING),

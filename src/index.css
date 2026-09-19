@@ -68,6 +68,11 @@
      yellow-800 donne 6,3:1. Les mêmes valeurs qu'avec la barre slate-100 :
      passer en Neutral n'a rien changé au contraste. */
   --sidebar-active: oklch(47.6% 0.114 61.907);
+  /* Texte posé sur un aplat `primary` quand le contraste doit être maximal :
+     l'onglet actif des niveaux de la collection. Noir pur et non le
+     `--primary-foreground` du thème Yellow, un brun yellow-950 : ~11:1 sur ce
+     jaune au lieu de ~7,6:1. */
+  --selected-foreground: oklch(0% 0 0);
   /* Couleurs de carte du jeu. Ce ne sont pas des tons de thème : elles viennent
      des données, et rien ne doit les remplacer. Elles vivent tout de même ici,
      pour être réglées par thème — une teinte lisible sur un fond clair ne l'est
@@ -121,6 +126,8 @@
   --sidebar-ring: oklch(79.5% 0.184 86.047);
   /* Sur le noir, le jaune de l'accent passe tel quel : 13,35:1. */
   --sidebar-active: oklch(85.2% 0.199 91.936);
+  /* Le jaune du sombre est plus clair : le noir y monte à ~13:1. */
+  --selected-foreground: oklch(0% 0 0);
   --card-red: oklch(70.4% 0.191 22.216);
   --card-yellow: oklch(85.2% 0.199 91.936);
   --card-green: oklch(79.2% 0.209 151.711);
@@ -163,6 +170,7 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-active: var(--sidebar-active);
+  --color-selected-foreground: var(--selected-foreground);
 }
 
 @layer base {

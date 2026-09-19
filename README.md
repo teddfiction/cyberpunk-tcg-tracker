@@ -38,13 +38,17 @@ ce qu'elle montre, puis comment rafraîchir ses données.
   recherche Cardmarket. La modale passe d'une carte à l'autre sans se refermer
   — chevrons de l'en-tête ou flèches du clavier —, dans l'ordre de la grille
   triée et filtrée. La base se remplit une fois `cards_enriched.json` importé.
-- **Collection** — la même grille, une tuile par version, en deux onglets :
-  « Collectées » et « Manquantes », celles-ci le visuel en retrait. Mêmes
-  filtres, recherche et tris, qui suivent d'un onglet à l'autre, et la
-  complétion en tête. Les quantités se règlent dans la modale d'une carte,
-  depuis la base comme depuis la collection ; la base montre ce qu'on possède
-  déjà (quantités sur les tuiles et les versions, filtre Possédée / Manquante).
-  La collection se sauvegarde, se restaure et se supprime depuis Paramètres.
+- **Collection** — la même grille, mesurée à trois niveaux, en onglets :
+  **Jeu de base** (les cartes à collectionner de Common à Secret), **Toutes
+  les raretés** (avec les Iconic et les Nova Rare) et **Masterset** (chaque
+  version). Chaque niveau montre toutes ses tuiles, les manquantes le visuel en
+  retrait, et sa complétion sous les onglets ; un sélecteur Toutes /
+  Possédées / Manquantes, à gauche du tri, isole les unes ou les autres. Mêmes
+  filtres, recherche et tris, qui suivent d'un niveau à l'autre. Les quantités
+  se règlent dans la modale d'une carte, depuis la base comme depuis la
+  collection ; la base montre ce qu'on possède déjà par les quantités sur les
+  tuiles et les versions. La collection se sauvegarde, se restaure et se
+  supprime depuis Paramètres.
 
 ## Exploiter l'app
 
@@ -145,8 +149,8 @@ permanente et partagée.
 
 Bouton **Exporter en CSV**, dans les trois vues : colonnes du mode courant pour
 la table des cotes, une ligne par carte pour la base de cartes, une ligne par
-version possédée — avec le nombre d'exemplaires — pour la collection. Lignes filtrées et
-triées telles qu'affichées. Séparateur `;`, virgule décimale, BOM UTF-8 — Excel
+tuile du niveau choisi — avec le nombre d'exemplaires — pour la collection.
+Lignes filtrées et triées telles qu'affichées. Séparateur `;`, virgule décimale, BOM UTF-8 — Excel
 FR ouvre le fichier sans assistant d'import.
 
 ### 5. Sauvegarder la collection
@@ -195,7 +199,9 @@ src/
     card-grid.tsx       grille de cartes, quatre colonnes au plus
     card-dialog.tsx     versions d'une carte, en modale : visuel, versions numérotées, quantité, carte voisine
     collection-control.tsx  quantité possédée d'une version, retrait en deux temps
-    collection-stats.tsx    complétion en tête de la collection
+    collection-stats.tsx    complétion du niveau, sous ses onglets
+    level-tabs.tsx      onglets des niveaux de la collection, en Item shadcn
+    owned-filter.tsx    sélecteur Toutes / Possédées / Manquantes (ToggleGroup)
     import-dialog.tsx   formats reconnus et zone de dépôt
     facet-filter.tsx    filtre à facette générique (menu à cases à cocher)
     sort-menu.tsx       menu de tri de la grille
@@ -209,7 +215,7 @@ src/
   data/
     dataset.json        jeu de données embarqué (généré, versionné)
     expansions.ts       libellés d'extensions, codes d'impression, URLs externes
-    rarities.ts         taxonomie des raretés et leur rang de tri
+    rarities.ts         taxonomie des raretés, leur rang de tri et le jeu de base
     colors.ts           couleurs de carte du jeu → tokens CSS
     cardmarket.ts       URLs des trois exports — script, relais et bouton
   hooks/
@@ -227,7 +233,7 @@ src/
     facets.ts           registre des facettes de la grille
     sorts.ts            registre des tris de la grille, et rangs couleur/type
     printings.ts        impressions Netdeck et regroupement par carte
-    collection.ts       quantités, grilles possédées et manquantes, orphelines, complétion
+    collection.ts       quantités, niveaux de la collection, orphelines, complétion
     table.ts            tri, filtres et recherche passés à TanStack
     format.ts           formatage et normalisation
     ingest.ts           lecture des formats JSON, registre des formats, sauvegarde
