@@ -437,6 +437,11 @@ Tous couverts par des tests : si l'un saute, `npm run test` le dit.
   alphabétique — sinon « Epic » passerait avant « Common ». L'ordre de la liste
   `RARITIES` est le rang ; les libellés Netdeck sont normalisés via `norm()`, et
   une rareté inconnue est affichée telle quelle et rangée après les connues.
+  **Secret se range avec le jeu de base**, juste après Epic et avant toutes les
+  variantes : elle le complète, l'Iconic Secret en est la variante. L'ordre suit
+  la numérotation de Welcome to Night City — 1 à 140 pour le jeu de base, puis
+  Iconic Legend (141–158), Other (159–167), Secret (168–171) ; Nova Rare, hors
+  de cette numérotation, ferme la liste.
 - **`norm()` et `words()`** (`lib/format.ts`) se ressemblent mais ne servent pas
   à la même chose. `norm()` colle tout (« V - Streetkid » → `vstreetkid`) : c'est
   la clé de jointure entre sources, elle reproduit exactement le `set.code` de

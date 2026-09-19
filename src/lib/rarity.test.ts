@@ -21,8 +21,17 @@ import {
 describe("taxonomie", () => {
   it("classe de la plus commune à la plus rare", () => {
     expect(rarityRank("Common")).toBeLessThan(rarityRank("Epic"))
-    expect(rarityRank("Epic")).toBeLessThan(rarityRank("Nova Rare"))
-    expect(rarityRank("Nova Rare")).toBeLessThan(rarityRank("Secret"))
+    expect(rarityRank("Epic")).toBeLessThan(rarityRank("Secret"))
+    expect(rarityRank("Iconic Legend")).toBeLessThan(rarityRank("Iconic Secret"))
+  })
+
+  it("range Secret avec le jeu de base, avant toutes les variantes", () => {
+    // Sasha Yakovleva existe en Secret (#109) et en Iconic Secret (#β169) : la
+    // première complète le jeu de base, la seconde en est la variante. Rangée
+    // en dernier, Secret passait derrière sa propre variante.
+    const base = ["Common", "Uncommon", "Rare", "Epic", "Secret"].map(rarityRank)
+    const variants = ["Iconic Legend", "Iconic Other", "Iconic Secret", "Nova Rare"].map(rarityRank)
+    expect(Math.max(...base)).toBeLessThan(Math.min(...variants))
   })
 
   it("tolère la casse et la ponctuation de Netdeck", () => {

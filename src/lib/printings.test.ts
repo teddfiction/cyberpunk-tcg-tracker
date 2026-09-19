@@ -283,8 +283,8 @@ describe("facettes", () => {
     expect(facetOptions(rarete, cards, ["Secret", "Epic"])).toEqual([
       { value: "Common", count: 1 },
       { value: "Epic", count: 1 },
-      { value: "Nova Rare", count: 1 },
       { value: "Secret", count: 0 },
+      { value: "Nova Rare", count: 1 },
     ])
     const couleur = FACETS.find((f) => f.id === "color")!
     expect(facetOptions(couleur, [], ["Red"])).toEqual([{ value: "Red", count: 0 }])
