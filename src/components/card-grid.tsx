@@ -2,7 +2,8 @@
  * Grille de cartes. Une tuile par carte ; cliquer l'ouvre en modale sur ses
  * impressions, dont chacune a son propre visuel — c'est là que se voient les
  * variantes de rareté que Cardmarket ne distingue pas. Dans la collection, une
- * tuile par version, possédée ou manquante — celles-ci le visuel en retrait.
+ * tuile par carte à collectionner ou par version, selon le niveau, et le visuel
+ * en retrait pour celles qui manquent.
  *
  * Cocher une rareté décline chaque carte en ses cartes à collectionner — une
  * tuile par rareté cochée, et par illustration alternative (voir `gridRows`) :
@@ -46,15 +47,16 @@ type Props = {
  */
 const OFFSCREEN = "[content-visibility:auto] [contain-intrinsic-size:auto_520px]"
 
-/** Visuel d'une version manquante : présent, mais en retrait de ceux qu'on possède. */
+/** Visuel d'une tuile manquante : présent, mais en retrait de ceux qu'on possède. */
 const MISSING = "opacity-40"
 
 export function CardGrid({ cards, rarities, scope, collection, onQty, empty }: Props) {
   // Séquence que parcourt la modale : la grille telle qu'elle était au clic, et
   // le rang de la carte montrée. Un instantané plutôt que `cards`, qui bouge
-  // sous la modale ouverte — une carte ajoutée depuis « Manquante » en sort, un
-  // tri par exemplaires la déplace : « suivante » sauterait une carte, et
-  // « précédente » ne ramènerait plus à celle qu'on vient de quitter.
+  // sous la modale ouverte — une carte ajoutée en sort quand seules les
+  // manquantes sont affichées, un tri par exemplaires la déplace : « suivante »
+  // sauterait une carte, et « précédente » ne ramènerait plus à celle qu'on
+  // vient de quitter.
   // Pas remise à `null` à la fermeture : la modale la rend encore pendant son
   // animation de sortie. C'est `open` qui pilote, pas elle.
   const [browse, setBrowse] = React.useState<{ cards: GridCard[]; at: number } | null>(null)
@@ -85,8 +87,8 @@ export function CardGrid({ cards, rarities, scope, collection, onQty, empty }: P
   return (
     <>
       {/* La grille vide ne démonte pas la modale : ajouter la dernière carte
-          d'un filtre « Manquante », ou retirer la dernière version de la
-          collection, fait disparaître sa tuile sous la modale encore ouverte. */}
+          qui manque, « Manquantes » choisi, ou retirer la dernière possédée,
+          « Possédées » choisi, fait disparaître sa tuile sous la modale. */}
       {!cards.length ? (
         (empty ?? (
           <div className="text-muted-foreground border p-8 text-center text-sm">
@@ -158,7 +160,9 @@ function Tile({
   // version par défaut de la carte.
   const pick = printingIndex(card, rarities)
   const shown = card.printings[pick]
-  const missing = scope === "missing"
+  // Dans la collection seulement : la base n'estompe rien, elle ne mesure pas
+  // une complétion.
+  const missing = scope !== "all" && card.owned === 0
   const collectible = tileCollectible(card, scope, rarities)
 
   return (
@@ -177,7 +181,7 @@ function Tile({
       >
         {/* Sans bordure : l'illustration se suffit, et le cadre dessiné sur la
             carte elle-même en tenait déjà lieu.
-            Une version manquante n'estompe que son visuel : nom, badges et
+            Une tuile manquante n'estompe que son visuel : nom, badges et
             caractéristiques gardent leur contraste, et restent lisibles. */}
         {shown?.thumb ? (
           <img src={shown.thumb} alt={card.name} className={cn("w-full", missing && MISSING)} />
@@ -195,11 +199,13 @@ function Tile({
         {/* Seule la couleur du type distingue les badges : voir `card-info.tsx`. */}
         <div className="mt-1 flex flex-wrap gap-1">
           <TypeBadge type={card.type} color={card.color} />
-          {/* Une version de la collection, ou une carte déclinée par
-              rareté : rareté et version la distinguent d'une autre tuile de
-              la même carte, que seul l'artwork séparerait sinon. */}
+          {/* Une tuile de la collection, ou une carte déclinée par rareté :
+              rareté et version la distinguent d'une autre tuile de la même
+              carte, que seul l'artwork séparerait sinon. */}
           <CollectibleBadges collectible={collectible} />
-          {scope === "all" && card.printings.length > 1 && (
+          {/* Une version du Masterset n'a qu'une impression : le compte n'y
+              dirait rien. Une carte à collectionner a ses réimpressions. */}
+          {scope !== "masterset" && card.printings.length > 1 && (
             <InfoBadge className="text-muted-foreground gap-1">
               <Layers className="size-3" />
               {card.printings.length}

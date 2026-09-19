@@ -9,7 +9,6 @@
 import type { ColumnFiltersState } from "@tanstack/react-table"
 
 import { rarityRank } from "@/data/rarities"
-import { MISSING, OWNED, OWNED_FACET } from "@/lib/collection"
 import { words } from "@/lib/format"
 import { collectibles } from "@/lib/printings"
 import type { GridCard } from "@/types"
@@ -42,12 +41,8 @@ export const FACETS: Facet[] = [
   { id: "eddiable", label: "Eddies", values: (c) => [c.eddiable ? "Oui" : "Non"], sort: "count" },
   { id: "sets", label: "Set", values: (c) => c.sets, sort: "count" },
   { id: RARITY_FACET, label: "Rareté", values: (c) => c.rarities, sort: "rarity" },
-  {
-    id: OWNED_FACET,
-    label: "Collection",
-    values: (c) => [c.owned > 0 ? OWNED : MISSING],
-    sort: "count",
-  },
+  // Pas de facette Possédée / Manquante : la possession se filtre dans la
+  // collection, par son sélecteur Toutes / Possédées / Manquantes (`OWNED_FACET`).
 ]
 
 const num = (v: number | null) => (v != null ? [String(v)] : [])
@@ -67,7 +62,8 @@ const num = (v: number | null) => (v != null ? [String(v)] : [])
  *
  * Sans rareté cochée, une tuile par carte : la base telle que la présente le
  * site officiel, chaque carte dans sa version par défaut. Sans effet sur la
- * collection, dont chaque tuile est déjà une version.
+ * collection, dont chaque tuile est déjà une carte à collectionner ou une
+ * version : `collectibles` la rend telle quelle.
  */
 export function gridRows(grid: GridCard[], filters: ColumnFiltersState): GridCard[] {
   return selectedIn(filters, RARITY_FACET).length ? grid.flatMap(collectibles) : grid
@@ -113,9 +109,9 @@ export type FacetOption = { value: string; count: number }
  * élargir sa sélection.
  *
  * Une valeur cochée reste proposée, fût-ce à zéro, sans quoi on ne pourrait
- * plus la décocher. Le cas se produit : les onglets de la collection partagent
- * leurs filtres, et un set coché dans « Collectées » peut n'avoir aucune version
- * dans « Manquantes » — ou disparaître quand on en retire la dernière version.
+ * plus la décocher. Le cas se produit : les niveaux de la collection partagent
+ * leurs filtres, et une rareté cochée dans « Toutes les raretés » — Nova Rare —
+ * n'a aucune tuile dans « Jeu de base ».
  */
 export function facetOptions(
   facet: Facet,

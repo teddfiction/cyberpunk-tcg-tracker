@@ -130,7 +130,7 @@ export default function App() {
     collection: () => (
       <NetdeckView
         key="collection"
-        scope="owned"
+        scope="base"
         cards={data.enrichedCards}
         rows={data.rows}
         codes={data.codes}
