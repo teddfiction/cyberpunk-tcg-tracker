@@ -10,7 +10,7 @@
  * ne dit lequel est cette impression : on montre la fourchette, on ne choisit
  * pas. Même règle que la colonne Rareté de l'autre table.
  */
-import { rarityRank } from "@/data/rarities"
+import { rarityLabel, rarityRank } from "@/data/rarities"
 import { matchExpansion } from "@/lib/enrich"
 import { eur, minOf, norm, words } from "@/lib/format"
 import type { Scope } from "@/lib/collection"
@@ -160,41 +160,85 @@ export const narrow = (card: GridCard, printings: PrintRow[], id: string): GridC
 })
 
 /**
- * Une tuile par rareté de la carte, de la plus commune à la plus rare, chacune
- * réduite aux impressions qui la portent.
+ * Lettre d'illustration alternative d'un numéro de collecteur : « 005a » → « a »,
+ * « β005b » → « b », et rien pour « 109 » ou « β169 ».
  *
- * C'est la rareté qu'on collectionne, pas l'impression : Sasha Yakovleva existe
- * en Secret (#109, #β109) et en Iconic Secret (#β169) — deux cartes à réunir,
- * dont la première s'obtient par l'une ou l'autre de ses impressions.
- * Réimpressions et illustrations alternatives d'une même rareté (V - Streetkid
- * #005a et #005b) restent donc sur une seule tuile, et dans sa modale.
+ * C'est ainsi que l'éditeur code deux illustrations d'une même carte à rareté
+ * égale — V - Streetkid, masculin en #005a, féminine en #005b, toutes deux
+ * Rare. Le « β » de tête ne compte pas : #005a et #β005a sont la même
+ * illustration, en Retail et en Beta. La lettre est gardée telle quelle, sans
+ * changer sa casse : « 005a » n'est pas « 005A ».
  *
- * Une carte d'une seule rareté est rendue telle quelle, identifiant compris.
- * Une impression sans rareté ne rejoint aucune tuile d'une carte déclinée :
- * aucune rareté cochée ne pourrait la retenir.
+ * Seule la lettre fait foi, pas le numéro : Royce a deux Rare, #002 et #004,
+ * qui ne sont qu'une réimpression dans un autre set.
  */
-export function byRarity(card: GridCard): GridCard[] {
-  if (card.rarities.length < 2) return [card]
-  return card.rarities.map((rarity) =>
-    narrow(
-      card,
-      card.printings.filter((p) => p.rarity === rarity),
-      `${card.id}|${rarity}`
-    )
-  )
+export const altOf = (num: string | null): string => num?.match(/\d([a-z])$/i)?.[1] ?? ""
+
+/**
+ * Les cartes à collectionner d'une carte, une tuile chacune : une par rareté, de
+ * la plus commune à la plus rare, et, à rareté égale, une par illustration
+ * alternative (`altOf`). Chaque tuile est réduite aux impressions qui la
+ * portent.
+ *
+ * C'est la carte à collectionner qu'on cherche, pas l'impression : Sasha
+ * Yakovleva existe en Secret (#109, #β109) et en Iconic Secret (#β169) — deux
+ * cartes à réunir, dont la première s'obtient par l'une ou l'autre de ses
+ * impressions. Les réimpressions restent donc sur une seule tuile, et dans sa
+ * modale. Les illustrations alternatives, elles, sont deux cartes : V -
+ * Streetkid en Rare donne #005a (et #β005a) d'un côté, #005b (et #β005b) de
+ * l'autre.
+ *
+ * Une carte qui ne donne qu'une tuile est rendue telle quelle, identifiant
+ * compris. Une impression sans rareté ne rejoint aucune tuile d'une carte
+ * déclinée : aucune rareté cochée ne pourrait la retenir.
+ */
+export function collectibles(card: GridCard): GridCard[] {
+  // Clé `nom|rareté`, suivie de `|lettre` pour une illustration alternative.
+  // Parcouru dans l'ordre des raretés, puis des impressions : c'est la carte
+  // qui ordonne ses lettres.
+  const groups = new Map<string, PrintRow[]>()
+  for (const rarity of card.rarities) {
+    for (const p of card.printings) {
+      if (p.rarity !== rarity) continue
+      const alt = altOf(p.num)
+      const id = `${card.id}|${rarity}` + (alt ? `|${alt}` : "")
+      const group = groups.get(id)
+      if (group) group.push(p)
+      else groups.set(id, [p])
+    }
+  }
+  if (groups.size < 2) return [card]
+  return [...groups].map(([id, printings]) => narrow(card, printings, id))
+}
+
+/** Ce qui distingue une carte à collectionner des autres tuiles de sa carte. */
+export type Collectible = {
+  rarity: string
+  /** Lettre d'illustration alternative, vide s'il n'y en a pas. */
+  alt: string
 }
 
 /**
- * La rareté que représente une tuile, quand elle n'en représente qu'une : une
- * version de la collection, ou une carte de la base déclinée par rareté parce
- * qu'une rareté est cochée. `null` pour une carte entière de la base : le
- * badge n'y figurerait que sur les cartes d'une seule rareté, et son absence
- * sur les autres ne dirait rien.
+ * La carte à collectionner que représente une tuile, quand elle n'en
+ * représente qu'une : une version de la collection, ou une carte de la base
+ * déclinée parce qu'une rareté est cochée. `null` pour une carte entière de la
+ * base : un badge de rareté n'y figurerait que sur les cartes d'une seule
+ * rareté, et son absence sur les autres ne dirait rien.
  */
-export function tileRarity(card: GridCard, scope: Scope, rarities: string[]): string | null {
+export function tileCollectible(
+  card: GridCard,
+  scope: Scope,
+  rarities: string[]
+): Collectible | null {
   const single = scope !== "all" || rarities.length > 0
-  return single && card.rarities.length === 1 ? card.rarities[0] : null
+  if (!single || card.rarities.length !== 1) return null
+  const alts = new Set(card.printings.map((p) => altOf(p.num)))
+  return { rarity: card.rarities[0], alt: alts.size === 1 ? [...alts][0] : "" }
 }
+
+/** « Rare, version a » : ce que lit un lecteur d'écran, et ce que comparent les tests. */
+export const collectibleText = (c: Collectible) =>
+  [rarityLabel(c.rarity), c.alt && `version ${c.alt}`].filter(Boolean).join(", ")
 
 /**
  * Index, dans `card.printings`, de l'impression que la tuile met en avant.

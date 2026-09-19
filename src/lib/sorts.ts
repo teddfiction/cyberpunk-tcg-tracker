@@ -21,19 +21,23 @@ export type SortConfig = { label: string; sorting: SortingState }
 const asc = (id: string) => ({ id, desc: false })
 
 /**
- * Ajoute les derniers critères, le nom puis la rareté : deux cartes ex æquo —
- * même coût, ou coût absent — se lisent dans l'ordre alphabétique, et deux
- * tuiles d'une même carte — déclinée par rareté, ou versions de la
- * collection — de la plus commune à la plus rare.
- *
- * Explicite plutôt que laissé à l'ordre d'origine des lignes : celui-ci ne
- * départage que si les lignes arrivent déjà triées, ce que rien n'impose à la
- * grille qu'on passe à `useTable`.
+ * Derniers critères de tout tri, dans l'ordre : le nom, la rareté, le numéro.
+ * Deux cartes ex æquo — même coût, ou coût absent — se lisent dans l'ordre
+ * alphabétique ; deux tuiles d'une même carte, de la plus commune à la plus
+ * rare ; et à rareté égale — les deux V - Streetkid Rare, ou deux versions de
+ * la collection —, par numéro de collecteur : #005a avant #005b.
+ */
+const TIE_BREAK: SortingState = [asc("name"), asc("rarities"), asc("num")]
+
+/**
+ * Ajoute à un tri les critères de départage qu'il n'a pas déjà. Explicite
+ * plutôt que laissé à l'ordre d'origine des lignes : celui-ci ne départage que
+ * si les lignes arrivent déjà triées, ce que rien n'impose à la grille qu'on
+ * passe à `useTable`.
  */
 const tieBreak = (...keys: SortingState): SortingState => [
   ...keys,
-  asc("name"),
-  asc("rarities"),
+  ...TIE_BREAK.filter((t) => !keys.some((k) => k.id === t.id)),
 ]
 
 /**

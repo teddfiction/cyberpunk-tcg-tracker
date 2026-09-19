@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import {
+  CollectibleBadges,
   InfoBadge,
   InfoList,
   InfoRow,
@@ -38,6 +39,7 @@ import { eur, plural } from "@/lib/format"
 import { cardStats } from "@/lib/printings"
 import { cn } from "@/lib/utils"
 import type { Scope } from "@/lib/collection"
+import type { Collectible } from "@/lib/printings"
 import type { Collection, GridCard, PrintRow } from "@/types"
 
 type Props = {
@@ -45,10 +47,10 @@ type Props = {
   /** Version à ouvrir : celle que montre la tuile de la carte. */
   pick: number
   /**
-   * Rareté que représente la tuile, quand elle n'en représente qu'une
-   * (`tileRarity`) : la modale ne présente alors que ses versions.
+   * Carte à collectionner que représente la tuile, quand elle n'en représente
+   * qu'une (`tileCollectible`) : la modale ne présente alors que ses versions.
    */
-  rarity: string | null
+  collectible: Collectible | null
   open: boolean
   onOpenChange: (open: boolean) => void
   /** Rang de la carte dans la séquence parcourue, à partir de 0. */
@@ -78,7 +80,7 @@ const STEP_KEYS: Record<string, -1 | 1> = { ArrowLeft: -1, ArrowRight: 1 }
 export function CardDialog({
   card,
   pick,
-  rarity,
+  collectible,
   open,
   onOpenChange,
   at,
@@ -136,16 +138,12 @@ export function CardDialog({
             <div className="flex flex-col gap-2">
               <div className="flex flex-wrap gap-1">
                 <TypeBadge type={card.type} color={card.color} className="text-xs" />
-                {/* Comme sur la tuile. Sans lui, « 2 impressions » d'une carte
+                {/* Comme sur la tuile. Sans eux, « 2 impressions » d'une carte
                     déclinée par rareté se lirait comme le compte de la carte. */}
-                {rarity && (
-                  <InfoBadge className="text-muted-foreground text-xs">
-                    {rarityLabel(rarity)}
-                  </InfoBadge>
-                )}
+                <CollectibleBadges collectible={collectible} className="text-xs" />
                 {/* Dans la collection la carte ne porte que sa version : compter
                     ses impressions y dirait « 1 », ce qui est faux pour la carte.
-                    Déclinée par rareté, ce sont les impressions de celle-ci. */}
+                    Déclinée, ce sont les impressions de sa carte à collectionner. */}
                 {scope === "all" && (
                   <InfoBadge className="text-muted-foreground gap-1 text-xs">
                     <Layers className="size-3" />

@@ -4,9 +4,9 @@
  * variantes de rareté que Cardmarket ne distingue pas. Dans la collection, une
  * tuile par version, possédée ou manquante — celles-ci le visuel en retrait.
  *
- * Cocher une rareté décline chaque carte en une tuile par rareté cochée (voir
- * `gridRows`) : chacune montre l'illustration de sa rareté, et sa modale n'en
- * présente que les versions.
+ * Cocher une rareté décline chaque carte en ses cartes à collectionner — une
+ * tuile par rareté cochée, et par illustration alternative (voir `gridRows`) :
+ * chacune montre son illustration, et sa modale n'en présente que les versions.
  *
  * La modale passe d'une carte à l'autre dans l'ordre de la grille, tri et
  * filtres compris : on constitue sa collection sans la refermer à chaque carte.
@@ -15,9 +15,14 @@ import * as React from "react"
 import { Check, Layers } from "lucide-react"
 
 import { CardDialog } from "@/components/card-dialog"
-import { InfoBadge, StatLine, TypeBadge } from "@/components/card-info"
-import { rarityLabel } from "@/data/rarities"
-import { focusTarget, printingIndex, tileRarity, tileStats } from "@/lib/printings"
+import { CollectibleBadges, InfoBadge, StatLine, TypeBadge } from "@/components/card-info"
+import {
+  collectibleText,
+  focusTarget,
+  printingIndex,
+  tileCollectible,
+  tileStats,
+} from "@/lib/printings"
 import { cn } from "@/lib/utils"
 import type { Scope } from "@/lib/collection"
 import type { Collection, GridCard, PrintRow } from "@/types"
@@ -119,7 +124,7 @@ export function CardGrid({ cards, rarities, scope, collection, onQty, empty }: P
           card={card}
           // La version que montre la tuile de cette carte, comme au clic.
           pick={printingIndex(card, rarities)}
-          rarity={tileRarity(card, scope, rarities)}
+          collectible={tileCollectible(card, scope, rarities)}
           open={open}
           onOpenChange={setOpen}
           at={browse.at}
@@ -154,7 +159,7 @@ function Tile({
   const pick = printingIndex(card, rarities)
   const shown = card.printings[pick]
   const missing = scope === "missing"
-  const rarity = tileRarity(card, scope, rarities)
+  const collectible = tileCollectible(card, scope, rarities)
 
   return (
     <div className={cn("flex flex-col gap-2", OFFSCREEN)}>
@@ -162,10 +167,10 @@ function Tile({
         ref={tileRef}
         onClick={onSelect}
         aria-haspopup="dialog"
-        // La rareté distingue deux tuiles d'une même carte, que seul l'artwork
-        // séparerait sinon — et un lecteur d'écran ne le voit pas.
+        // Rareté et version distinguent deux tuiles d'une même carte, que
+        // seul l'artwork séparerait sinon — et un lecteur d'écran ne le voit pas.
         aria-label={
-          `${card.name}${rarity ? ` (${rarityLabel(rarity)})` : ""} — ` +
+          `${card.name}${collectible ? ` (${collectibleText(collectible)})` : ""} — ` +
           (card.printings.length > 1 ? "voir les versions" : "voir la version")
         }
         className="focus-visible:ring-ring/50 block cursor-pointer outline-none focus-visible:ring-[3px]"
@@ -191,9 +196,9 @@ function Tile({
         <div className="mt-1 flex flex-wrap gap-1">
           <TypeBadge type={card.type} color={card.color} />
           {/* Une version de la collection, ou une carte déclinée par
-              rareté : sa rareté la distingue d'une autre tuile de la même
-              carte, que seul l'artwork séparerait sinon. */}
-          {rarity && <InfoBadge className="text-muted-foreground">{rarityLabel(rarity)}</InfoBadge>}
+              rareté : rareté et version la distinguent d'une autre tuile de
+              la même carte, que seul l'artwork séparerait sinon. */}
+          <CollectibleBadges collectible={collectible} />
           {scope === "all" && card.printings.length > 1 && (
             <InfoBadge className="text-muted-foreground gap-1">
               <Layers className="size-3" />

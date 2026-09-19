@@ -92,9 +92,11 @@ d'union de chaînes à maintenir en parallèle.
 
 Les effectifs affichés sont comptés sur **toutes** les tuiles, jamais sur les
 seules visibles : sinon cocher une option ferait disparaître les autres et l'on
-ne pourrait plus élargir sa sélection. Toutes les tuiles de TanStack
-(`getCoreRowModel`), et non `grid` : une rareté cochée décline la grille en une
-tuile par rareté, et c'est ce qu'elle filtre alors.
+ne pourrait plus élargir sa sélection. Comptées sur les tuiles qu'y cocher une
+option donnerait (`gridFacets`, `lib/facets.ts`) : celles du moment — déclinées
+dès qu'une rareté est cochée —, et toujours la grille déclinée pour la Rareté.
+Sinon « Rare » annoncerait 32 cartes puis passerait à 33 tuiles au moment où on
+la coche : V - Streetkid y compte deux fois, ses illustrations a et b.
 
 La facette vaut pour la base **et** la collection, qui partagent registre et
 colonnes. Seule « Collection » (`OWNED_FACET`) est masquée dans la collection,
@@ -108,11 +110,11 @@ n'exister dans l'autre sur aucune tuile.
 ### Ajouter un tri à la grille de cartes
 
 **Un fichier : `lib/sorts.ts`**, une entrée dans `SORTS` — un libellé et l'état
-TanStack correspondant, passé par `tieBreak(…)` pour que le nom, puis la
-rareté, départagent les ex æquo. Le menu se remplit tout seul, et des tests
-vérifient que chaque tri vise une colonne qui existe dans `grid-columns.ts`, se
-termine par le nom puis la rareté, et ne trie qu'en ascendant une colonne à
-valeurs manquantes.
+TanStack correspondant, passé par `tieBreak(…)` pour que le nom, la rareté puis
+le numéro départagent les ex æquo — ceux que le tri n'a pas déjà. Le menu se
+remplit tout seul, et des tests vérifient que chaque tri vise une colonne qui
+existe dans `grid-columns.ts`, se termine par ces trois critères sans en
+reprendre aucun, et ne trie qu'en ascendant une colonne à valeurs manquantes.
 
 Le tri ne se double pas d'un `useState` : `sortIdOf` retrouve l'entrée active
 depuis l'état de la table, qui en reste seule dépositaire.
@@ -316,19 +318,26 @@ miniatures des versions sont une grille `auto-fill` : elles gardent ~90 px que
 la carte ait deux versions ou sept, et chacune porte son numéro de collecteur,
 seul texte qui sépare deux versions d'une même rareté.
 
-**Cocher une rareté décline les cartes par rareté.** Sans rareté cochée, une
-tuile par carte, sur sa version par défaut — la base telle que la présente le
-site officiel. Dès qu'une rareté est cochée, une tuile par rareté de chaque
-carte (`byRarity`, `lib/printings.ts`), et la facette ne garde que les cochées :
-Secret et Iconic Secret cochées montrent Sasha Yakovleva deux fois, sa Secret
-et son Iconic Secret. C'est la rareté qu'on collectionne, pas l'impression :
-l'Iconic Secret est une carte d'exception, la Secret complète le jeu de base, et
-l'une ne tient pas lieu de l'autre. Ce qui en découle :
+**Cocher une rareté décline les cartes en cartes à collectionner.** Sans
+rareté cochée, une tuile par carte, sur sa version par défaut — la base telle
+que la présente le site officiel. Dès qu'une rareté est cochée, une tuile par
+rareté de chaque carte, et, à rareté égale, par illustration alternative
+(`collectibles`, `lib/printings.ts`) ; la facette ne garde que les raretés
+cochées. Secret et Iconic Secret cochées montrent Sasha Yakovleva deux fois, sa
+Secret et son Iconic Secret ; Rare cochée montre V - Streetkid deux fois, #005a
+et #005b. C'est la carte à collectionner qu'on cherche, pas l'impression :
+l'Iconic Secret est une carte d'exception, la Secret complète le jeu de base,
+et l'une ne tient pas lieu de l'autre. Ce qui en découle :
 
-- **Une tuile par rareté, pas par impression.** Réimpressions et illustrations
-  alternatives d'une même rareté — #109 et #β109 de Sasha, #005a et #005b de
-  V - Streetkid — restent sur une tuile, et dans sa modale : l'une ou l'autre
-  complète la collection.
+- **Une tuile par carte à collectionner, pas par impression.** Les
+  réimpressions restent sur une tuile, et dans sa modale : #109 et #β109 de
+  Sasha, l'une ou l'autre complète la collection.
+- **L'illustration alternative se lit à la lettre du numéro** (`altOf`) :
+  « 005a », « β005b ». C'est ainsi que l'éditeur la code, et c'est le seul
+  signe fiable — deux numéros différents ne suffisent pas, Royce a deux Rare
+  #002 et #004 qui ne sont qu'une réimpression. Le « β » de tête ne compte pas :
+  #005a et #β005a partagent la tuile « a ». Relevé du 19/09/2026 : V -
+  Streetkid est la seule carte concernée, mais la règle ne la nomme pas.
 - **Chaque tuile ne porte que ses impressions** (`narrow`) : sets, cote et
   exemplaires sont les leurs. Filtrer un set ou « Manquante » vaut donc rareté
   par rareté — l'Iconic Secret possédée ne cache plus la Secret qui manque.
@@ -338,19 +347,22 @@ l'une ne tient pas lieu de l'autre. Ce qui en découle :
   TanStack filtre et trie ensuite ces tuiles comme les autres : pas de second
   moteur de filtrage, et les filtres restent son seul état. `makeGrid` passe
   par la même fonction.
-- **Identifiant `nom|rareté`**, sauf pour une carte d'une seule rareté, rendue
-  telle quelle. Les tuiles d'une carte se suivent de la plus commune à la plus
-  rare : `tieBreak` trie par rareté après le nom.
-- **La tuile porte alors sa rareté en badge**, comme une version de la
-  collection, et la modale aussi (`tileRarity`) : sans lui, « 2 impressions »
-  se lirait comme le compte de la carte. Le compteur de la vue dit cartes,
-  tuiles et impressions.
+- **Identifiant `nom|rareté`, suivi de `|lettre`** pour une illustration
+  alternative ; une carte qui ne donne qu'une tuile est rendue telle quelle.
+  Les tuiles d'une carte se suivent de la plus commune à la plus rare, puis
+  par numéro : `tieBreak` finit par le nom, la rareté et le numéro — #005a
+  avant #005b.
+- **La tuile porte alors sa rareté en badge, et « Version a »** s'il y a lieu,
+  comme une version de la collection, et la modale aussi (`tileCollectible`,
+  `CollectibleBadges`) : sans eux, « 2 impressions » se lirait comme le compte
+  de la carte. Le compteur de la vue dit cartes, tuiles et impressions.
 
 Le visuel suit la même logique : c'est `printingIndex` (`lib/printings.ts`) qui
 élit l'impression montrée, au rendu et non dans la donnée — le choix dépend de
 l'état de la table, que `buildGrid` ne connaît pas, d'où l'absence de champ
 `thumb` sur `GridCard`. Déclinée, la tuile n'a plus que des impressions de sa
-rareté : c'est la première qui a une miniature. L'artwork est la seule chose qui
+carte à collectionner : c'est la première qui a une miniature — V féminine sur
+la tuile « b », et non la masculine du rang 0. L'artwork est la seule chose qui
 distingue deux impressions, donc une grille filtrée par rareté qui garderait le
 visuel par défaut ne montrerait rien de ce qu'on vient de demander. C'est aussi
 pourquoi la facette Rareté a un identifiant nommé (`RARITY_FACET`,
@@ -446,10 +458,11 @@ Tous couverts par des tests : si l'un saute, `npm run test` le dit.
   collation française, et à valeur égale TanStack retombe sur l'index
   d'origine, donc sur ce tri-là — supprimer ce tri amont rendrait l'ordre des
   ex æquo aléatoire. Grille : chaque tri de `SORTS` se termine **explicitement**
-  par le nom puis la rareté (`tieBreak`), sans dépendre de l'ordre dans lequel
-  les tuiles arrivent — la rareté départage les tuiles d'une même carte,
-  déclinée par rareté ou versions de la collection. Des tests passent la
-  grille à rebours pour le vérifier.
+  par le nom, la rareté puis le numéro (`tieBreak`), sans dépendre de l'ordre
+  dans lequel les tuiles arrivent — la rareté départage les tuiles d'une même
+  carte, déclinée ou versions de la collection, et le numéro celles d'une même
+  rareté : #005a avant #005b. Des tests passent la grille à rebours pour le
+  vérifier.
 - **Recherche : la déclarer par `id`, jamais par rang.** `enableGlobalFilter`
   n'est vrai que sur la colonne `name`. La viser par sa position casserait la
   recherche en silence dès qu'une colonne passe devant — la colonne Visuel n'a
@@ -713,7 +726,8 @@ Ces contraintes viennent des sources, pas du code. Ne pas « réparer » :
   les impressions sans numéro et dit de régénérer le fichier. Les
   numéros distinguent les variantes qu'aucun autre champ ne sépare : « 005a » et
   « 005b » sont deux Rare du même illustrateur, le préfixe « β » marquant les
-  tirages Beta.
+  tirages Beta. C'est cette lettre qui fait de chacune une carte à
+  collectionner (`altOf`).
 - **L'impression de référence d'une carte est celle de rang 0**, pas « celle qui
   porte un numéro » : l'endpoint liste sert la version par défaut, le script la
   pousse en tête, et `PrintRow.rank` la retrouve après le tri à plat de
