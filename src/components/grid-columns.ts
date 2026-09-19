@@ -7,7 +7,7 @@ import type { ColumnDef } from "@tanstack/react-table"
 
 import { MISSING, OWNED, OWNED_FACET } from "@/lib/collection"
 import { COLOR_RANK, TYPE_RANK } from "@/lib/sorts"
-import { filterAny, filterIn, sortRank, sortText } from "@/lib/table"
+import { filterAny, filterIn, sortRank, sortRarity, sortText } from "@/lib/table"
 import type { GridCard } from "@/types"
 
 /**
@@ -89,6 +89,7 @@ export const GRID_COLUMNS: ColumnDef<GridCard>[] = [
     accessorKey: "rarities",
     header: "Raretés",
     filterFn: filterAny,
+    sortingFn: sortRarity,
     meta: { csv: (c) => c.rarities.join(" · ") },
   },
   {

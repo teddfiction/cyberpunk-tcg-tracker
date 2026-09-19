@@ -44,6 +44,11 @@ type Props = {
   card: GridCard
   /** Version à ouvrir : celle que montre la tuile de la carte. */
   pick: number
+  /**
+   * Rareté que représente la tuile, quand elle n'en représente qu'une
+   * (`tileRarity`) : la modale ne présente alors que ses versions.
+   */
+  rarity: string | null
   open: boolean
   onOpenChange: (open: boolean) => void
   /** Rang de la carte dans la séquence parcourue, à partir de 0. */
@@ -73,6 +78,7 @@ const STEP_KEYS: Record<string, -1 | 1> = { ArrowLeft: -1, ArrowRight: 1 }
 export function CardDialog({
   card,
   pick,
+  rarity,
   open,
   onOpenChange,
   at,
@@ -130,8 +136,16 @@ export function CardDialog({
             <div className="flex flex-col gap-2">
               <div className="flex flex-wrap gap-1">
                 <TypeBadge type={card.type} color={card.color} className="text-xs" />
+                {/* Comme sur la tuile. Sans lui, « 2 impressions » d'une carte
+                    déclinée par rareté se lirait comme le compte de la carte. */}
+                {rarity && (
+                  <InfoBadge className="text-muted-foreground text-xs">
+                    {rarityLabel(rarity)}
+                  </InfoBadge>
+                )}
                 {/* Dans la collection la carte ne porte que sa version : compter
-                    ses impressions y dirait « 1 », ce qui est faux pour la carte. */}
+                    ses impressions y dirait « 1 », ce qui est faux pour la carte.
+                    Déclinée par rareté, ce sont les impressions de celle-ci. */}
                 {scope === "all" && (
                   <InfoBadge className="text-muted-foreground gap-1 text-xs">
                     <Layers className="size-3" />

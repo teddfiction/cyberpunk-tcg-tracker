@@ -4,8 +4,9 @@
  * variantes de rareté que Cardmarket ne distingue pas. Dans la collection, une
  * tuile par version, possédée ou manquante — celles-ci le visuel en retrait.
  *
- * Filtrer par rareté change l'illustration des tuiles : c'est l'impression qui
- * porte cette rareté qui est montrée, et la modale s'ouvre sur elle.
+ * Cocher une rareté décline chaque carte en une tuile par rareté cochée (voir
+ * `gridRows`) : chacune montre l'illustration de sa rareté, et sa modale n'en
+ * présente que les versions.
  *
  * La modale passe d'une carte à l'autre dans l'ordre de la grille, tri et
  * filtres compris : on constitue sa collection sans la refermer à chaque carte.
@@ -16,7 +17,7 @@ import { Check, Layers } from "lucide-react"
 import { CardDialog } from "@/components/card-dialog"
 import { InfoBadge, StatLine, TypeBadge } from "@/components/card-info"
 import { rarityLabel } from "@/data/rarities"
-import { focusTarget, printingIndex, tileStats } from "@/lib/printings"
+import { focusTarget, printingIndex, tileRarity, tileStats } from "@/lib/printings"
 import { cn } from "@/lib/utils"
 import type { Scope } from "@/lib/collection"
 import type { Collection, GridCard, PrintRow } from "@/types"
@@ -118,6 +119,7 @@ export function CardGrid({ cards, rarities, scope, collection, onQty, empty }: P
           card={card}
           // La version que montre la tuile de cette carte, comme au clic.
           pick={printingIndex(card, rarities)}
+          rarity={tileRarity(card, scope, rarities)}
           open={open}
           onOpenChange={setOpen}
           at={browse.at}
@@ -152,6 +154,7 @@ function Tile({
   const pick = printingIndex(card, rarities)
   const shown = card.printings[pick]
   const missing = scope === "missing"
+  const rarity = tileRarity(card, scope, rarities)
 
   return (
     <div className={cn("flex flex-col gap-2", OFFSCREEN)}>
@@ -159,7 +162,12 @@ function Tile({
         ref={tileRef}
         onClick={onSelect}
         aria-haspopup="dialog"
-        aria-label={`${card.name} — ${scope === "all" ? "voir les versions" : "voir la version"}`}
+        // La rareté distingue deux tuiles d'une même carte, que seul l'artwork
+        // séparerait sinon — et un lecteur d'écran ne le voit pas.
+        aria-label={
+          `${card.name}${rarity ? ` (${rarityLabel(rarity)})` : ""} — ` +
+          (card.printings.length > 1 ? "voir les versions" : "voir la version")
+        }
         className="focus-visible:ring-ring/50 block cursor-pointer outline-none focus-visible:ring-[3px]"
       >
         {/* Sans bordure : l'illustration se suffit, et le cadre dessiné sur la
@@ -182,12 +190,10 @@ function Tile({
         {/* Seule la couleur du type distingue les badges : voir `card-info.tsx`. */}
         <div className="mt-1 flex flex-wrap gap-1">
           <TypeBadge type={card.type} color={card.color} />
-          {/* Dans la collection la tuile est une version : sa rareté la
-              distingue d'une autre version de la même carte, que seul
-              l'artwork séparerait sinon. */}
-          {scope !== "all" && shown?.rarity && (
-            <InfoBadge className="text-muted-foreground">{rarityLabel(shown.rarity)}</InfoBadge>
-          )}
+          {/* Une version de la collection, ou une carte déclinée par
+              rareté : sa rareté la distingue d'une autre tuile de la même
+              carte, que seul l'artwork séparerait sinon. */}
+          {rarity && <InfoBadge className="text-muted-foreground">{rarityLabel(rarity)}</InfoBadge>}
           {scope === "all" && card.printings.length > 1 && (
             <InfoBadge className="text-muted-foreground gap-1">
               <Layers className="size-3" />

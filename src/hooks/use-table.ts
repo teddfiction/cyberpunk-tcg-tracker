@@ -45,6 +45,15 @@ type Args<T> = {
   hidden?: VisibilityState
   /** Filtres actifs au départ, et rétablis par `resetColumnFilters()`. */
   initialFilters?: ColumnFiltersState
+  /**
+   * Lignes tirées de `data` selon les filtres posés, quand l'unité de ligne en
+   * dépend : la grille décline ses cartes par rareté dès qu'une rareté est
+   * cochée (`gridRows`). TanStack filtre et trie ensuite ces lignes-là — les
+   * filtres restent son seul état, rien n'en est copié. Une fonction de
+   * `lib/`, stable d'un rendu à l'autre : une closure recalculerait les lignes
+   * à chaque rendu.
+   */
+  rowsOf?: (data: T[], filters: ColumnFiltersState) => T[]
 }
 
 export function useTable<T>({
@@ -57,6 +66,7 @@ export function useTable<T>({
   meta,
   hidden = {},
   initialFilters = [],
+  rowsOf,
 }: Args<T>) {
   const initialSorting = React.useMemo<SortingState>(
     () => (typeof defaultSort === "string" ? [{ id: defaultSort, desc: defaultDesc }] : defaultSort),
@@ -67,6 +77,11 @@ export function useTable<T>({
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(initialFilters)
   const [globalFilter, setGlobalFilter] = React.useState("")
 
+  const rows = React.useMemo(
+    () => (rowsOf ? rowsOf(data, columnFilters) : data),
+    [rowsOf, data, columnFilters]
+  )
+
   /** Changer de jeu de colonnes peut faire disparaître la colonne triée. */
   const safeSorting = React.useMemo(
     () => resolveSorting(sorting, columns.map((c) => c.id), initialSorting),
@@ -74,7 +89,7 @@ export function useTable<T>({
   )
 
   return useReactTable<T>({
-    data,
+    data: rows,
     columns,
     state: { sorting: safeSorting, columnFilters, globalFilter },
     initialState: {

@@ -13,6 +13,7 @@
 import { rarityRank } from "@/data/rarities"
 import { matchExpansion } from "@/lib/enrich"
 import { eur, minOf, norm, words } from "@/lib/format"
+import type { Scope } from "@/lib/collection"
 import type { CodeMap, Collection, EnrichedCard, GridCard, PrintRow, Row } from "@/types"
 
 import type { FilterFn } from "@tanstack/react-table"
@@ -111,33 +112,88 @@ export function buildGrid(cards: EnrichedCard[] | null, printings: PrintRow[]): 
   }
 
   return cards
-    .map((card) => {
-      const ordered = [...(byName.get(card.name) ?? [])].sort((a, b) => a.rank - b.rank)
-
-      const lows = ordered.map((p) => p.low ?? p.lowRange?.[0] ?? null)
-
-      return {
-        id: card.name,
-        name: card.name,
-        subname: card.subname ?? null,
-        slug: card.slug,
-        type: card.type ?? null,
-        color: card.color ?? null,
-        tags: card.tags ?? [],
-        eddiable: !!card.eddiable,
-        cost: card.cost ?? null,
-        power: card.power ?? null,
-        ram: card.ram ?? null,
-        printings: ordered,
-        sets: [...new Set(ordered.map((p) => p.set))],
-        rarities: [...new Set(ordered.map((p) => p.rarity).filter((r): r is string => !!r))].sort(
-          (a, b) => rarityRank(a) - rarityRank(b)
-        ),
-        low: minOf(lows),
-        owned: ordered.reduce((n, p) => n + p.qty, 0),
-      }
-    })
+    .map((card) => ({
+      id: card.name,
+      name: card.name,
+      subname: card.subname ?? null,
+      slug: card.slug,
+      type: card.type ?? null,
+      color: card.color ?? null,
+      tags: card.tags ?? [],
+      eddiable: !!card.eddiable,
+      cost: card.cost ?? null,
+      power: card.power ?? null,
+      ram: card.ram ?? null,
+      ...aggregate([...(byName.get(card.name) ?? [])].sort((a, b) => a.rank - b.rank)),
+    }))
     .sort((a, b) => a.name.localeCompare(b.name, "fr"))
+}
+
+/**
+ * Ce qu'une tuile agrège de ses impressions : facettes, cote, exemplaires. Une
+ * seule définition pour la carte entière, la version de la collection et la
+ * carte déclinée par rareté — sans quoi l'une des trois finirait par compter
+ * autrement que les autres.
+ */
+function aggregate(printings: PrintRow[]) {
+  return {
+    printings,
+    sets: [...new Set(printings.map((p) => p.set))],
+    rarities: [...new Set(printings.map((p) => p.rarity).filter((r): r is string => !!r))].sort(
+      (a, b) => rarityRank(a) - rarityRank(b)
+    ),
+    low: minOf(printings.map((p) => p.low ?? p.lowRange?.[0] ?? null)),
+    owned: printings.reduce((n, p) => n + p.qty, 0),
+  }
+}
+
+/**
+ * La tuile réduite à certaines de ses impressions, sous un autre identifiant.
+ * Tout ce qui s'agrège est recalculé sur celles-là seules : c'est ce qui rend
+ * les facettes exactes — filtrer « Nova Rare » ne garde pas une tuile qui n'en
+ * porte que la Common, filtrer un set ne garde pas une rareté qui n'y figure pas.
+ */
+export const narrow = (card: GridCard, printings: PrintRow[], id: string): GridCard => ({
+  ...card,
+  id,
+  ...aggregate(printings),
+})
+
+/**
+ * Une tuile par rareté de la carte, de la plus commune à la plus rare, chacune
+ * réduite aux impressions qui la portent.
+ *
+ * C'est la rareté qu'on collectionne, pas l'impression : Sasha Yakovleva existe
+ * en Secret (#109, #β109) et en Iconic Secret (#β169) — deux cartes à réunir,
+ * dont la première s'obtient par l'une ou l'autre de ses impressions.
+ * Réimpressions et illustrations alternatives d'une même rareté (V - Streetkid
+ * #005a et #005b) restent donc sur une seule tuile, et dans sa modale.
+ *
+ * Une carte d'une seule rareté est rendue telle quelle, identifiant compris.
+ * Une impression sans rareté ne rejoint aucune tuile d'une carte déclinée :
+ * aucune rareté cochée ne pourrait la retenir.
+ */
+export function byRarity(card: GridCard): GridCard[] {
+  if (card.rarities.length < 2) return [card]
+  return card.rarities.map((rarity) =>
+    narrow(
+      card,
+      card.printings.filter((p) => p.rarity === rarity),
+      `${card.id}|${rarity}`
+    )
+  )
+}
+
+/**
+ * La rareté que représente une tuile, quand elle n'en représente qu'une : une
+ * version de la collection, ou une carte de la base déclinée par rareté parce
+ * qu'une rareté est cochée. `null` pour une carte entière de la base : le
+ * badge n'y figurerait que sur les cartes d'une seule rareté, et son absence
+ * sur les autres ne dirait rien.
+ */
+export function tileRarity(card: GridCard, scope: Scope, rarities: string[]): string | null {
+  const single = scope !== "all" || rarities.length > 0
+  return single && card.rarities.length === 1 ? card.rarities[0] : null
 }
 
 /**

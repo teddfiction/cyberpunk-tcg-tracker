@@ -6,6 +6,7 @@
  * toutes les impressions de la carte, et filtrer « Iconic Legend » garderait une
  * carte dont on ne possède que la Rare.
  */
+import { narrow } from "@/lib/printings"
 import type { Collection, GridCard, Owned, PrintRow } from "@/types"
 
 /**
@@ -78,19 +79,7 @@ export function withQty(
  * qui rend les facettes exactes.
  */
 function versionGrid(grid: GridCard[], keep: (p: PrintRow) => boolean): GridCard[] {
-  return grid.flatMap((card) =>
-    card.printings
-      .filter(keep)
-      .map((p) => ({
-        ...card,
-        id: p.uuid,
-        printings: [p],
-        sets: [p.set],
-        rarities: p.rarity ? [p.rarity] : [],
-        low: p.low ?? p.lowRange?.[0] ?? null,
-        owned: p.qty,
-      }))
-  )
+  return grid.flatMap((card) => card.printings.filter(keep).map((p) => narrow(card, [p], p.uuid)))
 }
 
 /** Ce qu'on a : une tuile par version possédée. */

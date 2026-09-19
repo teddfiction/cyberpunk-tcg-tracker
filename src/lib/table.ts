@@ -10,6 +10,7 @@ import type {
   SortingState,
 } from "@tanstack/react-table"
 
+import { RARITIES, rarityRank } from "@/data/rarities"
 import { words } from "@/lib/format"
 import type { AnyRow, TableRow } from "@/types"
 
@@ -38,6 +39,20 @@ export const sortRank =
     }
     return rank(a) - rank(b)
   }
+
+/**
+ * Rang de la rareté la plus commune d'une ligne qui en porte une liste. Dernier
+ * critère des tris de la grille, après le nom : les tuiles d'une même carte —
+ * déclinée par rareté, ou versions de la collection — se lisent de la plus
+ * commune à la plus rare. Une ligne sans rareté passe après les autres.
+ */
+export function sortRarity<T>(a: TanstackRow<T>, b: TanstackRow<T>, id: string): number {
+  const rank = (r: TanstackRow<T>) => {
+    const values = (r.getValue(id) as string[] | undefined) ?? []
+    return values.length ? Math.min(...values.map(rarityRank)) : RARITIES.length
+  }
+  return rank(a) - rank(b)
+}
 
 /**
  * Recherche plein texte, tolérante à la saisie naturelle.
