@@ -412,8 +412,7 @@ se comportent différemment. Ce qui en découle :
   seule donnée, le filtre TanStack de la colonne `OWNED_FACET` (`undefined`,
   `[OWNED]` ou `[MISSING]`). « Toutes » est l'absence de filtre, et
   « Réinitialiser » y revient comme pour tout filtre. À côté du tri parce que
-  les deux disent comment la grille se présente, pas ce qu'elle contient ; le
-  compteur passe à droite de la ligne, dans la base comme dans la collection.
+  les deux disent comment la grille se présente, pas ce qu'elle contient.
 - **Le périmètre est un `Scope`** — `"all" | Level` —, et `scopeGrid` en tire
   la grille. `NetdeckView` reçoit celui d'ouverture — `base` pour la
   collection ; l'onglet le change ensuite.
@@ -658,7 +657,16 @@ La consigne du projet : **uniquement Tailwind et les composants shadcn natifs.**
 
   **« Réinitialiser » ferme la dernière ligne de commandes**, en cyan :
   après les bascules dans la table des cotes, après le tri dans la grille
-  (base et collection), le compteur calé à droite derrière lui.
+  (base et collection).
+
+  **Le compte de ce qui est affiché est seul sur sa ligne** (`CountLine`,
+  `count-line.tsx`), sous les commandes et au-dessus du contenu, aligné à
+  gauche au fer de ce qu'il annonce, dans toutes les vues qui en portent un —
+  cotes, base de cartes, niveaux de la collection. Il fermait la dernière
+  rangée de commandes, calé à droite, où il se lisait comme l'une d'elles et se
+  perdait dès que la rangée passait à la ligne. Seul, il se retrouve, et le
+  blanc qu'il pose de part et d'autre sépare le haut de page du contenu. Voix
+  des données, comme les repères chiffrés : Geist Mono en capitales.
 
   **Badges : `NotchBadge`** (`notch-badge.tsx`), le `Badge` du registry
   droit (`rounded-none`) et encoché en `xs`. Type, rareté et version d'une

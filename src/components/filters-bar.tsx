@@ -8,6 +8,7 @@ import { Download, RotateCcw, Upload } from "lucide-react"
 
 import { ActionButton } from "@/components/action-button"
 import { ChoiceGroup, FilterToggle, SearchField } from "@/components/controls"
+import { CountLine } from "@/components/count-line"
 import { ExtensionCombobox } from "@/components/extension-combobox"
 import { MODES, MODE_IDS, type Mode } from "@/lib/modes"
 import type { CodeMap, TableRow } from "@/types"
@@ -116,11 +117,12 @@ export function FiltersBar({
           <RotateCcw />
           Réinitialiser
         </ActionButton>
-
-        <span className="text-muted-foreground ml-auto text-xs tabular-nums">
-          {shown} / {total} {MODES[mode].noun}
-        </span>
       </div>
+
+      {/* Sous les commandes, seul sur sa ligne : c'est ce qu'annonce la table. */}
+      <CountLine>
+        {shown} / {total} {MODES[mode].noun}
+      </CountLine>
     </div>
   )
 }

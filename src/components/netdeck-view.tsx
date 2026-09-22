@@ -21,6 +21,7 @@ import { ActionButton } from "@/components/action-button"
 import { CardGrid } from "@/components/card-grid"
 import { CollectionStats } from "@/components/collection-stats"
 import { SearchField } from "@/components/controls"
+import { CountLine } from "@/components/count-line"
 import { FacetFilter } from "@/components/facet-filter"
 import { GRID_COLUMNS } from "@/components/grid-columns"
 import { LevelTabs } from "@/components/level-tabs"
@@ -180,49 +181,47 @@ export function NetdeckView({
             ))}
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            {/* Possession et tri côte à côte, à gauche, sous les filtres : les
-                deux disent comment la grille se présente, pas ce qu'elle
-                contient. La possession, dans la collection seulement — la base
-                ne mesure pas de complétion. « Réinitialiser » ferme la ligne,
-                la dernière des commandes, comme dans la table des cotes. */}
-            <div className="flex flex-wrap items-center gap-2">
-              {inCollection && (
-                <OwnedFilter
-                  value={owned}
-                  onChange={(next) => ownedColumn?.setFilterValue(next ? [next] : undefined)}
-                />
-              )}
-              <SortMenu
-                sorting={table.getState().sorting}
-                onSort={(next) => table.setSorting(next)}
+          {/* Possession et tri côte à côte, sous les filtres : les deux disent
+              comment la grille se présente, pas ce qu'elle contient. La
+              possession, dans la collection seulement — la base ne mesure pas
+              de complétion. « Réinitialiser » ferme la ligne, la dernière des
+              commandes, comme dans la table des cotes. */}
+          <div className="flex flex-wrap items-center gap-2">
+            {inCollection && (
+              <OwnedFilter
+                value={owned}
+                onChange={(next) => ownedColumn?.setFilterValue(next ? [next] : undefined)}
               />
-              {filtering && (
-                <ActionButton
-                  tone="secondary"
-                  onClick={() => {
-                    table.resetColumnFilters()
-                    table.resetGlobalFilter()
-                  }}
-                >
-                  <RotateCcw />
-                  Réinitialiser
-                </ActionButton>
-              )}
-            </div>
-
-            {/* À droite, et y reste passé à la ligne (`ml-auto`). */}
-            <span className="text-muted-foreground ml-auto text-xs tabular-nums">
-              {/* Déclinée par rareté, la base compte ses cartes et ses tuiles à
-                  part : Sasha en Secret et en Iconic Secret, c'est une carte
-                  de la base et deux tuiles. */}
-              {shown === "all"
-                ? `${new Set(visible.map((c) => c.name)).size} / ${grid.length} cartes` +
-                  (rarities.length ? ` · ${plural(visible.length, "tuile")}` : "") +
-                  ` · ${impressions} impressions`
-                : `${visible.length} / ${plural(grid.length, LEVELS[shown].unit)}`}
-            </span>
+            )}
+            <SortMenu
+              sorting={table.getState().sorting}
+              onSort={(next) => table.setSorting(next)}
+            />
+            {filtering && (
+              <ActionButton
+                tone="secondary"
+                onClick={() => {
+                  table.resetColumnFilters()
+                  table.resetGlobalFilter()
+                }}
+              >
+                <RotateCcw />
+                Réinitialiser
+              </ActionButton>
+            )}
           </div>
+
+          {/* Sous les commandes, seul sur sa ligne : c'est ce qu'annonce la
+              grille. Déclinée par rareté, la base compte ses cartes et ses
+              tuiles à part — Sasha en Secret et en Iconic Secret, c'est une
+              carte de la base et deux tuiles. */}
+          <CountLine>
+            {shown === "all"
+              ? `${new Set(visible.map((c) => c.name)).size} / ${grid.length} cartes` +
+                (rarities.length ? ` · ${plural(visible.length, "tuile")}` : "") +
+                ` · ${impressions} impressions`
+              : `${visible.length} / ${plural(grid.length, LEVELS[shown].unit)}`}
+          </CountLine>
         </>
       )}
 
