@@ -306,6 +306,30 @@ repoussait toute la grille. Radix ne rend pas le focus à la tuile en sortant :
 `CardGrid` le fait lui-même, sinon le clavier repartirait du haut des 151
 tuiles à chaque fermeture.
 
+**La grille se rend par lots** (`FIRST`, `BATCH`, `card-grid.tsx`). Rendre les
+502 tuiles du Masterset d'un bloc — composants, DOM, 502 data URI de 87 Ko sur
+`src` — gelait la page 190 à 230 ms en développement à chaque changement
+d'onglet, avant même que l'onglet s'allume. Les 24 premières tuiles sont
+rendues tout de suite, le reste par lots de 48, chacun dans une
+`startTransition` : interruptible, commis entre deux images. Relevé du
+21/09/2026 : 20 à 45 ms bloquantes vers le Masterset, aucune tâche longue
+pendant les lots, grille complète en moins de 300 ms. Ce qui le fait tenir :
+
+- **`Tile` est mémoïsée, sur des props stables** — `select` et `register` en
+  `useCallback`, le rang passé en `index`. Sinon chaque lot rendrait de nouveau
+  toutes les tuiles d'avant, et le coût total deviendrait quadratique.
+- **Le compte ne redescend jamais.** Une grille qui change sous la modale — une
+  quantité réglée, une carte qui sort des manquantes — garde ses tuiles, sa
+  hauteur et son défilement. Repartir de 24 à chaque changement de `cards`
+  replierait la page sous la modale, et le défilement serait perdu.
+- **C'est le changement de niveau qui repart de 24**, par `key={shown}` sur
+  `CardGrid` (`NetdeckView`) : la grille est remontée, la modale — fermée pour
+  cliquer un onglet — n'y perd rien. L'instance TanStack, elle, reste partagée
+  par les trois onglets : tri, filtres et recherche suivent toujours.
+- **Mesurer dans un onglet visible.** Caché, le navigateur plafonne l'onglet à
+  une image par seconde, et toute mesure qui attend une image lit ~1 000 ms.
+  Seul le temps de script y reste juste.
+
 **La modale passe d'une carte à l'autre** — chevrons de l'en-tête, flèches du
 clavier —, pour constituer sa collection sans la refermer. Ce qui la fait tenir :
 
