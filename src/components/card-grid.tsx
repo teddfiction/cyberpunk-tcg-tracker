@@ -11,6 +11,9 @@
  *
  * La modale passe d'une carte à l'autre dans l'ordre de la grille, tri et
  * filtres compris : on constitue sa collection sans la refermer à chaque carte.
+ *
+ * Les tuiles sont rendues par lots, les premières d'abord : le Masterset en
+ * compte 502, qu'un seul rendu bloquait près d'un quart de seconde.
  */
 import * as React from "react"
 import { Check, Layers } from "lucide-react"
@@ -50,6 +53,20 @@ const OFFSCREEN = "[content-visibility:auto] [contain-intrinsic-size:auto_520px]
 /** Visuel d'une tuile manquante : présent, mais en retrait de ceux qu'on possède. */
 const MISSING = "opacity-40"
 
+/**
+ * Rendu progressif. Rendre les 502 tuiles du Masterset d'un bloc — composants,
+ * DOM, et 502 data URI de 87 Ko posées sur `src` — gelait la page ~230 ms en
+ * développement à chaque changement d'onglet, avant même que l'onglet s'allume.
+ *
+ * `FIRST` couvre l'écran : quatre colonnes de tuiles de ~450 px, six rangées,
+ * de quoi voir la grille et commencer à défiler. Le reste suit par lots de
+ * `BATCH`, chacun dans une transition : interruptible par un clic ou une
+ * frappe, et commis entre deux images plutôt qu'en une tâche d'un seul tenant.
+ * La grille est complète en quelques images, sans qu'aucune ne soit longue.
+ */
+const FIRST = 24
+const BATCH = 48
+
 export function CardGrid({ cards, rarities, scope, collection, onQty, empty }: Props) {
   // Séquence que parcourt la modale : la grille telle qu'elle était au clic, et
   // le rang de la carte montrée. Un instantané plutôt que `cards`, qui bouge
@@ -64,12 +81,34 @@ export function CardGrid({ cards, rarities, scope, collection, onQty, empty }: P
   // Boutons des tuiles montées, par carte : le focus y revient en sortant.
   const tiles = React.useRef(new Map<string, HTMLButtonElement>())
 
+  // Tuiles rendues : `FIRST`, puis un lot de plus à chaque transition commise,
+  // jusqu'à la dernière. Ne redescend jamais : une grille qui change sous la
+  // modale — une quantité réglée, une carte qui sort des manquantes — garde
+  // ses tuiles, sa hauteur et le défilement. C'est le changement de niveau qui
+  // repart de `FIRST`, en remontant la grille (`key` dans `NetdeckView`).
+  const [count, setCount] = React.useState(FIRST)
+  React.useEffect(() => {
+    if (count >= cards.length) return
+    React.startTransition(() => setCount((n) => n + BATCH))
+  }, [count, cards.length])
+
   const card = browse?.cards[browse.at]
 
-  const select = (at: number) => {
-    setBrowse({ cards, at })
-    setOpen(true)
-  }
+  // Stables d'un lot à l'autre : les tuiles déjà rendues ne le sont pas de
+  // nouveau (`Tile` est mémoïsée), chaque lot ne coûte que ses propres tuiles.
+  const select = React.useCallback(
+    (at: number) => {
+      setBrowse({ cards, at })
+      setOpen(true)
+    },
+    [cards]
+  )
+  const register = React.useCallback((id: string, el: HTMLButtonElement) => {
+    tiles.current.set(id, el)
+    return () => {
+      tiles.current.delete(id)
+    }
+  }, [])
 
   // Sans effet en bout de séquence : on ne boucle pas, arriver au bout dit
   // qu'on a tout vu.
@@ -104,20 +143,15 @@ export function CardGrid({ cards, rarities, scope, collection, onQty, empty }: P
         // Vertical plus large que l'horizontal : sous chaque visuel, le nom et
         // les caractéristiques occupent déjà une partie de l'écart.
         <div className="grid grid-cols-2 items-start gap-x-6 gap-y-10 sm:grid-cols-3 lg:grid-cols-4">
-          {cards.map((c, i) => (
+          {cards.slice(0, count).map((c, i) => (
             <Tile
               key={c.id}
               card={c}
+              index={i}
               rarities={rarities}
               scope={scope}
-              onSelect={() => select(i)}
-              tileRef={(el) => {
-                if (!el) return
-                tiles.current.set(c.id, el)
-                return () => {
-                  tiles.current.delete(c.id)
-                }
-              }}
+              onSelect={select}
+              register={register}
             />
           ))}
         </div>
@@ -144,18 +178,23 @@ export function CardGrid({ cards, rarities, scope, collection, onQty, empty }: P
   )
 }
 
-function Tile({
+/** Mémoïsée : un lot du rendu progressif ne rend que ses tuiles, pas celles d'avant. */
+const Tile = React.memo(function Tile({
   card,
+  index,
   rarities,
   scope,
   onSelect,
-  tileRef,
+  register,
 }: {
   card: GridCard
+  /** Rang dans la grille, que la modale parcourt à partir de là. */
+  index: number
   rarities: string[]
   scope: Scope
-  onSelect: () => void
-  tileRef: React.RefCallback<HTMLButtonElement>
+  onSelect: (at: number) => void
+  /** Inscrit le bouton de la tuile, où le focus revient ; rend sa désinscription. */
+  register: (id: string, el: HTMLButtonElement) => () => void
 }) {
   const stats = tileStats(card)
   // L'impression mise en avant : celle de la rareté filtrée, à défaut la
@@ -170,8 +209,8 @@ function Tile({
   return (
     <div className={cn("flex flex-col gap-2", OFFSCREEN)}>
       <button
-        ref={tileRef}
-        onClick={onSelect}
+        ref={(el) => (el ? register(card.id, el) : undefined)}
+        onClick={() => onSelect(index)}
         aria-haspopup="dialog"
         // Rareté et version distinguent deux tuiles d'une même carte, que
         // seul l'artwork séparerait sinon — et un lecteur d'écran ne le voit pas.
@@ -229,4 +268,4 @@ function Tile({
       </div>
     </div>
   )
-}
+})

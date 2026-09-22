@@ -225,7 +225,12 @@ export function NetdeckView({
         </>
       )}
 
+      {/* Une grille par niveau : changer d'onglet la remonte, et son rendu
+          progressif repart des premières tuiles au lieu de rendre d'un bloc
+          celles du nouveau niveau. La modale, fermée pour cliquer un onglet,
+          n'y perd rien. */}
       <CardGrid
+        key={shown}
         cards={visible}
         rarities={rarities}
         scope={shown}
