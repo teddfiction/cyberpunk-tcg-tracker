@@ -294,10 +294,13 @@ plus sa colonne dans `grid-columns.ts`, et un test vérifie que chaque facette a
 bien la sienne.
 
 Elle est la seule vue à **plafonner sa largeur** (`max-w-7xl`, quatre colonnes
-au plus) là où la table des cotes s'étale : à 1280 px les tuiles font 308 px,
+au plus) là où la table des cotes s'étale : à 1280 px les tuiles font 302 px,
 soit juste sous les 320 px CSS pour lesquels les visuels sont exportés — en
 640 px, pour Retina ; l'original n'en fait que 733 (voir « Limites des
-données »). Les versions s'ouvrent en modale plutôt qu'en dépliant la tuile —
+données »). Les écarts (`gap-x-6 gap-y-10`) valent pour les trois grilles, et
+le vertical passe l'horizontal parce que le nom et les caractéristiques
+occupent déjà une part de l'écart sous chaque visuel. Les versions s'ouvrent
+en modale plutôt qu'en dépliant la tuile —
 sous une tuile, les artworks tenaient dans 40 px de haut, illisibles, et déplier
 repoussait toute la grille. Radix ne rend pas le focus à la tuile en sortant :
 `CardGrid` le fait lui-même, sinon le clavier repartirait du haut des 151
