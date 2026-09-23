@@ -220,7 +220,17 @@
 
 @layer base {
   * { @apply border-border outline-ring/50; }
-  body { @apply bg-background text-foreground; }
+  /* `antialiased` : sur macOS, le texte clair s'épaissit sur le noir pur du
+     thème sombre — surtout le Geist Mono en capitales de 10 à 12 px, la voix
+     de toutes les commandes. */
+  body { @apply bg-background text-foreground antialiased; }
+  /* Pas de mot orphelin en fin de paragraphe, titres en lignes égales. Par
+     les balises et les `data-slot` des descriptions, que les fichiers du
+     registry ne permettent pas de viser autrement. `text-wrap-style` et non
+     `text-pretty` : le raccourci `text-wrap` remettrait aussi
+     `text-wrap-mode` à `wrap`, et romprait un `whitespace-nowrap` hérité. */
+  p, li, [data-slot$="-description"] { text-wrap-style: pretty; }
+  h1, h2, h3 { text-wrap-style: balance; }
 }
 
 /* Encoche : le coin supérieur droit coupé à 45°, élément de la charte —

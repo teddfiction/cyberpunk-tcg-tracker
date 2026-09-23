@@ -781,6 +781,12 @@ La consigne du projet : **uniquement Tailwind et les composants shadcn natifs.**
   cibles ne se chevauchent jamais : celles du chevron « Carte suivante » et
   de la croix se touchent, au pixel — agrandir l'une demande d'écarter le
   `pr-6` de l'en-tête.
+- **Rendu du texte** (`@layer base`, `index.css`) : `antialiased` sur le
+  `body`, sans quoi macOS épaissit le texte clair sur le noir pur du thème
+  sombre ; paragraphes, items et descriptions en `text-wrap-style: pretty`,
+  titres en `balance`. La propriété longue, pas `text-pretty` : le raccourci
+  `text-wrap` remettrait aussi `text-wrap-mode` à `wrap`, et romprait un
+  `whitespace-nowrap` hérité.
 - **Encoche : `notch-*`, le coin supérieur droit coupé à 45°.** Élément de
   charte, porté par les commandes (`ActionButton`, `controls.tsx`) et les
   badges (`NotchBadge`), et posé par `className` ailleurs : **toutes les
