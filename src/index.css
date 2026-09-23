@@ -1,7 +1,7 @@
 /* Tokens du thème shadcn (base Neutral, accent Yellow, secondaire et charts
    Cyan, radius 0),
    couleurs de carte du jeu, polices Geist / Geist Mono, encoche `notch-*`,
-   voile des modales et bascule de thème. */
+   voile et croix des modales, bascule de thème. */
 @import "tailwindcss";
 /* Les `animate-in fade-in-0 zoom-in-95…` que le registry pose sur modales,
    menus, popovers et sheet viennent d'ici : sans lui, ces classes ne
@@ -281,6 +281,16 @@
 [data-slot="alert-dialog-overlay"],
 [data-slot="sheet-overlay"] {
   @apply bg-black/10 supports-backdrop-filter:backdrop-blur-xs;
+}
+
+/* Croix des modales : 16 px de cible dans le registry, portée à 40 par un
+   pseudo-élément, sans rien déplacer. 12 px de débord, pas plus : la cible
+   touche alors celle du chevron « Carte suivante » de la modale de carte
+   (`Stepper`), sans la chevaucher. */
+[data-slot="dialog-content"] > [data-slot="dialog-close"]::after {
+  content: "";
+  position: absolute;
+  inset: -12px;
 }
 
 /* Mouvement réduit : les overlays gardent leur fondu, mais ni zoom, ni

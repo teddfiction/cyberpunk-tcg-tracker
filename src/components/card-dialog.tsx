@@ -246,6 +246,14 @@ function Versions({
  */
 const ENDED = "aria-disabled:pointer-events-none aria-disabled:opacity-50"
 
+/**
+ * Chevrons de 32 px, cible de 40 : le pseudo-élément déborde de 4 px sans
+ * rien déplacer. C'est le geste qu'on répète en constituant sa collection. À
+ * droite, il touche la cible élargie de la croix (`index.css`) sans la
+ * chevaucher. `transition-colors` au lieu du `transition-all` du registry.
+ */
+const CHEVRON = cn(ENDED, "relative transition-colors after:absolute after:-inset-1")
+
 function Stepper({
   name,
   at,
@@ -266,7 +274,7 @@ function Stepper({
       <Button
         variant="ghost"
         size="icon-sm"
-        className={ENDED}
+        className={CHEVRON}
         aria-label="Carte précédente"
         aria-keyshortcuts="ArrowLeft"
         title="Carte précédente (←)"
@@ -286,7 +294,7 @@ function Stepper({
       <Button
         variant="ghost"
         size="icon-sm"
-        className={ENDED}
+        className={CHEVRON}
         aria-label="Carte suivante"
         aria-keyshortcuts="ArrowRight"
         title="Carte suivante (→)"
@@ -438,8 +446,10 @@ function Links({
   printing: PrintRow | null
   className?: string
 }) {
+  // `gap-y-6` : repliés l'un sous l'autre — vers 320 px d'écran —, les
+  // liens et leurs cibles de 40 px (`OutLink`) ne se chevauchent pas.
   return (
-    <div className={cn("flex flex-wrap gap-x-4 gap-y-1", className)}>
+    <div className={cn("flex flex-wrap gap-x-4 gap-y-6", className)}>
       {card.slug && (
         <OutLink href={cyberpunkTcgUrl(card.slug, printing?.uuid)}>Fiche officielle</OutLink>
       )}
@@ -448,6 +458,11 @@ function Links({
   )
 }
 
+/**
+ * Lien de 16 px de haut, cible de 40 : `py-3` l'agrandit, `-my-3` rend la
+ * place, rien ne bouge. Les 16 px d'écart au-dessus (`gap-4`) en laissent 4
+ * avant la commande de collection.
+ */
 function OutLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
     <a
@@ -456,7 +471,7 @@ function OutLink({ href, children }: { href: string; children: React.ReactNode }
       rel="noopener"
       className={cn(
         CONTROL_TEXT,
-        "text-muted-foreground hover:text-foreground flex w-fit items-center gap-1 hover:underline"
+        "text-muted-foreground hover:text-foreground -my-3 flex w-fit items-center gap-1 py-3 hover:underline"
       )}
     >
       {children}

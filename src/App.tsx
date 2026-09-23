@@ -196,7 +196,9 @@ export default function App() {
         {/* Le nom de la page, et rien d'autre : ce qui ne vaut que pour une
             vue vit dans son contenu. */}
         <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-          <SidebarTrigger className="-ml-1" />
+          {/* 28 px dans le registry, cible portée à 40 par le pseudo-élément,
+              sans rien déplacer : le séparateur voisin n'est pas cliquable. */}
+          <SidebarTrigger className="relative -ml-1 after:absolute after:-inset-1.5" />
           <Separator orientation="vertical" className="mr-2 !h-6" />
           <h1 className="min-w-0 truncate text-2xl font-semibold tracking-tight">
             {VIEWS[view].label}

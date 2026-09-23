@@ -773,6 +773,14 @@ La consigne du projet : **uniquement Tailwind et les composants shadcn natifs.**
   couleurs — mesuré : « Exporter en CSV » encore blanc sur la page déjà
   blanche. Un onglet caché ne rend pas d'image : la classe y reste jusqu'à
   ce qu'il revienne au premier plan, ce qui est sans conséquence.
+- **Cibles de 40 px au moins**, étendues par un pseudo-élément quand le
+  visuel est plus petit, sans rien déplacer : chevrons de la modale de carte
+  (32 px, `after:-inset-1`), croix des modales (16 px, règle hors couche dans
+  `index.css` : le fichier du registry ne se modifie pas), bouton de la
+  barre latérale (28 px), liens sortants de la modale (`py-3 -my-3`). Deux
+  cibles ne se chevauchent jamais : celles du chevron « Carte suivante » et
+  de la croix se touchent, au pixel — agrandir l'une demande d'écarter le
+  `pr-6` de l'en-tête.
 - **Encoche : `notch-*`, le coin supérieur droit coupé à 45°.** Élément de
   charte, porté par les commandes (`ActionButton`, `controls.tsx`) et les
   badges (`NotchBadge`), et posé par `className` ailleurs : **toutes les
