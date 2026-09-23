@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { CONTROL_TEXT, FilterTrigger } from "@/components/controls"
 import { SORT_IDS, SORTS, sortIdOf, type SortId } from "@/lib/sorts"
+import { cn } from "@/lib/utils"
 
 import type { SortingState } from "@tanstack/react-table"
 
@@ -33,7 +34,9 @@ export function SortMenu({ sorting, onSort }: Props) {
         {SORT_IDS.map((id) => (
           <DropdownMenuCheckboxItem
             key={id}
-            className={CONTROL_TEXT}
+            // Le premier item a sa propre encoche : surligné, son coin tombait
+            // dans le biais du menu, coupé à ras. Voir `FacetFilter`.
+            className={cn(CONTROL_TEXT, "first:notch-sm")}
             checked={id === active}
             // Un seul tri à la fois : décocher l'actif n'a pas de sens, on
             // ignore, comme le ferait un groupe radio.

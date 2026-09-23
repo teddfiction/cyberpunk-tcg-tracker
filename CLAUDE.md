@@ -823,6 +823,14 @@ La consigne du projet : **uniquement Tailwind et les composants shadcn natifs.**
     rien ne bouge au clic ;
   - dans un groupe sans bordure propre (`ChoiceGroup`), l'encoche va au
     dernier élément (`last:notch-sm`), qui porte le coin et la bordure ;
+  - ce qui se surligne dans le coin d'un menu encoché — son premier item,
+    quand aucun champ de recherche ne le précède — porte sa propre encoche
+    (`first:notch-sm`, `SortMenu` et `FacetFilter`) : sinon le biais du
+    menu le coupe à ras, à 0 px sur la diagonale et 4 px partout ailleurs.
+    Deux biais à 45° sont parallèles et régulièrement espacés quand
+    N_intérieur = N_extérieur − (2 − √2) × écart, soit 13 px pour un menu
+    `md` et 5 px d'écart ; `sm` en laisse 3,2 sur la diagonale, comme le
+    `SearchField` posé au même endroit ;
   - un `<input>` n'a pas de `::before` : l'encoche d'un champ va au groupe
     qui porte sa bordure (`SearchField`).
 - **Informations de carte : Geist Mono en capitales** (`components/card-info.tsx`).
