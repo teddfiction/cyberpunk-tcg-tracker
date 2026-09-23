@@ -88,7 +88,11 @@ export function SettingsView({
           {list.map((exp) => {
             const entry = codes[exp] ?? { code: "", sure: false }
             return (
-              <div key={exp} className="flex items-center gap-2">
+              // `min-w-0` : le nom de l'extension ne se tronque qu'à cette
+              // condition. Sans lui, la ligne impose sa largeur minimale à sa
+              // colonne de grille, et c'est la page entière qui défile — 40 px
+              // de trop à 375 px, mesuré.
+              <div key={exp} className="flex min-w-0 items-center gap-2">
                 <Input
                   value={entry.code}
                   placeholder="—"
