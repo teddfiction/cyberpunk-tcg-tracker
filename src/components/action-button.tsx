@@ -25,11 +25,18 @@ import { cn } from "@/lib/utils"
  * leurs aplats sombres par-dessus les nôtres. Sans bordure visible : l'aplat
  * se détache seul, dans les deux thèmes. Elle reste transparente pour que le
  * focus la colore, comme sur les filtres.
+ *
+ * Les propriétés animées sont nommées, au lieu du `transition-all` du
+ * registry : couleurs, halo de focus et course de la touche. L'icône de tête
+ * a 2 px de moins que le côté texte (`pl-3.5`) — à retraits égaux, elle
+ * paraissait poussée vers l'intérieur. `px-4` d'abord : il écarte le
+ * `has-[>svg]:px-3` du registry, que `pl` seul laisserait à droite.
  */
 const actionVariants = cva(
   cn(
     CONTROL_TEXT,
-    "notch-sm h-10 gap-2 border border-transparent px-4 font-semibold has-[>svg]:px-4 active:translate-y-px"
+    "notch-sm h-10 gap-2 border border-transparent px-4 font-semibold has-[>svg]:px-4 has-[>svg]:pl-3.5 active:translate-y-px",
+    "transition-[color,background-color,border-color,box-shadow,translate]"
   ),
   {
     variants: {

@@ -48,8 +48,10 @@ export function DataTable<T>({ table }: { table: TanstackTable<T> }) {
                           // `px-2` et non `px-3` : c'est le retrait des cellules
                           // du registry, donc l'en-tête s'aligne enfin sur sa
                           // colonne — et douze colonnes y gagnent 8 px chacune.
+                          // `transition-colors` au lieu du `transition-all` du
+                          // registry : seules les couleurs changent au survol.
                           CONTROL_TEXT,
-                          "h-auto w-full justify-start gap-1 px-2 py-2 whitespace-nowrap",
+                          "h-auto w-full justify-start gap-1 px-2 py-2 whitespace-nowrap transition-colors",
                           sorted ? "text-foreground font-semibold" : "text-muted-foreground",
                           right && "justify-end"
                         )}

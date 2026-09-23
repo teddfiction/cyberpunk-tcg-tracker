@@ -161,7 +161,11 @@ export function NetdeckView({
               className="min-w-56 flex-1"
             />
 
-            <ActionButton onClick={() => download(CSV_NAMES[shown], toCsv(table, codes))}>
+            {/* Icône seule sous `sm` : retraits égaux, comme dans la table des cotes. */}
+            <ActionButton
+              onClick={() => download(CSV_NAMES[shown], toCsv(table, codes))}
+              className="max-sm:has-[>svg]:pl-4"
+            >
               <Download />
               <span className="hidden sm:inline">Exporter en CSV</span>
             </ActionButton>

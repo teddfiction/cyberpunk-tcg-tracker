@@ -70,7 +70,9 @@ export function FiltersBar({
 
         <ChoiceGroup label="Mode d'affichage" choices={MODE_CHOICES} value={mode} onChange={onMode} />
 
-        <ActionButton onClick={onExport}>
+        {/* Sous `sm`, l'icône seule : retraits égaux, sans quoi le `pl-3.5`
+            des boutons à icône la décentrerait d'un pixel. */}
+        <ActionButton onClick={onExport} className="max-sm:has-[>svg]:pl-4">
           <Download />
           <span className="hidden sm:inline">Exporter en CSV</span>
         </ActionButton>

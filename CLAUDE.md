@@ -649,7 +649,12 @@ La consigne du projet : **uniquement Tailwind et les composants shadcn natifs.**
     de `ghost` ni d'`outline` pour une action — sauf `danger-outline`, le
     premier temps d'un retrait confirmé dans le bouton, en `destructive`
     (red-400 en sombre) : le red-600 de `--danger`, en texte sur le noir,
-    tomberait à 3,6:1.
+    tomberait à 3,6:1. Ses transitions sont nommées — couleurs, halo, course
+    de la touche —, pas le `transition-all` du registry. L'icône de tête a
+    2 px de moins que le texte (`has-[>svg]:pl-3.5`) ; un bouton dont le
+    libellé se masque sous `sm` repasse à `max-sm:has-[>svg]:pl-4`, sans quoi
+    l'icône seule serait décentrée. Même règle, côté chevron, pour
+    `FilterTrigger` (`pr-2.5`).
   - **Les commandes à état** (`controls.tsx`) — `FilterTrigger` (menu de
     filtre ou de tri), `FilterToggle` (bascule), `ChoiceGroup` (options à
     choix unique : modes des cotes, possession de la collection) et
