@@ -1,7 +1,7 @@
 /* Tokens du thème shadcn (base Neutral, accent Yellow, secondaire et charts
    Cyan, radius 0),
-   couleurs de carte du jeu, polices Geist / Geist Mono, encoche `notch-*` et
-   voile des modales. */
+   couleurs de carte du jeu, polices Geist / Geist Mono, encoche `notch-*`,
+   voile des modales et bascule de thème. */
 @import "tailwindcss";
 /* Les `animate-in fade-in-0 zoom-in-95…` que le registry pose sur modales,
    menus, popovers et sheet viennent d'ici : sans lui, ces classes ne
@@ -299,4 +299,15 @@
     --tw-enter-blur: 0;
     --tw-exit-blur: 0;
   }
+}
+
+/* Bascule de thème (`useTheme`) : aucune transition le temps que `.dark`
+   change. Sans quoi la page change d'un coup, mais chaque commande glisse
+   150 ms vers ses nouvelles couleurs — un bouton d'action encore blanc sur une
+   page déjà blanche. `!important` pour passer devant tout `transition-*`. */
+.theme-switching,
+.theme-switching *,
+.theme-switching *::before,
+.theme-switching *::after {
+  transition: none !important;
 }

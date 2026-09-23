@@ -766,6 +766,13 @@ La consigne du projet : **uniquement Tailwind et les composants shadcn natifs.**
   modale montée pendant sa sortie (d'où `browse`, jamais remis à `null`, dans
   `CardGrid`), et, en mouvement réduit, `index.css` neutralise zoom,
   glissement, rotation et flou — le fondu reste.
+- **Bascule de thème sans transition.** `useTheme` pose `.theme-switching`
+  sur `<html>` le temps de changer `.dark`, et `index.css` y coupe toute
+  transition ; la classe part deux images plus tard. Sans elle, la page
+  change d'un coup mais chaque commande glisse 150 ms vers ses nouvelles
+  couleurs — mesuré : « Exporter en CSV » encore blanc sur la page déjà
+  blanche. Un onglet caché ne rend pas d'image : la classe y reste jusqu'à
+  ce qu'il revienne au premier plan, ce qui est sans conséquence.
 - **Encoche : `notch-*`, le coin supérieur droit coupé à 45°.** Élément de
   charte, porté par les commandes (`ActionButton`, `controls.tsx`) et les
   badges (`NotchBadge`), et posé par `className` ailleurs : **toutes les

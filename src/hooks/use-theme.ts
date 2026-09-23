@@ -12,8 +12,21 @@ export function useTheme() {
   })
 
   React.useEffect(() => {
-    document.documentElement.classList.toggle("dark", dark)
+    const root = document.documentElement
+    // Transitions coupées pendant la bascule (`.theme-switching`, index.css) :
+    // la page change d'un coup, les commandes aussi. Retirée deux images plus
+    // tard — la première calcule les nouvelles couleurs sans transition ; à la
+    // seconde, plus rien ne change, donc plus rien ne glisse.
+    root.classList.add("theme-switching")
+    root.classList.toggle("dark", dark)
     localStorage.setItem(KEY, dark ? "dark" : "light")
+    let frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => root.classList.remove("theme-switching"))
+    })
+    return () => {
+      cancelAnimationFrame(frame)
+      root.classList.remove("theme-switching")
+    }
   }, [dark])
 
   return { dark, toggle: React.useCallback(() => setDark((d) => !d), []) }
