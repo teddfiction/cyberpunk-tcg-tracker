@@ -649,7 +649,12 @@ La consigne du projet : **uniquement Tailwind et les composants shadcn natifs.**
     de `ghost` ni d'`outline` pour une action — sauf `danger-outline`, le
     premier temps d'un retrait confirmé dans le bouton, en `destructive`
     (red-400 en sombre) : le red-600 de `--danger`, en texte sur le noir,
-    tomberait à 3,6:1.
+    tomberait à 3,6:1. Ses transitions sont nommées — couleurs, halo, course
+    de la touche —, pas le `transition-all` du registry. L'icône de tête a
+    2 px de moins que le texte (`has-[>svg]:pl-3.5`) ; un bouton dont le
+    libellé se masque sous `sm` repasse à `max-sm:has-[>svg]:pl-4`, sans quoi
+    l'icône seule serait décentrée. Même règle, côté chevron, pour
+    `FilterTrigger` (`pr-2.5`).
   - **Les commandes à état** (`controls.tsx`) — `FilterTrigger` (menu de
     filtre ou de tri), `FilterToggle` (bascule), `ChoiceGroup` (options à
     choix unique : modes des cotes, possession de la collection) et
@@ -758,6 +763,35 @@ La consigne du projet : **uniquement Tailwind et les composants shadcn natifs.**
   `sheet`), **hors de toute couche** : c'est ce qui la fait passer devant les
   utilitaires du registry. Dans `@layer base` ou `components`, elle perdrait
   contre `bg-black/50`, en silence.
+- **Overlays animés : `tw-animate-css`**, importé dans `index.css`. C'est lui
+  qui donne un sens aux `animate-in fade-in-0 zoom-in-95` du registry — fondu
+  et zoom de 150 à 200 ms à l'ouverture comme à la fermeture, glissement du
+  sheet mobile. Sans lui ces classes ne produisent rien : tout overlay surgit
+  d'une image à l'autre, sans erreur. Deux conséquences : Radix garde la
+  modale montée pendant sa sortie (d'où `browse`, jamais remis à `null`, dans
+  `CardGrid`), et, en mouvement réduit, `index.css` neutralise zoom,
+  glissement, rotation et flou — le fondu reste.
+- **Bascule de thème sans transition.** `useTheme` pose `.theme-switching`
+  sur `<html>` le temps de changer `.dark`, et `index.css` y coupe toute
+  transition ; la classe part deux images plus tard. Sans elle, la page
+  change d'un coup mais chaque commande glisse 150 ms vers ses nouvelles
+  couleurs — mesuré : « Exporter en CSV » encore blanc sur la page déjà
+  blanche. Un onglet caché ne rend pas d'image : la classe y reste jusqu'à
+  ce qu'il revienne au premier plan, ce qui est sans conséquence.
+- **Cibles de 40 px au moins**, étendues par un pseudo-élément quand le
+  visuel est plus petit, sans rien déplacer : chevrons de la modale de carte
+  (32 px, `after:-inset-1`), croix des modales (16 px, règle hors couche dans
+  `index.css` : le fichier du registry ne se modifie pas), bouton de la
+  barre latérale (28 px), liens sortants de la modale (`py-3 -my-3`). Deux
+  cibles ne se chevauchent jamais : celles du chevron « Carte suivante » et
+  de la croix se touchent, au pixel — agrandir l'une demande d'écarter le
+  `pr-6` de l'en-tête.
+- **Rendu du texte** (`@layer base`, `index.css`) : `antialiased` sur le
+  `body`, sans quoi macOS épaissit le texte clair sur le noir pur du thème
+  sombre ; paragraphes, items et descriptions en `text-wrap-style: pretty`,
+  titres en `balance`. La propriété longue, pas `text-pretty` : le raccourci
+  `text-wrap` remettrait aussi `text-wrap-mode` à `wrap`, et romprait un
+  `whitespace-nowrap` hérité.
 - **Encoche : `notch-*`, le coin supérieur droit coupé à 45°.** Élément de
   charte, porté par les commandes (`ActionButton`, `controls.tsx`) et les
   badges (`NotchBadge`), et posé par `className` ailleurs : **toutes les
@@ -789,6 +823,14 @@ La consigne du projet : **uniquement Tailwind et les composants shadcn natifs.**
     rien ne bouge au clic ;
   - dans un groupe sans bordure propre (`ChoiceGroup`), l'encoche va au
     dernier élément (`last:notch-sm`), qui porte le coin et la bordure ;
+  - ce qui se surligne dans le coin d'un menu encoché — son premier item,
+    quand aucun champ de recherche ne le précède — porte sa propre encoche
+    (`first:notch-sm`, `SortMenu` et `FacetFilter`) : sinon le biais du
+    menu le coupe à ras, à 0 px sur la diagonale et 4 px partout ailleurs.
+    Deux biais à 45° sont parallèles et régulièrement espacés quand
+    N_intérieur = N_extérieur − (2 − √2) × écart, soit 13 px pour un menu
+    `md` et 5 px d'écart ; `sm` en laisse 3,2 sur la diagonale, comme le
+    `SearchField` posé au même endroit ;
   - un `<input>` n'a pas de `::before` : l'encoche d'un champ va au groupe
     qui porte sa bordure (`SearchField`).
 - **Informations de carte : Geist Mono en capitales** (`components/card-info.tsx`).

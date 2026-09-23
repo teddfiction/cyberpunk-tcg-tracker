@@ -44,6 +44,8 @@ const lamp = (lit: boolean) => (lit ? LIT : OFF)
  * Déclencheur d'un menu de filtre ou de tri, allumé dès qu'un choix y est
  * actif — leur nombre en chiffres jaunes sur noir, comme un afficheur. Posé
  * sous un `Trigger asChild` de Radix, qui lui passe ref, état et gestionnaires.
+ * `pr-2.5` : le chevron final a 2 px de moins que le texte, sans quoi il
+ * paraît décollé du bord.
  */
 export function FilterTrigger({
   label,
@@ -56,7 +58,11 @@ export function FilterTrigger({
   count?: number
 }) {
   return (
-    <button type="button" className={cn(CONTROL, lamp(count > 0), "notch-sm", className)} {...props}>
+    <button
+      type="button"
+      className={cn(CONTROL, lamp(count > 0), "notch-sm pr-2.5", className)}
+      {...props}
+    >
       <span className="truncate">{label}</span>
       {count > 0 && (
         <NotchBadge className="bg-selected-foreground text-primary px-1.5 tabular-nums">

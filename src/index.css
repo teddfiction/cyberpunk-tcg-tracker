@@ -1,8 +1,12 @@
 /* Tokens du thème shadcn (base Neutral, accent Yellow, secondaire et charts
    Cyan, radius 0),
-   couleurs de carte du jeu, polices Geist / Geist Mono, encoche `notch-*` et
-   voile des modales. */
+   couleurs de carte du jeu, polices Geist / Geist Mono, encoche `notch-*`,
+   voile et croix des modales, bascule de thème. */
 @import "tailwindcss";
+/* Les `animate-in fade-in-0 zoom-in-95…` que le registry pose sur modales,
+   menus, popovers et sheet viennent d'ici : sans lui, ces classes ne
+   produisent rien, et tout overlay surgit et disparaît d'une image à l'autre. */
+@import "tw-animate-css";
 @source "./**/*.{ts,tsx}";
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -216,7 +220,17 @@
 
 @layer base {
   * { @apply border-border outline-ring/50; }
-  body { @apply bg-background text-foreground; }
+  /* `antialiased` : sur macOS, le texte clair s'épaissit sur le noir pur du
+     thème sombre — surtout le Geist Mono en capitales de 10 à 12 px, la voix
+     de toutes les commandes. */
+  body { @apply bg-background text-foreground antialiased; }
+  /* Pas de mot orphelin en fin de paragraphe, titres en lignes égales. Par
+     les balises et les `data-slot` des descriptions, que les fichiers du
+     registry ne permettent pas de viser autrement. `text-wrap-style` et non
+     `text-pretty` : le raccourci `text-wrap` remettrait aussi
+     `text-wrap-mode` à `wrap`, et romprait un `whitespace-nowrap` hérité. */
+  p, li, [data-slot$="-description"] { text-wrap-style: pretty; }
+  h1, h2, h3 { text-wrap-style: balance; }
 }
 
 /* Encoche : le coin supérieur droit coupé à 45°, élément de la charte —
@@ -277,4 +291,43 @@
 [data-slot="alert-dialog-overlay"],
 [data-slot="sheet-overlay"] {
   @apply bg-black/10 supports-backdrop-filter:backdrop-blur-xs;
+}
+
+/* Croix des modales : 16 px de cible dans le registry, portée à 40 par un
+   pseudo-élément, sans rien déplacer. 12 px de débord, pas plus : la cible
+   touche alors celle du chevron « Carte suivante » de la modale de carte
+   (`Stepper`), sans la chevaucher. */
+[data-slot="dialog-content"] > [data-slot="dialog-close"]::after {
+  content: "";
+  position: absolute;
+  inset: -12px;
+}
+
+/* Mouvement réduit : les overlays gardent leur fondu, mais ni zoom, ni
+   glissement, ni rotation, ni flou. Hors couche, comme le voile : c'est ce qui
+   passe devant les `zoom-in-95` et `slide-in-from-left` du registry. */
+@media (prefers-reduced-motion: reduce) {
+  [data-state] {
+    --tw-enter-scale: 1;
+    --tw-exit-scale: 1;
+    --tw-enter-translate-x: 0;
+    --tw-enter-translate-y: 0;
+    --tw-exit-translate-x: 0;
+    --tw-exit-translate-y: 0;
+    --tw-enter-rotate: 0;
+    --tw-exit-rotate: 0;
+    --tw-enter-blur: 0;
+    --tw-exit-blur: 0;
+  }
+}
+
+/* Bascule de thème (`useTheme`) : aucune transition le temps que `.dark`
+   change. Sans quoi la page change d'un coup, mais chaque commande glisse
+   150 ms vers ses nouvelles couleurs — un bouton d'action encore blanc sur une
+   page déjà blanche. `!important` pour passer devant tout `transition-*`. */
+.theme-switching,
+.theme-switching *,
+.theme-switching *::before,
+.theme-switching *::after {
+  transition: none !important;
 }

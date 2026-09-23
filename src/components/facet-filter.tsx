@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { CONTROL_TEXT, FilterTrigger, SearchField } from "@/components/controls"
 import { matchOptions, type FacetOption } from "@/lib/facets"
+import { cn } from "@/lib/utils"
 
 type Props = {
   label: string
@@ -103,7 +104,11 @@ export function FacetFilter({ label, options, selected, onChange }: Props) {
             shown.map(({ value, count }) => (
               <DropdownMenuCheckboxItem
                 key={value}
-                className={CONTROL_TEXT}
+                // Sans champ de recherche, le premier item occupe le coin du
+                // menu : surligné, le biais de 16 px le coupait à ras, là où 4
+                // px le séparent des bords. Sa propre encoche lui rend un biais
+                // parallèle — celui du champ, quand il y en a un.
+                className={cn(CONTROL_TEXT, !searchable && "first:notch-sm")}
                 checked={selected.includes(value)}
                 // La bascule est dans `onSelect`, qui sert le clic comme la
                 // touche Entrée, plutôt que dans `onCheckedChange` qu'il faudrait
