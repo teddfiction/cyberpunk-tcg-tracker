@@ -758,6 +758,14 @@ La consigne du projet : **uniquement Tailwind et les composants shadcn natifs.**
   `sheet`), **hors de toute couche** : c'est ce qui la fait passer devant les
   utilitaires du registry. Dans `@layer base` ou `components`, elle perdrait
   contre `bg-black/50`, en silence.
+- **Overlays animés : `tw-animate-css`**, importé dans `index.css`. C'est lui
+  qui donne un sens aux `animate-in fade-in-0 zoom-in-95` du registry — fondu
+  et zoom de 150 à 200 ms à l'ouverture comme à la fermeture, glissement du
+  sheet mobile. Sans lui ces classes ne produisent rien : tout overlay surgit
+  d'une image à l'autre, sans erreur. Deux conséquences : Radix garde la
+  modale montée pendant sa sortie (d'où `browse`, jamais remis à `null`, dans
+  `CardGrid`), et, en mouvement réduit, `index.css` neutralise zoom,
+  glissement, rotation et flou — le fondu reste.
 - **Encoche : `notch-*`, le coin supérieur droit coupé à 45°.** Élément de
   charte, porté par les commandes (`ActionButton`, `controls.tsx`) et les
   badges (`NotchBadge`), et posé par `className` ailleurs : **toutes les

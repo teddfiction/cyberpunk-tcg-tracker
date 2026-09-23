@@ -3,6 +3,10 @@
    couleurs de carte du jeu, polices Geist / Geist Mono, encoche `notch-*` et
    voile des modales. */
 @import "tailwindcss";
+/* Les `animate-in fade-in-0 zoom-in-95…` que le registry pose sur modales,
+   menus, popovers et sheet viennent d'ici : sans lui, ces classes ne
+   produisent rien, et tout overlay surgit et disparaît d'une image à l'autre. */
+@import "tw-animate-css";
 @source "./**/*.{ts,tsx}";
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -277,4 +281,22 @@
 [data-slot="alert-dialog-overlay"],
 [data-slot="sheet-overlay"] {
   @apply bg-black/10 supports-backdrop-filter:backdrop-blur-xs;
+}
+
+/* Mouvement réduit : les overlays gardent leur fondu, mais ni zoom, ni
+   glissement, ni rotation, ni flou. Hors couche, comme le voile : c'est ce qui
+   passe devant les `zoom-in-95` et `slide-in-from-left` du registry. */
+@media (prefers-reduced-motion: reduce) {
+  [data-state] {
+    --tw-enter-scale: 1;
+    --tw-exit-scale: 1;
+    --tw-enter-translate-x: 0;
+    --tw-enter-translate-y: 0;
+    --tw-exit-translate-x: 0;
+    --tw-exit-translate-y: 0;
+    --tw-enter-rotate: 0;
+    --tw-exit-rotate: 0;
+    --tw-enter-blur: 0;
+    --tw-exit-blur: 0;
+  }
 }
